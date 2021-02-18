@@ -1,5 +1,3 @@
-module Production
-
 include("blueprint.jl")
 export Direction, down, up, Thresholds
 export Lifecycle, Restorable
@@ -18,5 +16,3 @@ include("products.jl")
 export Enhancer, Consumable, Decayable, Product, Producer
 export id, get_blueprint, is_type, produce!
 export health, damaged, usable, reconstructable, use!, restore!, maintenance_due, maintain!, damage!, decay!, destroy!
-
-end

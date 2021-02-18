@@ -1,6 +1,6 @@
 
 using UUIDs
-using ..Utilities
+
 # TODO move damage functions to LifeCycle.
 # damage!(product, damage) = damage!(lifecycle, health, damage)
 abstract type Enhancer <: Entity end

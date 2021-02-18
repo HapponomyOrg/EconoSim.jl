@@ -3,7 +3,6 @@ import Base: ==
 using Base.Order
 using UUIDs
 using DataStructures
-using ..Utilities
 
 @enum Direction up down
 

@@ -1,9 +1,6 @@
 using DataStructures
 using Random
 
-using ..Utilities
-using ..Production
-
 """
     Needs - indicates the needs of an Actor.
 

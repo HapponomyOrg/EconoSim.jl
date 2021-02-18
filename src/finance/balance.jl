@@ -1,5 +1,5 @@
 using UUIDs
-using ..Utilities
+
 # TODO Add current balance to transactions
 import Base: ==
 

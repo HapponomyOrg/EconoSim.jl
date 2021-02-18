@@ -1,7 +1,4 @@
 using Agents
-using ..Utilities
-using ..Finance
-using ..Production
 
 global ID_COUNTER = 0
 

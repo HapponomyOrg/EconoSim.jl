@@ -1,5 +1,3 @@
-using ..Utilities
-
 import Base: +, -, *, /, <, >, <=, >=, ==, max, min
 
 """

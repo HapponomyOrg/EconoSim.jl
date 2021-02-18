@@ -1,5 +1,3 @@
-module Finance
-
 include("balance.jl")
 export EntryType, BalanceEntry, Balance
 export EQUITY, asset, liability
@@ -22,5 +20,3 @@ export Debt, borrow, process_debt!
 include("price.jl")
 export Price
 export purchases_available, pay!
-
-end

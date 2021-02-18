@@ -1,5 +1,4 @@
 using DataStructures
-using ..Utilities
 
 """
     Marginality - a progressive marginal use structure.

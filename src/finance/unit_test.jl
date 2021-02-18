@@ -1,5 +1,5 @@
 using Test
-using ..Finance
+using .EconoSim
 
 @testset "Balance" begin
     b = Balance()

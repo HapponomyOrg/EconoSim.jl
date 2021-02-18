@@ -1,5 +1,3 @@
-using ..Utilities
-
 struct Stock
     stock::Entities
     stock_limits::Dict{Blueprint, Tuple{Int64, Int64}}

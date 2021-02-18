@@ -1,6 +1,5 @@
 using Test
-using ..Utilities
-using ..Production
+using .EconoSim
 
 @testset "Restorable" begin
     bp = ConsumableBlueprint("C")
@@ -254,7 +253,7 @@ end
     push!(e, p2)
     req_res = Dict(cb => 1)
     req_tools = Dict(pb => 2)
-    @test Production.extract!(e, req_res, req_tools)
+    @test EconoSim.extract!(e, req_res, req_tools)
     @test length(keys(e)) == 1
     @test !(cb in keys(e))
 

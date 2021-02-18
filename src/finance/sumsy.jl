@@ -1,7 +1,5 @@
 using DataStructures
 
-using ..Utilities
-
 SUMSY_DEP = BalanceEntry("SuMSy deposit")
 SUMSY_DEBT = BalanceEntry("SuMSy debt")
 

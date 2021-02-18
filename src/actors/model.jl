@@ -1,5 +1,4 @@
 using Agents
-using ..Finance
 
 function create_econo_model()
     properties = Dict{Symbol, Any}()

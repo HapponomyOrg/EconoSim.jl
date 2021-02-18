@@ -1,10 +1,6 @@
 using Agents
 using DataStructures
-
-using ..Utilities
-using ..Finance
-using ..Production
-using ..Econo_Sim
+using .EconoSim
 
 # Default properties
 SUMSY = :sumsy
@@ -20,6 +16,46 @@ container_ticket = ConsumableBlueprint("Container park ticket")
 swim_ticket = ConsumableBlueprint("Swim ticket")
 bread = ConsumableBlueprint("Bread")
 tv = ProductBlueprint("TV", Restorable(wear = 0.01))
+
+sumsy_data = Dict{Symbol, Float64}(CONSUMER => 0, BAKER => 0, TV_MERCHANT => 0, GOVERNANCE => 0)
+
+"""
+    run_example()
+
+Run a pre-configured example model.
+"""
+function run_example()
+    # Mark runtime start
+    now = time()
+    # Create the Loreco model.
+    model = init_loreco_model()
+
+    # Execute 300 default steps
+    econo_step!(model, 60)
+
+    # Mark runtime end
+    done = time() - now
+
+    for actor in allagents(model)
+        if has_type(actor, CONSUMER)
+            symbol = CONSUMER
+        elseif has_type(actor, BAKER)
+            symbol = BAKER
+        elseif has_type(actor, TV_MERCHANT)
+            symbol = TV_MERCHANT
+        elseif has_type(actor, GOVERNANCE)
+            symbol = GOVERNANCE
+        end
+
+        sumsy_data[symbol] = sumsy_data[symbol] + sumsy_balance(actor)
+    end
+
+    sumsy_data[CONSUMER] = round(sumsy_data[CONSUMER] / 380, digits = 2)
+    sumsy_data[BAKER] = round(sumsy_data[BAKER] / 15, digits = 2)
+    sumsy_data[TV_MERCHANT] = round(sumsy_data[TV_MERCHANT] / 20, digits = 2)
+
+    return sumsy_data
+end
 
 """
 init_loreco_model(sumsy::SuMSy = SuMSy(2000, 25000, 0.1, 30, seed = 5000),
@@ -151,13 +187,13 @@ function add_governance(model, citizens::Integer)
     add_agent!(governance, model)
 end
 
-Finance.sumsy_balance(actor::Actor) = sumsy_balance(actor.balance)
+EconoSim.sumsy_balance(actor::Actor) = sumsy_balance(actor.balance)
 
 function sumsy_price(model, bp::Blueprint)
     price(model)[SUMSY_DEP]
 end
 
-function Econo_Sim.set_price!(model, bp::Blueprint, sumsy_price::Real, euro_price::Real = 0)
+function EconoSim.set_price!(model, bp::Blueprint, sumsy_price::Real, euro_price::Real = 0)
     price = Price()
     price[SUMSY_DEP] = sumsy_price
     price[DEPOSIT] = euro_price
@@ -170,7 +206,7 @@ end
 
 Deposit guaranteed income on the balance of the actor if it's elegible to receive it and subtract demurrage. These transactions are recorded in de balance of the actor.
 """
-Finance.process_sumsy!(model, actor::Actor) = process_sumsy!(model.sumsy, actor.balance, get_step(model))
+EconoSim.process_sumsy!(model, actor::Actor) = process_sumsy!(model.sumsy, actor.balance, get_step(model))
 
 """
     make_loreco(model, actor, needs = nothing)
@@ -189,7 +225,7 @@ function make_loreco(model, actor, needs = nothing)
         set_guaranteed_income!(model.sumsy, actor.balance, true)
 
         # Add sumsy processing to the pre-actor activation step (model_step).
-        add_model_behavior!(actor, Loreco.process_sumsy!)
+        add_model_behavior!(actor, process_sumsy!)
     end
 
     # If the actor has needs, add marginal behavior to its behavior functions.

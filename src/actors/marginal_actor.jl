@@ -1,9 +1,5 @@
 using Agents
 
-using ..Utilities
-using ..Finance
-using ..Production
-
 MARGINAL = :marginal
 
 """

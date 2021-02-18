@@ -1,5 +1,3 @@
-truecondition(x) = true
-
 function extract(set::Set, num_elements::Integer, condition::Function = truecondition)
     result = Set()
     i = 0
