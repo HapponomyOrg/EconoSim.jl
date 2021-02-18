@@ -3,7 +3,7 @@ using ..Utilities
 using ..Finance
 using ..Production
 
-global ID_COUNTER = 0 #
+global ID_COUNTER = 0
 
 """
     Actor - agent representing an economic actor.
