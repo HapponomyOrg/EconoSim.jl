@@ -1,1 +1,2 @@
-# Happonomy simulation cockpit
+# EconoSim
+## Simulation tools for agent based economic simulation.
