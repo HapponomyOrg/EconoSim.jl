@@ -1,3 +1,5 @@
+module EconoSim
+
 include("utilities/Utilities.jl")
 using .Utilities
 
@@ -12,3 +14,5 @@ using .Econo_Sim
 
 include("loreco/Loreco.jl")
 using .Loreco
+
+end
