@@ -15,11 +15,12 @@ export has_model_behavior, add_model_behavior!, delete_model_bahavior!, clear_mo
 export push_producer!, delete_producer!, produce_stock!, purchase!
 export get_price, set_price!
 export get_posessions, get_stock, get_production_output
+export actor_step!
 
 include("marginal_actor.jl")
 export make_marginal
 export process_needs, process_usage, process_wants
 
 include("model.jl")
-export create_econo_model, econo_step!
+export create_econo_model, econo_step!, econo_model_step!
 export get_step, get_price, set_price!
