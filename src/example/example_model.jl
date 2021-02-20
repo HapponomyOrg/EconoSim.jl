@@ -19,6 +19,8 @@ tv = ProductBlueprint("TV", Restorable(wear = 0.01))
 
 sumsy_data = Dict{Symbol, Float64}(CONSUMER => 0, BAKER => 0, TV_MERCHANT => 0, GOVERNANCE => 0)
 
+EconoSim.sumsy_balance(actor::Actor) = sumsy_balance(actor.balance)
+
 """
     run_example()
 
@@ -30,8 +32,10 @@ function run_example()
     # Create the Loreco model.
     model = init_loreco_model()
 
+    adata = [sumsy_balance]
+
     # Execute 300 default steps
-    econo_step!(model, 60)
+    data, _ =run!(model, actor_step!, econo_model_step!, 900; adata)
 
     # Mark runtime end
     done = time() - now
