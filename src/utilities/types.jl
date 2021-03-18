@@ -1,3 +1,9 @@
+using FixedPointDecimals
+
+"""
+    Percentage
+A float which remains between 0 and 1, representing 0% - 100%.
+"""
 struct Percentage <: Real
     value::Float64
     Percentage(x, precision::Integer=6) = x < 0 ? new(0) : x > 1 ? new(1) : new(round(x, digits=precision))
@@ -11,6 +17,10 @@ Base.convert(::Type{Percentage}, x::Percentage) = x
 Base.promote_rule(::Type{T}, ::Type{Percentage}) where T <: Real = Percentage
 Base.round(x::Percentage; digits::Integer = 6, base = 10) = Percentage(round(value(x), digits = digits, base = base))
 
+"""
+    Health
+Mutable struct holding health, expressed in percentages between 0% and 100%.
+"""
 mutable struct Health
     current::Percentage
     Health(current=1) = new(current)
@@ -60,3 +70,9 @@ end
 
 /(x::Health, y::Percentage) = Health(round(value(x) / value(y), digits = 6))
 /(x::Percentage, y::Health) = Health(round(value(x) / value(y), digits = 6))
+
+"""
+    Currency
+Convenience type for working with currencies.
+"""
+Currency = FixedDecimal{Int64, 2}
