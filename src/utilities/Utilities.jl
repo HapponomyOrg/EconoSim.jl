@@ -6,3 +6,4 @@ export extract, delete_element!
 
 include("types.jl")
 export Percentage, Health, value, num_entities
+export Currency
