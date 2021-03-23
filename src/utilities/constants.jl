@@ -1,1 +1,1 @@
-INF = 2^63 - 1 # Indicates infinity for Int64
+INF = typemax(Int64) # Indicates infinity for Int64
