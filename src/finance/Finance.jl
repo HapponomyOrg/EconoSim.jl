@@ -1,5 +1,5 @@
 include("balance.jl")
-export EntryType, BalanceEntry, Balance
+export EntryType, BalanceEntry, Balance, AtomicTransaction, Transaction
 export EQUITY, asset, liability
 export min_balance!, min_asset!, min_liability!, min_balance, min_asset, min_liability
 export validate, assets, liabilities, asset_value, assets_value, liability_value, liabilities_value, liabilities_net_value, equity
