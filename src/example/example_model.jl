@@ -1,6 +1,6 @@
 using Agents
 using DataStructures
-using .EconoSim
+using EconoSim
 
 # Default properties
 SUMSY = :sumsy
@@ -35,7 +35,7 @@ function run_example()
     adata = [sumsy_balance]
 
     # Execute 300 default steps
-    data, _ =run!(model, actor_step!, econo_model_step!, 900; adata)
+    data, _ =run!(model, actor_step!, econo_model_step!, 300; adata)
 
     # Mark runtime end
     done = time() - now
