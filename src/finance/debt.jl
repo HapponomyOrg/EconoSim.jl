@@ -23,7 +23,7 @@ mutable struct Debt
     id::UUID
     creditor::Balance
     debtor::Balance
-    installments::Vector{Float64}
+    installments::Vector{Currency}
     interest_rate::Float64
     bank_debt::Bool
     money_entry::BalanceEntry
@@ -82,9 +82,9 @@ function Debt(creditor::Balance,
             debt_entry::BalanceEntry = DEBT,
             creation::Int64 = 0,
             interval::Int64 = 0)
-    installment = round(amount / installments, digits = 2)
-    rest = amount - installment * installments
-    installment_vector = Vector{Float64}()
+    installment = Currency(amount / installments)
+    rest = Currency(amount) - installment * installments
+    installment_vector = Vector{Currency}()
 
     for i in 1:installments
         if i == 1
