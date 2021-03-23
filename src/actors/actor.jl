@@ -9,7 +9,7 @@ global ID_COUNTER = 0
 * id::Int - the id of the agent.
 * types::Set{Symbol} - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
 * model_behaviors::Vector{Function} - the list of functions which are called by econo_model_step!, which is the default model_step! function.
-* behaviors::Function - the list of behavior functions which is called when the actor is activated.
+* behaviors::Vector{Function} - the list of behavior functions which is called when the actor is activated.
 * balance::Balance - the balance sheet of the agent.
 * posessions::Entities - the entities in personal posession of the agent.
 * stock::Stock - the stock held by the agent. The stock is considered to be used for business purposes.
