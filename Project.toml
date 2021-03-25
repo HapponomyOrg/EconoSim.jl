@@ -1,13 +1,15 @@
 name = "EconoSim"
 uuid = "cc8cb6e0-4c11-4d04-b964-59e7aacda730"
 authors = ["Stef Kuypers <stef@happonomy.org>"]
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 Agents = "46ada45e-f475-11e8-01d0-f70cc89e6671"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+FixedPointDecimals = "fb4d412d-6eee-574d-9565-ede6634db7b0"
 
 [compat]
 julia = "1.5"
 Agents = "4.0"
 DataStructures = "0.18"
+FixedPointDecimals = "0.8"
