@@ -1,5 +1,5 @@
 using Test
-using .EconoSim
+using EconoSim
 
 @testset "Balance" begin
     b = Balance()
@@ -51,8 +51,8 @@ end
     e2 = BalanceEntry("E2")
     b = Balance()
 
-    min_asset!(b, e1, -Inf)
-    min_liability!(b, e2, -Inf)
+    min_asset!(b, e1, CUR_MIN)
+    min_liability!(b, e2, CUR_MIN)
 
     @test min_asset(b, e1) < 0
     @test min_asset(b, e2) == 0
@@ -108,23 +108,23 @@ end
     transfer_asset!(b1, b2, a, 50, comment = "transfer")
 
     @test length(b1.transactions) == 2
-    @test b1.transactions[1][1] == 0
-    @test b1.transactions[1][2] == asset
-    @test b1.transactions[1][3] == a
-    @test b1.transactions[1][4] == 100
-    @test b1.transactions[1][5] == "book"
-    @test b1.transactions[2][1] == 0
-    @test b1.transactions[2][2] == asset
-    @test b1.transactions[2][3] == a
-    @test b1.transactions[2][4] == -50
-    @test b1.transactions[2][5] == "transfer"
+    @test b1.transactions[1].timestamp == 0
+    @test b1.transactions[1].transactions[1].type == asset
+    @test b1.transactions[1].transactions[1].entry == a
+    @test b1.transactions[1].transactions[1].amount == 100
+    @test b1.transactions[1].transactions[1].comment == "book"
+    @test b1.transactions[2].timestamp == 0
+    @test b1.transactions[2].transactions[1].type == asset
+    @test b1.transactions[2].transactions[1].entry == a
+    @test b1.transactions[2].transactions[1].amount == -50
+    @test b1.transactions[2].transactions[1].comment == "transfer"
 
     @test length(b2.transactions) == 1
-    @test b2.transactions[1][1] == 0
-    @test b2.transactions[1][2] == asset
-    @test b2.transactions[1][3] == a
-    @test b2.transactions[1][4] == 50
-    @test b2.transactions[1][5] == "transfer"
+    @test b2.transactions[1].timestamp == 0
+    @test b2.transactions[1].transactions[1].type == asset
+    @test b2.transactions[1].transactions[1].entry == a
+    @test b2.transactions[1].transactions[1].amount == 50
+    @test b2.transactions[1].transactions[1].comment == "transfer"
 end
 
 @testset "SuMSy demurrage - single" begin
@@ -163,12 +163,12 @@ end
     e2 = BalanceEntry("E2")
 
     b1 = Balance()
-    min_asset!(b1, e1, -Inf)
-    min_liability!(b1, e2, -Inf)
+    min_asset!(b1, e1, CUR_MIN)
+    min_liability!(b1, e2, CUR_MIN)
 
     b2 = Balance()
-    min_asset!(b2, e1, -Inf)
-    min_liability!(b2, e2, -Inf)
+    min_asset!(b2, e1, CUR_MIN)
+    min_liability!(b2, e2, CUR_MIN)
 
     # 1 valid transfer
     queue_asset_transfer!(b1, b2, e1, 100)
@@ -201,7 +201,7 @@ end
 
     @test execute_transfers!(b1)
     @test length(b1.transfer_queue) == 0
-    @test length(b2.transfer_queue) > 0 # Only be transfer queue is processed
+    @test length(b2.transfer_queue) > 0 # Only b1 transfer queue is processed
     @test asset_value(b1, e1) == -200
     @test asset_value(b2, e1) == 200
     @test asset_value(b1, e2) == 25
@@ -220,7 +220,7 @@ end
     c2 = BalanceEntry("C2")
 
     b1 = Balance()
-    min_asset!(b1, c1, -Inf)
+    min_asset!(b1, c1, CUR_MIN)
     book_asset!(b1, c1, 100)
     book_asset!(b1, c2, 100)
 

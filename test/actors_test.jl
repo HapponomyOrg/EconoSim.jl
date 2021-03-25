@@ -1,7 +1,7 @@
 using Test
 using Agents
 using DataStructures
-using .EconoSim
+using EconoSim
 
 @testset "Marginality" begin
     m = Marginality([(5, 0.1), (1, 1)])

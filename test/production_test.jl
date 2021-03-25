@@ -1,5 +1,5 @@
 using Test
-using .EconoSim
+using EconoSim
 
 @testset "Restorable" begin
     bp = ConsumableBlueprint("C")

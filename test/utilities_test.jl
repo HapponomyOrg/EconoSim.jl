@@ -1,5 +1,5 @@
 using Test
-using .EconoSim
+using EconoSim
 
 @testset "Percentage" begin
     @test_throws MethodError Percentage()
