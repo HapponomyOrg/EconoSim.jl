@@ -37,8 +37,8 @@ struct Transfer{T <: AbstractBalance}
     source_type::EntryType
     destination::T
     destination_type::EntryType
-    amount::Currency
     entry::BalanceEntry
+    amount::Currency
     comment::String
 end
 
@@ -104,16 +104,16 @@ struct Balance <: AbstractBalance
     transactions::Vector{Transaction}
     properties::Dict
     Balance(;properties = Dict()) = new(
-                Dict(BalanceEntry, Currency}(),
-                Dict(BalanceEntry, Currency}(),
-                Dict(BalanceEntry, Currency}(EQUITY => 0),
-                Dict(BalanceEntry, Currency}(EQUITY => typemin(Currency)),
+                Dict{BalanceEntry, Currency}(),
+                Dict{BalanceEntry, Currency}(),
+                Dict{BalanceEntry, Currency}(EQUITY => 0),
+                Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
                 Vector{Transfer{Balance}}(),
                 Vector{Transaction}(),
                 properties)
 end
 
-Base.show(io::IO, b::Balance) = print(io, "Balance(\nAssets:\n$(b.balance[asset]) \nLiabilities:\n$(b.balance[liability]) \nTransactions:\n$(b.transactions))")
+Base.show(io::IO, b::Balance) = print(io, "Balance(\nAssets:\n$(b.assets) \nLiabilities:\n$(b.liabilities) \nTransactions:\n$(b.transactions))")
 
 function Base.getproperty(balance::Balance, s::Symbol)
     properties = getfield(balance, :properties)
@@ -189,23 +189,6 @@ function entry_value(dict::Dict{BalanceEntry, Currency},
 end
 
 """
-    book_amount!(entry::BalanceEntry,
-                dict::Dict{BalanceEntry, Currency},
-                amount::Real)
-
-Books the amount. Checks on allowance of negative balances need to be made prior to this call.
-"""
-function book_amount!(entry::BalanceEntry,
-                    dict::Dict{BalanceEntry, Currency},
-                    amount::Real)
-    if entry in keys(dict)
-        dict[entry] = dict[entry] + amount
-    else
-        dict[entry] = amount
-    end
-end
-
-"""
     check_booking(entry::BalanceEntry,
                 dict::Dict{BalanceEntry, Currency},
                 amount::Real)
@@ -229,6 +212,40 @@ function check_booking(balance::Balance,
 end
 
 """
+    book_amount!(entry::BalanceEntry,
+                dict::Dict{BalanceEntry, Currency},
+                amount::Real)
+
+Books the amount. Checks on allowance of negative balances need to be made prior to this call.
+"""
+function book_amount!(balance::Balance,
+                    entry::BalanceEntry,
+                    type::EntryType,
+                    amount::Real,
+                    timestamp::Integer,
+                    comment::String,
+                    value_function::Function,
+                    transaction::Union{Transaction, Nothing})
+    dict = type == asset ? balance.assets : balance.liabilities
+
+    if entry in keys(dict)
+        dict[entry] += amount
+    else
+        dict[entry] = amount
+    end
+
+    balance.liabilities[EQUITY] += type == asset ? amount : -amount
+
+    if amount != 0
+        if isnothing(transaction)
+            push!(balance.transactions, Transaction(timestamp, asset, entry, amount, value_function(balance, entry), comment))
+        else
+            push!(transaction, AtomicTransaction(asset, entry, amount, value_function(balance, entry), comment))
+        end
+    end
+end
+
+"""
     book_asset!(b::Balance,
                 entry::BalanceEntry,
                 amount::Real,
@@ -244,19 +261,9 @@ function book_asset!(b::Balance,
                     timestamp::Integer = 0;
                     comment::String = "",
                     skip_check::Bool = false,
-                    new_transaction::Bool = true)
+                    transaction::Union{Transaction, Nothing} = nothing)
     if skip_check || check_booking(b, entry, asset, amount)
-        book_amount!(entry, b.assets, amount)
-        # Negative equity is always allowed!
-        book_amount!(EQUITY, b.liabilities, amount)
-
-        if amount != 0
-            if new_transaction
-                push!(b.transactions, Transaction(timestamp, asset, entry, amount, asset_value(b, entry), comment))
-            else
-                push!(last(b.transactions, AtomicTransaction(asset, entry, amount, asset_value(b, entry), comment)))
-            end
-        end
+        book_amount!(b, entry, asset, amount, timestamp, comment, asset_value, transaction)
 
         return true
     else
@@ -280,25 +287,17 @@ function book_liability!(b::Balance,
                         timestamp::Integer = 0;
                         comment::String = "",
                         skip_check::Bool = false,
-                        new_transaction::Bool = true)
+                        transaction::Union{Transaction, Nothing} = nothing)
     if skip_check || check_booking(b, entry, liability, amount)
-        book_amount!(entry, b.liabilities, amount)
-        # Negative equity is always allowed!
-        book_amount!(EQUITY, b.liabilities, -amount)
-
-        if amount != 0
-            if new_transaction
-                push!(b.transactions, Transaction(timestamp, asset, entry, amount, liability_value(b, entry), comment))
-            else
-                push!(last(b.transactions, AtomicTransaction(asset, entry, amount, liability_value(b, entry), comment)))
-            end
-        end
+        book_amount!(b, entry, liability, amount, timestamp, comment, liability_value, transaction)
 
         return true
     else
         return false
     end
 end
+
+booking_functions = Dict(asset => book_asset!, liability => book_liability!)
 
 function check_transfer(b1::Balance,
                 type1::EntryType,
@@ -312,9 +311,6 @@ function check_transfer(b1::Balance,
         return check_booking(b2, entry, type2, amount)
     end
 end
-
-transfer_functions = Dict(asset => book_asset!, liability => book_liability!)
-value_functions = Dict(asset => asset_value, liability => liability_value)
 
 """
     transfer!(b1::Balance,
@@ -335,12 +331,13 @@ function transfer!(b1::Balance,
                 timestamp::Integer = 0;
                 comment::String = "",
                 skip_check::Bool = false,
-                new_transaction::Bool = true)
+                transaction1::Union{Transaction, Nothing} = nothing,
+                transaction2::Union{Transaction, Nothing} = nothing)
     go = skip_check ? true : check_transfer(b1, type1, b2, type2, entry, amount)
 
     if go
-        transfer_functions[type1](b1, entry, -amount, timestamp, comment = comment, skip_check = true, new_transaction = new_transaction)
-        transfer_functions[type2](b2, entry, amount, timestamp, comment = comment, skip_check = true, new_transaction = new_transaction)
+        booking_functions[type1](b1, entry, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
+        booking_functions[type2](b2, entry, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
     end
 
     return go
@@ -399,7 +396,7 @@ function queue_transfer!(b1::Balance,
                 entry::BalanceEntry,
                 amount::Real;
                 comment::String = "")
-    push!(b1.transfer_queue, Transfer(b1, type1, b2, type2, entry, amount, comment))
+    push!(b1.transfer_queue, Transfer(b1, type1, b2, type2, entry, Currency(amount), comment))
 end
 
 function queue_asset_transfer!(b1::Balance,
@@ -426,12 +423,11 @@ function execute_transfers!(balance::Balance, timestamp::Integer = 0)
     end
 
     if go
-        new_transaction = true
+        t1 = Transaction(timestamp)
+        t2 = Transaction(timestamp)
 
         for transfer in balance.transfer_queue
-            transfer!(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.entry, transfer.amount, timestamp, comment = transfer.comment, skip_check = true, new_transaction = new_transaction)
-
-            new_transaction = false
+            transfer!(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.entry, transfer.amount, timestamp, comment = transfer.comment, skip_check = true, transaction1 = t1, transaction2 = t2)
         end
     end
 

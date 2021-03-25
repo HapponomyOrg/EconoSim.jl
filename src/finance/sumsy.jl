@@ -15,11 +15,11 @@ Representation of the parameters of a SuMSy implementation.
 * seed: the amount whith which new accounts start.
 """
 mutable struct SuMSy
-    guaranteed_income::Float64
-    dem_free::Float64
-    dem_tiers::Vector{Tuple{Float64, Percentage}}
+    guaranteed_income::Currency
+    dem_free::Currency
+    dem_tiers::Vector{Tuple{Currency, Percentage}}
     interval::Int64
-    seed::Float64
+    seed::Currency
     SuMSy(guaranteed_income::Real,
         dem_free::Real,
         dem_tiers::Vector{T},
@@ -48,7 +48,7 @@ end
     Make sure there is at least 1 demurrage tier and that the lowest demurrage tier starts at 0.
 """
 function complete_tiers(dem_tiers::Vector{T}) where  {T <: Tuple{Real, Real}}
-    dem_tiers = Vector{Tuple{Float64, Percentage}}(dem_tiers)
+    dem_tiers = Vector{Tuple{Currency, Percentage}}(dem_tiers)
     sort!(dem_tiers, rev = true)
 
     if isempty(dem_tiers)
@@ -74,15 +74,17 @@ function calculate_demurrage(sumsy::SuMSy, balance::Balance, step::Int)
     i = length(transactions)
     t_step = step
 
-    while i > 0 && transactions[i][1] >= period_start
-        t_step = transactions[i][1]
+    while i > 0 && transactions[i].timestamp >= period_start
+        t_step = transactions[i].timestamp
         amount = 0
 
-        while i > 0 && transactions[i][1] == t_step
+        while i > 0 && transactions[i].timestamp == t_step
             t = transactions[i]
 
-            if t[2] == asset && t[3] == SUMSY_DEP
-                amount += t[4]
+            for transaction in t.transactions
+                if transaction.type == asset && transaction.entry == SUMSY_DEP
+                    amount += transaction.amount
+                end
             end
 
             i -= 1
