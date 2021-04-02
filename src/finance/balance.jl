@@ -88,10 +88,12 @@ end
 
 A balance sheet, including a history of transactions which led to the current state of the balance sheet.
 
+# Properties
 * assets: the asset side of the balance sheet.
 * min_assets: minimum asset values. Used to validate transactions.
 * liabilities: the liability side of the balance sheet.
 * min_liabilities:  minimum liability values. Used to validate transactions.
+* log_transactions: flag indicating whether transactions are logged. Not logging transactions improves performance.
 * transactions: a chronological list of transaction tuples. Each tuple is constructed as follows: timestamp, entry type (asset or liability), balance entry, amount, new balance value, comment.
 * properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by balance.symbol.
 """
@@ -101,14 +103,16 @@ struct Balance <: AbstractBalance
     liabilities::Dict{BalanceEntry, Currency}
     min_liabilities::Dict{BalanceEntry, Currency}
     transfer_queue::Vector{Transfer}
+    log_transactions::Bool
     transactions::Vector{Transaction}
     properties::Dict
-    Balance(;properties = Dict()) = new(
+    Balance(;properties = Dict(), log_transactions = true) = new(
                 Dict{BalanceEntry, Currency}(),
                 Dict{BalanceEntry, Currency}(),
                 Dict{BalanceEntry, Currency}(EQUITY => 0),
                 Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
                 Vector{Transfer{Balance}}(),
+                log_transactions,
                 Vector{Transaction}(),
                 properties)
 end
@@ -236,7 +240,7 @@ function book_amount!(balance::Balance,
 
     balance.liabilities[EQUITY] += type == asset ? amount : -amount
 
-    if amount != 0
+    if balance.log_transactions && amount != 0
         if isnothing(transaction)
             push!(balance.transactions, Transaction(timestamp, asset, entry, amount, value_function(balance, entry), comment))
         else
