@@ -1,7 +1,7 @@
 
 include("types.jl")
 export Percentage, Health, value, num_entities
-export Currency
+export Fixed, Currency
 
 include("functions.jl")
 export extract, delete_element!
