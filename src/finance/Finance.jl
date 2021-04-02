@@ -15,7 +15,7 @@ export set_guaranteed_income!, has_guaranteed_income, dem_free, transfer_dem_fre
 
 include("debt.jl")
 export DEPOSIT, DEBT
-export Debt, borrow, process_debt!
+export Debt, borrow, bank_loan, process_debt!, debt_settled
 
 include("price.jl")
 export Price
