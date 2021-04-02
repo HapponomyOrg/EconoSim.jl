@@ -12,10 +12,22 @@ ThresholdInput = Union{<: AbstractVector{<:Tuple{<:Real, <:Real}},
 Thresholds = SortedSet{Tuple{Percentage, Float64}}
 
 abstract type Lifecycle end
-abstract type Blueprint end
 
 reconstructable(lifecycle::Union{Lifecycle, Nothing}) = false
 get_maintenance_interval(lifecycle::Union{Lifecycle, Nothing}) = INF
+calculate_health_change(lifecycle::Union{Lifecycle, Nothing}, direction::Direction) = 0 # new function!! Needs to be implemented for Restorable.
+
+abstract type Blueprint end
+
+type_id(blueprint::Blueprint) = blueprint.type_id
+get_lifecycle(blueprint::Blueprint) = nothing
+reconstructable(blueprint::Blueprint) = reconstructable(get_lifecycle(blueprint))
+get_name(blueprint::Blueprint) = blueprint.name
+get_maintenance_interval(blueprint::Blueprint) = get_maintenance_interval(get_lifecycle(blueprint))
+get_decay(blueprint::Blueprint) = Percentage(0)
+
+==(x::Blueprint, y::Blueprint) = type_id(x) == type_id(y)
+Base.isless(x::Blueprint, y::Blueprint) = isless(type_id(x), type_id(y))
 
 """
     Restorable
@@ -95,6 +107,9 @@ end
 reconstructable(lifecycle::Restorable) = first(lifecycle.restoration_thresholds)[2] != 0
 get_maintenance_interval(lifecycle::Restorable) = lifecycle.maintenance_interval
 
+function calculate_health_change(restorable::Restorable, change::Real, direction::Direction)
+end
+
 struct ConsumableBlueprint <: Blueprint
     type_id::UUID
     name::String
@@ -103,9 +118,6 @@ end
 
 Base.show(io::IO, bp::ConsumableBlueprint) =
     print(io, "ConsumableBlueprint(Name: $(get_name(bp)))")
-
-get_lifecycle(blueprint::ConsumableBlueprint) = nothing
-reconstructable(blueprint::Blueprint) = reconstructable(get_lifecycle(blueprint))
 
 struct DecayableBlueprint <: Blueprint
     type_id::UUID
@@ -117,7 +129,6 @@ end
 Base.show(io::IO, bp::DecayableBlueprint) =
     print(io, "DecayableBlueprint(Name: $(get_name(bp)))")
 
-get_lifecycle(blueprint::DecayableBlueprint) = nothing
 get_decay(blueprint::DecayableBlueprint) = blueprint.decay
 
 struct ProductBlueprint <: Blueprint
@@ -161,12 +172,3 @@ end
 Base.show(io::IO, bp::ProducerBlueprint) = print(
     io,
     "ProducerBlueprint(Name: $(get_name(bp)), $(bp.lifecycle), Batch resources: $(bp.batch_res), Batch tools: $(bp.batch_tools), Batch: $(bp.batch)")
-
-type_id(blueprint::Blueprint) = blueprint.type_id
-get_name(blueprint::Blueprint) = blueprint.name
-get_lifecycle(blueprint::Blueprint) = blueprint.lifecycle
-get_maintenance_interval(blueprint::Blueprint) = get_maintenance_interval(get_lifecycle(blueprint))
-get_decay(blueprint::Blueprint) = Percentage(0)
-
-==(x::Blueprint, y::Blueprint) = type_id(x) == type_id(y)
-Base.isless(x::Blueprint, y::Blueprint) = isless(type_id(x), type_id(y))
