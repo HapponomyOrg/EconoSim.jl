@@ -90,26 +90,32 @@ A balance sheet, including a history of transactions which led to the current st
 
 # Properties
 * assets: the asset side of the balance sheet.
-* min_assets: minimum asset values. Used to validate transactions.
+* def_min_asset: the default lower bound for asset balance entries.
+* min_assets: minimum asset values. Used to validate transactions. Entries override def_min_asset.
 * liabilities: the liability side of the balance sheet.
-* min_liabilities:  minimum liability values. Used to validate transactions.
+* def_min_liability: the default lower bound for liability balance entries.
+* min_liabilities:  minimum liability values. Used to validate transactions. Entries override def_min_liability.
 * log_transactions: flag indicating whether transactions are logged. Not logging transactions improves performance.
 * transactions: a chronological list of transaction tuples. Each tuple is constructed as follows: timestamp, entry type (asset or liability), balance entry, amount, new balance value, comment.
 * properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by balance.symbol.
 """
 struct Balance <: AbstractBalance
     assets::Dict{BalanceEntry, Currency}
+    def_min_asset::Currency
     min_assets::Dict{BalanceEntry, Currency}
     liabilities::Dict{BalanceEntry, Currency}
+    def_min_liability::Currency
     min_liabilities::Dict{BalanceEntry, Currency}
     transfer_queue::Vector{Transfer}
     log_transactions::Bool
     transactions::Vector{Transaction}
     properties::Dict
-    Balance(;properties = Dict(), log_transactions = true) = new(
+    Balance(;def_min_asset = 0, def_min_liability = 0, log_transactions = true, properties = Dict()) = new(
                 Dict{BalanceEntry, Currency}(),
+                def_min_asset,
                 Dict{BalanceEntry, Currency}(),
                 Dict{BalanceEntry, Currency}(EQUITY => 0),
+                def_min_liability,
                 Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
                 Vector{Transfer{Balance}}(),
                 log_transactions,
@@ -162,7 +168,7 @@ function min_balance(b::Balance,
                     type::EntryType)
     d = type == asset ? b.min_assets : b.min_liabilities
 
-    return e in keys(d) ? d[e] : Currency(0)
+    return e in keys(d) ? d[e] : type == asset ? b.min_def_asset : b.min_def_liability
 end
 
 min_asset(b::Balance, e::BalanceEntry) = min_balance(b, e, asset)
