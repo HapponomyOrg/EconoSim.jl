@@ -72,7 +72,13 @@ end
 /(x::Percentage, y::Health) = Health(round(value(x) / value(y), digits = 6))
 
 """
+    Fixed
+Convenience type for working with fixed point decimals.
+"""
+Fixed(digits::Integer) = FixedDecimal{Int128, digits}
+
+"""
     Currency
 Convenience type for working with currencies.
 """
-Currency = FixedDecimal{Int64, 2}
+Currency = Fixed(2)
