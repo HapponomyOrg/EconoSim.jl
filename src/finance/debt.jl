@@ -84,16 +84,10 @@ function Debt(creditor::Balance,
             interval::Int64 = 0)
     installment = Currency(amount / installments)
     rest = Currency(amount) - installment * installments
-    installment_vector = Vector{Currency}()
+    installment_vector = fill(installment, (installments))
 
-    for i in 1:installments
-        if i == 1
-            # Make sure the entire debt is paid off.
-            push!(installment_vector, installment + rest)
-        else
-            push!(installment_vector, installment)
-        end
-    end
+    # Make sure the entire debt is paid off.
+    installment_vector[1] = installment + rest
 
     return Debt(creditor, debtor, installment_vector, interest_rate; bank_debt = bank_debt, money_entry = money_entry, debt_entry = debt_entry, creation = creation, interval = interval)
 end
@@ -139,23 +133,29 @@ function borrow(creditor::Balance,
         amount = min(asset_value(creditor, money_entry))
     end
 
-    debt = Debt(creditor, debtor, amount, interest_rate, installments, bank_debt = bank_loan,
-                money_entry = money_entry, debt_entry = debt_entry, creation = timestamp, interval = interval)
-
     # adjust creditor balance
     if bank_loan
-        book_liability!(creditor.balance, money_entry, amount)
+        book_liability!(creditor, money_entry, amount)
     else
-        book_asset!(creditor.balance, money_entry, -amount)
+        book_asset!(creditor, money_entry, -amount)
     end
 
-    book_asset!(creditor.balance, debt_entry, amount)
+    book_asset!(creditor, debt_entry, amount)
 
     # adjust debtor balance
-    book_asset!(debtor.balance, money_entry, amount)
-    book_liability!(debtor.balance, debt_entry, amount)
+    book_asset!(debtor, money_entry, amount)
+    book_liability!(debtor, debt_entry, amount)
 
-    return debt
+    return Debt(creditor,
+                debtor,
+                amount,
+                interest_rate,
+                installments,
+                bank_debt = bank_loan,
+                money_entry = money_entry,
+                debt_entry = debt_entry,
+                creation = timestamp,
+                interval = interval)
 end
 
 function bank_loan(creditor::Balance,
@@ -189,3 +189,5 @@ function process_debt!(debt::Debt)
 
     return debt
 end
+
+debt_settled(debt::Debt) = isempty(debt.installments)
