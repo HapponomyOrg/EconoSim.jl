@@ -147,6 +147,30 @@ function Base.setproperty!(balance::Balance, s::Symbol, value)
     return value
 end
 
+function entry_dict(balance::Balance, type::EntryType)
+    if type == asset
+        return balance.assets
+    else
+        return balance.liabilities
+    end
+end
+
+"""
+    clear!(balance::Balance)
+
+Sets all assets and liabilities to 0.
+"""
+function clear!(balance::Balance)
+    for type in instances(EntryType)
+        dict = entry_dict(type)
+        for entry in keys(dict)
+            dict[entry] = 0
+        end
+    end
+
+    return balance
+end
+
 function min_balance!(b::Balance,
                     e::BalanceEntry,
                     type::EntryType,
