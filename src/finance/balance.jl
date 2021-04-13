@@ -190,9 +190,9 @@ min_liability!(b::Balance, e::BalanceEntry, amount::Real = 0) = min_balance!(b, 
 function min_balance(b::Balance,
                     e::BalanceEntry,
                     type::EntryType)
-    d = type == asset ? b.min_assets : b.min_liabilities
+    d = entry_dict(balance, type)
 
-    return e in keys(d) ? d[e] : type == asset ? b.min_def_asset : b.min_def_liability
+    return e in keys(d) ? d[e] : type == asset ? b.def_min_asset : b.def_min_liability
 end
 
 min_asset(b::Balance, e::BalanceEntry) = min_balance(b, e, asset)
@@ -234,7 +234,7 @@ function check_booking(balance::Balance,
                     entry::BalanceEntry,
                     type::EntryType,
                     amount::Real)
-    dict = type == asset ? balance.assets : balance.liabilities
+    dict = entry_dict(balance, type)
 
     if entry in keys(dict)
         new_amount = dict[entry] + amount
@@ -260,7 +260,7 @@ function book_amount!(balance::Balance,
                     comment::String,
                     value_function::Function,
                     transaction::Union{Transaction, Nothing})
-    dict = type == asset ? balance.assets : balance.liabilities
+    dict = entry_dict(balance, type)
 
     if entry in keys(dict)
         dict[entry] += amount
