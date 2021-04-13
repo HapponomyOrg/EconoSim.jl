@@ -162,7 +162,7 @@ Sets all assets and liabilities to 0.
 """
 function clear!(balance::Balance)
     for type in instances(EntryType)
-        dict = entry_dict(type)
+        dict = entry_dict(balance, type)
         for entry in keys(dict)
             dict[entry] = 0
         end
