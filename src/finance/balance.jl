@@ -190,7 +190,7 @@ min_liability!(b::Balance, e::BalanceEntry, amount::Real = 0) = min_balance!(b, 
 function min_balance(b::Balance,
                     e::BalanceEntry,
                     type::EntryType)
-    d = entry_dict(b, type)
+    d = type == asset ? b.min_assets : b.min_liabilities
 
     return e in keys(d) ? d[e] : type == asset ? b.def_min_asset : b.def_min_liability
 end
