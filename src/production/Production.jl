@@ -1,7 +1,7 @@
 include("blueprint.jl")
 export Direction, down, up, Thresholds
 export Lifecycle, Restorable
-export Blueprint, ConsumableBlueprint, DecayableBlueprint, ProductBlueprint, ProducerBlueprint
+export Blueprint, ConsumableBlueprint, DecayableBlueprint, LifecycleBlueprint, ProductBlueprint, ProducerBlueprint
 export type_id, get_name, get_lifecycle, get_maintenance_interval
 
 include("entities.jl")

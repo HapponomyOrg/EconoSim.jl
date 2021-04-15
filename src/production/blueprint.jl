@@ -131,7 +131,11 @@ Base.show(io::IO, bp::DecayableBlueprint) =
 
 get_decay(blueprint::DecayableBlueprint) = blueprint.decay
 
-struct ProductBlueprint <: Blueprint
+abstract type LifecycleBlueprint <: Blueprint
+
+get_lifecycle(lcb::LifecycleBlueprint) = lcb.lifecycle
+
+struct ProductBlueprint <: LifecycleBlueprint
     type_id::UUID
     name::String
     lifecycle::Restorable
@@ -152,7 +156,7 @@ Base.show(io::IO, bp::ProductBlueprint) =
 * batch_tools::Dict{<:Blueprint,Int64} - the necessary tools for a production batch. These are used during production.
 * batch::Dict{<:Blueprint,Int64} - output per batch.
 """
-struct ProducerBlueprint <: Blueprint
+struct ProducerBlueprint <: LifecycleBlueprint
     type_id::UUID
     name::String
     lifecycle::Restorable
