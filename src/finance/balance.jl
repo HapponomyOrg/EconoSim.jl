@@ -16,7 +16,7 @@ EQUITY = BalanceEntry("Equity")
 
 ==(e1::BalanceEntry, e2::BalanceEntry) = e1.id == e2.id
 
-Base.show(io::IO, e::BalanceEntry) = print(io, "BalanceEntry($(e.name))")
+Base.show(io::IO, entry::BalanceEntry) = print(io, "BalanceEntry($(entry.name))")
 
 abstract type AbstractBalance end
 
@@ -29,7 +29,7 @@ Used when working with transactions. All transfers in a transaction must succeed
 * destination: the destination of the transfer.
 * destination_type: asset or liability.
 * amount: the amount that was transferred.
-* e: the BalanceEntry used in the transfer.
+* entry: the BalanceEntry used in the transfer.
 * comment
 """
 struct Transfer{T <: AbstractBalance}
@@ -37,7 +37,7 @@ struct Transfer{T <: AbstractBalance}
     source_type::EntryType
     destination::T
     destination_type::EntryType
-    e::BalanceEntry
+    entry::BalanceEntry
     amount::Currency
     comment::String
 end
@@ -47,16 +47,16 @@ end
 An atomic transaction.
 
 * type: asset or liability.
-* e: b e.
-* amount
-* b: b of the e after the transaction.
+* entry: balance entry.
+* amount: amount of the transaction.
+* result: result of the transaction. The new balance amount of the entry.
 * comment
 """
 struct AtomicTransaction
     type::EntryType
-    e::BalanceEntry
+    entry::BalanceEntry
     amount::Currency
-    b::Currency
+    result::Currency
     comment::String
 end
 
@@ -73,12 +73,12 @@ end
 Base.push!(transaction::Transaction, at::AtomicTransaction) = push!(transaction.transactions, at)
 
 """
-    Transaction(timestamp::Integer, type::EntryType, e::BalanceEntry, amount::Real, b::Real, comment::String)
+    Transaction(timestamp::Integer, type::EntryType, entry::BalanceEntry, amount::Real, result::Real, comment::String)
 Creates a Transaction with 1 Atomictransaction.
 """
-function Transaction(timestamp::Integer, type::EntryType, e::BalanceEntry, amount::Real, b::Real, comment::String = "")
+function Transaction(timestamp::Integer, type::EntryType, entry::BalanceEntry, amount::Real, result::Real, comment::String = "")
     t = Transaction(timestamp)
-    push!(t, AtomicTransaction(type, e, amount, b, comment))
+    push!(t, AtomicTransaction(type, entry, amount, result, comment))
 
     return t
 end
@@ -86,18 +86,18 @@ end
 """
     struct Balance
 
-A b sheet, including a history of transactions which led to the current state of the b sheet.
+A balance sheet, including a history of transactions which led to the current state of the balance sheet.
 
 # Properties
-* assets: the asset side of the b sheet.
-* def_min_asset: the default lower bound for asset b entries.
+* assets: the asset side of the balance sheet.
+* def_min_asset: the default lower bound for asset balance entries.
 * min_assets: minimum asset values. Used to validate transactions. Entries override def_min_asset.
-* liabilities: the liability side of the b sheet.
-* def_min_liability: the default lower bound for liability b entries.
+* liabilities: the liability side of the balance sheet.
+* def_min_liability: the default lower bound for liability balance entries.
 * min_liabilities:  minimum liability values. Used to validate transactions. Entries override def_min_liability.
 * log_transactions: flag indicating whether transactions are logged. Not logging transactions improves performance.
-* transactions: a chronological list of transaction tuples. Each tuple is constructed as follows: timestamp, e type (asset or liability), b e, amount, new b value, comment.
-* properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by b.symbol.
+* transactions: a chronological list of transaction tuples. Each tuple is constructed as follows: timestamp, entry type (asset or liability), balance entry, amount, new balance value, comment.
+* properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by balance.symbol.
 """
 struct Balance <: AbstractBalance
     assets::Dict{BalanceEntry, Currency}
@@ -123,165 +123,165 @@ struct Balance <: AbstractBalance
                 properties)
 end
 
-Base.show(io::IO, b::Balance) = print(io, "Balance(\nAssets:\n$(b.assets) \nLiabilities:\n$(b.liabilities) \nTransactions:\n$(b.transactions))")
+Base.show(io::IO, balance::Balance) = print(io, "Balance(\nAssets:\n$(balance.assets) \nLiabilities:\n$(balance.liabilities) \nTransactions:\n$(balance.transactions))")
 
-function Base.getproperty(b::Balance, s::Symbol)
-    properties = getfield(b, :properties)
+function Base.getproperty(balance::Balance, s::Symbol)
+    properties = getfield(balance, :properties)
 
     if s in keys(properties)
         return properties[s]
     elseif s in fieldnames(Balance)
-        return getfield(b, s)
+        return getfield(balance, s)
     else
         return nothing
     end
 end
 
-function Base.setproperty!(b::Balance, s::Symbol, value)
+function Base.setproperty!(balance::Balance, s::Symbol, value)
     if s in fieldnames(Balance)
-        setfield!(b, s, value)
+        setfield!(balance, s, value)
     else
-        b.properties[s] = value
+        balance.properties[s] = value
     end
 
     return value
 end
 
-function entry_dict(b::Balance, type::EntryType)
+function entry_dict(balance::Balance, type::EntryType)
     if type == asset
-        return b.assets
+        return balance.assets
     else
-        return b.liabilities
+        return balance.liabilities
     end
 end
 
 """
-    clear!(b::Balance)
+    clear!(balance::Balance)
 
 Sets all assets and liabilities to 0.
 """
-function clear!(b::Balance)
+function clear!(balance::Balance)
     for type in instances(EntryType)
-        dict = entry_dict(b, type)
-        for e in keys(dict)
-            dict[e] = 0
+        dict = entry_dict(balance, type)
+        for entry in keys(dict)
+            dict[entry] = 0
         end
     end
 
-    return b
+    return balance
 end
 
-function min_balance!(b::Balance,
-                    e::BalanceEntry,
+function min_balance!(balance::Balance,
+                    entry::BalanceEntry,
                     type::EntryType,
                     amount::Real = 0)
-    if e != EQUITY # Min equity is fixed at typemin(Currency).
+    if entry != EQUITY # Min equity is fixed at typemin(Currency).
         if type == asset
-            b.min_assets[e] = amount
+            balance.min_assets[entry] = amount
         else
-            b.min_liabilities[e] = amount
+            balance.min_liabilities[entry] = amount
         end
     end
 end
 
-min_asset!(b::Balance, e::BalanceEntry, amount::Real = 0) = min_balance!(b, e, asset, amount)
-min_liability!(b::Balance, e::BalanceEntry, amount::Real = 0) = min_balance!(b, e, liability, amount)
+min_asset!(balance::Balance, entry::BalanceEntry, amount::Real = 0) = min_balance!(balance, entry, asset, amount)
+min_liability!(balance::Balance, entry::BalanceEntry, amount::Real = 0) = min_balance!(balance, entry, liability, amount)
 
-function min_balance(b::Balance,
-                    e::BalanceEntry,
+function min_balance(balance::Balance,
+                    entry::BalanceEntry,
                     type::EntryType)
-    d = type == asset ? b.min_assets : b.min_liabilities
+    d = type == asset ? balance.min_assets : balance.min_liabilities
 
-    return e in keys(d) ? d[e] : type == asset ? b.def_min_asset : b.def_min_liability
+    return entry in keys(d) ? d[entry] : type == asset ? balance.def_min_asset : balance.def_min_liability
 end
 
-min_asset(b::Balance, e::BalanceEntry) = min_balance(b, e, asset)
-min_liability(b::Balance, e::BalanceEntry) = min_balance(b, e, liability)
+min_asset(balance::Balance, entry::BalanceEntry) = min_balance(balance, entry, asset)
+min_liability(balance::Balance, entry::BalanceEntry) = min_balance(balance, entry, liability)
 
 
-validate(b::Balance) = sum(values(b.assets)) == sum(values(b.liabilities))
-asset_value(b::Balance, e::BalanceEntry) = entry_value(b.assets, e)
-liability_value(b::Balance, e::BalanceEntry) = entry_value(b.liabilities, e)
-assets(b::Balance) = collect(keys(b.assets))
-liabilities(b::Balance) = collect(keys(b.liabilities))
-assets_value(b::Balance) = sum(values(b.assets))
-liabilities_value(b::Balance) = sum(values(b.liabilities))
-liabilities_net_value(b::Balance) = liabilities_value(b) - equity(b)
-equity(b::Balance) = b.liabilities[EQUITY]
+validate(balance::Balance) = sum(values(balance.assets)) == sum(values(balance.liabilities))
+asset_value(balance::Balance, entry::BalanceEntry) = entry_value(balance.assets, entry)
+liability_value(balance::Balance, entry::BalanceEntry) = entry_value(balance.liabilities, entry)
+assets(balance::Balance) = collect(keys(balance.assets))
+liabilities(balance::Balance) = collect(keys(balance.liabilities))
+assets_value(balance::Balance) = sum(values(balance.assets))
+liabilities_value(balance::Balance) = sum(values(balance.liabilities))
+liabilities_net_value(balance::Balance) = liabilities_value(balance) - equity(balance)
+equity(balance::Balance) = balance.liabilities[EQUITY]
 
 """
     entry_value(dict::Dict{BalanceEntry, Currency},
-                e::BalanceEntry)
+                entry::BalanceEntry)
 """
 function entry_value(dict::Dict{BalanceEntry, Currency},
-                    e::BalanceEntry)
-    if e in keys(dict)
-        return dict[e]
+                    entry::BalanceEntry)
+    if entry in keys(dict)
+        return dict[entry]
     else
         return Currency(0)
     end
 end
 
 """
-    check_booking(e::BalanceEntry,
+    check_booking(entry::BalanceEntry,
                 dict::Dict{BalanceEntry, Currency},
                 amount::Real)
 
 # Returns
 True if the booking can be executed, false if it violates minimum value constrictions.
 """
-function check_booking(b::Balance,
-                    e::BalanceEntry,
+function check_booking(balance::Balance,
+                    entry::BalanceEntry,
                     type::EntryType,
                     amount::Real)
-    dict = entry_dict(b, type)
+    dict = entry_dict(balance, type)
 
-    if e in keys(dict)
-        new_amount = dict[e] + amount
+    if entry in keys(dict)
+        new_amount = dict[entry] + amount
     else
         new_amount = amount
     end
 
-    return new_amount >= min_balance(b, e, type)
+    return new_amount >= min_balance(balance, entry, type)
 end
 
 """
-    book_amount!(e::BalanceEntry,
+    book_amount!(entry::BalanceEntry,
                 dict::Dict{BalanceEntry, Currency},
                 amount::Real)
 
 Books the amount. Checks on allowance of negative balances need to be made prior to this call.
 """
-function book_amount!(b::Balance,
-                    e::BalanceEntry,
+function book_amount!(balance::Balance,
+                    entry::BalanceEntry,
                     type::EntryType,
                     amount::Real,
                     timestamp::Integer,
                     comment::String,
                     value_function::Function,
                     transaction::Union{Transaction, Nothing})
-    dict = entry_dict(b, type)
+    dict = entry_dict(balance, type)
 
-    if e in keys(dict)
-        dict[e] += amount
+    if entry in keys(dict)
+        dict[entry] += amount
     else
-        dict[e] = amount
+        dict[entry] = amount
     end
 
-    b.liabilities[EQUITY] += type == asset ? amount : -amount
+    balance.liabilities[EQUITY] += type == asset ? amount : -amount
 
-    if b.log_transactions && amount != 0
+    if balance.log_transactions && amount != 0
         if isnothing(transaction)
-            push!(b.transactions, Transaction(timestamp, asset, e, amount, value_function(b, e), comment))
+            push!(balance.transactions, Transaction(timestamp, asset, entry, amount, value_function(balance, entry), comment))
         else
-            push!(transaction, AtomicTransaction(asset, e, amount, value_function(b, e), comment))
+            push!(transaction, AtomicTransaction(asset, entry, amount, value_function(balance, entry), comment))
         end
     end
 end
 
 """
-    book_asset!(b::Balance,
-                e::BalanceEntry,
+    book_asset!(balance::Balance,
+                entry::BalanceEntry,
                 amount::Real,
                 timestamp::Integer = 0;
                 comment::String = "")
@@ -289,15 +289,15 @@ end
     # Returns
     Whether or not the booking was succesful.
 """
-function book_asset!(b::Balance,
-                    e::BalanceEntry,
+function book_asset!(balance::Balance,
+                    entry::BalanceEntry,
                     amount::Real,
                     timestamp::Integer = 0;
                     comment::String = "",
                     skip_check::Bool = false,
                     transaction::Union{Transaction, Nothing} = nothing)
-    if skip_check || check_booking(b, e, asset, amount)
-        book_amount!(b, e, asset, amount, timestamp, comment, asset_value, transaction)
+    if skip_check || check_booking(balance, entry, asset, amount)
+        book_amount!(balance, entry, asset, amount, timestamp, comment, asset_value, transaction)
 
         return true
     else
@@ -306,8 +306,8 @@ function book_asset!(b::Balance,
 end
 
 """
-    book_liability!(b::Balance,
-                    e::BalanceEntry,
+    book_liability!(balance::Balance,
+                    entry::BalanceEntry,
                     amount::Real,
                     timestamp::Integer = 0;
                     comment::String = "")
@@ -315,15 +315,15 @@ end
         # Returns
         Whether or not the booking was succesful.
 """
-function book_liability!(b::Balance,
-                        e::BalanceEntry,
+function book_liability!(balance::Balance,
+                        entry::BalanceEntry,
                         amount::Real,
                         timestamp::Integer = 0;
                         comment::String = "",
                         skip_check::Bool = false,
                         transaction::Union{Transaction, Nothing} = nothing)
-    if skip_check || check_booking(b, e, liability, amount)
-        book_amount!(b, e, liability, amount, timestamp, comment, liability_value, transaction)
+    if skip_check || check_booking(balance, entry, liability, amount)
+        book_amount!(balance, entry, liability, amount, timestamp, comment, liability_value, transaction)
 
         return true
     else
@@ -333,139 +333,139 @@ end
 
 booking_functions = Dict(asset => book_asset!, liability => book_liability!)
 
-function check_transfer(b1::Balance,
+function check_transfer(balance1::Balance,
                 type1::EntryType,
-                b2::Balance,
+                balance2::Balance,
                 type2::EntryType,
-                e::BalanceEntry,
+                entry::BalanceEntry,
                 amount::Real)
     if amount >= 0
-        return check_booking(b1, e, type1, -amount)
+        return check_booking(balance1, entry, type1, -amount)
     else
-        return check_booking(b2, e, type2, amount)
+        return check_booking(balance2, entry, type2, amount)
     end
 end
 
 """
-    transfer!(b1::Balance,
+    transfer!(balance1::Balance,
             type1::EntryType,
-            b2::Balance,
+            balance2::Balance,
             type2::EntryType,
-            e::BalanceEntry,
+            entry::BalanceEntry,
             amount::Real,
             timestamp::Integer = 0;
             comment::String = "")
 """
-function transfer!(b1::Balance,
+function transfer!(balance1::Balance,
                 type1::EntryType,
-                b2::Balance,
+                balance2::Balance,
                 type2::EntryType,
-                e::BalanceEntry,
+                entry::BalanceEntry,
                 amount::Real,
                 timestamp::Integer = 0;
                 comment::String = "",
                 skip_check::Bool = false,
                 transaction1::Union{Transaction, Nothing} = nothing,
                 transaction2::Union{Transaction, Nothing} = nothing)
-    go = skip_check ? true : check_transfer(b1, type1, b2, type2, e, amount)
+    go = skip_check ? true : check_transfer(balance1, type1, balance2, type2, entry, amount)
 
     if go
-        booking_functions[type1](b1, e, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
-        booking_functions[type2](b2, e, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
+        booking_functions[type1](balance1, entry, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
+        booking_functions[type2](balance2, entry, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
     end
 
     return go
 end
 
 """
-    transfer_asset!(b1::Balance,
-                    b2::Balance,
-                    e::BalanceEntry,
+    transfer_asset!(balance1::Balance,
+                    balance2::Balance,
+                    entry::BalanceEntry,
                     amount::Real,
                     timestamp::Integer = 0;
                     comment::String = "")
 """
-function transfer_asset!(b1::Balance,
-                        b2::Balance,
-                        e::BalanceEntry,
+function transfer_asset!(balance1::Balance,
+                        balance2::Balance,
+                        entry::BalanceEntry,
                         amount::Real,
                         timestamp::Integer = 0;
                         comment::String = "")
-    transfer!(b1, asset, b2, asset, e, amount, timestamp, comment = comment)
+    transfer!(balance1, asset, balance2, asset, entry, amount, timestamp, comment = comment)
 end
 
 """
-    transfer_liability!(b1::Balance,
-                        b2::Balance,
-                        e::BalanceEntry,
+    transfer_liability!(balance1::Balance,
+                        balance2::Balance,
+                        entry::BalanceEntry,
                         amount::Real,
                         timestamp::Integer = 0;
                         comment::String = "")
 """
-function transfer_liability!(b1::Balance,
-                            b2::Balance,
-                            e::BalanceEntry,
+function transfer_liability!(balance1::Balance,
+                            balance2::Balance,
+                            entry::BalanceEntry,
                             amount::Real,
                             timestamp::Integer = 0;
                             comment::String = "")
-    transfer!(b1, liability, b2, liability, e, amount, timestamp, comment = comment)
+    transfer!(balance1, liability, balance2, liability, entry, amount, timestamp, comment = comment)
 end
 
 """
-    queue_transfer!(b1::Balance,
+    queue_transfer!(balance1::Balance,
                 type1::EntryType,
-                b2::Balance,
+                balance2::Balance,
                 type2::EntryType,
-                e::BalanceEntry,
+                entry::BalanceEntry,
                 amount::Real,
                 timestamp::Integer = 0;
                 comment::String = "")
 
-Queues a transfer to be executed later. The transfer is queued in the source b.
+Queues a transfer to be executed later. The transfer is queued in the source balance.
 """
-function queue_transfer!(b1::Balance,
+function queue_transfer!(balance1::Balance,
                 type1::EntryType,
-                b2::Balance,
+                balance2::Balance,
                 type2::EntryType,
-                e::BalanceEntry,
+                entry::BalanceEntry,
                 amount::Real;
                 comment::String = "")
-    push!(b1.transfer_queue, Transfer(b1, type1, b2, type2, e, Currency(amount), comment))
+    push!(balance1.transfer_queue, Transfer(balance1, type1, balance2, type2, entry, Currency(amount), comment))
 end
 
-function queue_asset_transfer!(b1::Balance,
-                            b2::Balance,
-                            e::BalanceEntry,
+function queue_asset_transfer!(balance1::Balance,
+                            balance2::Balance,
+                            entry::BalanceEntry,
                             amount::Real;
                             comment::String = "")
-    queue_transfer!(b1, asset, b2, asset, e, amount, comment = comment)
+    queue_transfer!(balance1, asset, balance2, asset, entry, amount, comment = comment)
 end
 
-function queue_liability_transfer!(b1::Balance,
-                            b2::Balance,
-                            e::BalanceEntry,
+function queue_liability_transfer!(balance1::Balance,
+                            balance2::Balance,
+                            entry::BalanceEntry,
                             amount::Real;
                             comment::String = "")
-    queue_transfer!(b1, liability, b2, liability, e, amount, comment = comment)
+    queue_transfer!(balance1, liability, balance2, liability, entry, amount, comment = comment)
 end
 
-function execute_transfers!(b::Balance, timestamp::Integer = 0)
+function execute_transfers!(balance::Balance, timestamp::Integer = 0)
     go = true
 
-    for transfer in b.transfer_queue
-        go &= check_transfer(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.e, transfer.amount)
+    for transfer in balance.transfer_queue
+        go &= check_transfer(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.entry, transfer.amount)
     end
 
     if go
         t1 = Transaction(timestamp)
         t2 = Transaction(timestamp)
 
-        for transfer in b.transfer_queue
-            transfer!(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.e, transfer.amount, timestamp, comment = transfer.comment, skip_check = true, transaction1 = t1, transaction2 = t2)
+        for transfer in balance.transfer_queue
+            transfer!(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.entry, transfer.amount, timestamp, comment = transfer.comment, skip_check = true, transaction1 = t1, transaction2 = t2)
         end
     end
 
-    empty!(b.transfer_queue)
+    empty!(balance.transfer_queue)
 
     return go
 end
