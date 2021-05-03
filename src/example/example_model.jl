@@ -105,7 +105,7 @@ function add_consumers(model, consumers::Integer)
     # Add wants. See Needs for details.
     push_want!(needs, container_ticket, [(1, 0.1)])
     push_want!(needs, swim_ticket, [(1, 0.25)])
-    push_want!(needs, bread, [(1, 0.3), (2, 0.1)])
+    push_want!(needs, bread, [(1, 1.0), (2, 0.3), (3, 0.1)])
     push_want!(needs, tv, [(1, 0.4)])
 
     # Add usages. See Needs for details.
@@ -129,7 +129,7 @@ function add_bakers(model, bakers::Integer)
     needs = Needs()
     push_want!(needs, container_ticket, [(1, 0.3)])
     push_want!(needs, swim_ticket, [(1, 0.2)])
-    push_want!(needs, bread, [(1, 0.3)])
+    push_want!(needs, bread, [(1, 1.0), (2, 0.3)])
     push_want!(needs, tv, [(1, 0.6)])
 
     push_usage!(needs, container_ticket, [(1, 1)])
