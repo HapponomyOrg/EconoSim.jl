@@ -1,36 +1,16 @@
 
 using UUIDs
 
-# TODO move damage functions to LifeCycle.
-# damage!(product, damage) = damage!(lifecycle, health, damage)
-abstract type Enhancer <: Entity end
-
-==(x::Entity, y::Entity) = x.id == y.id
-
-get_blueprint(entity::Entity) = entity.blueprint
-type_id(entity::Entity) = type_id(get_blueprint(entity))
-is_type(entity::Entity, blueprint::Blueprint) = type_id(entity) == type_id(blueprint)
-get_name(entity::Entity) = get_name(get_blueprint(entity))
-get_lifecycle(entity::Entity) = get_lifecycle(get_blueprint(entity))
-get_maintenance_interval(entity::Entity) = get_maintenance_interval(get_blueprint(entity))
-id(entity::Entity) = entity.id
-
 mutable struct Consumable <: Entity
     id::UUID
-    used::Bool
+    health::Health
     blueprint::ConsumableBlueprint
     Consumable(blueprint::ConsumableBlueprint, used::Bool = false) = new(uuid4(), used, blueprint)
 end
 
 Base.show(io::IO, e::Consumable) = print(io, "Consumable(Name: $(get_name(e)), Health: $(health(e)), Blueprint: $(e.blueprint)))")
 
-health(consumable::Consumable) = consumable.used ? Health(0) : Health(1)
-use!(consumable::Consumable) = (consumable.used = true; consumable)
-restore!(consumable::Consumable, resources::Entities = Entities()) = consumable
-maintenance_due(consumable::Consumable) = false
-maintain!(consumable::Consumable, resources::Entities = Entities()) = false
-damage!(consumable::Consumable, damage::Real = 1) = damage == 0 ? consumable : use!(consumable)
-destroy!(consumable::Consumable) = (consumable.used = true; consumable)
+use!(consumable::Consumable) = destroy!(consumable)
 
 mutable struct Decayable <: Entity
     id::UUID
@@ -41,14 +21,11 @@ end
 
 Base.show(io::IO, e::Decayable) = print(io, "Decayable(Name: $(get_name(e)), Health: $(health(e)), Blueprint: $(e.blueprint)))")
 
-use!(decayable::Decayable) = decay!(decayable)
-restore!(decayable::Decayable, resources::Entities = Entities()) = decayable
-maintenance_due(decayable) = false
-maintain!(decayable::Decayable, resources::Entities = Entities()) = false
-damage!(decayable::Decayable, damage::Real = 1) = decayable
-decay!(decayable::Decayable) = (decayable.health -= decayable.health * get_decay(get_blueprint(decayable)); decayable)
+decay!(decayable::Decayable) = (decayable.health -= decay(get_blueprint(decayable), decayable.health); decayable)
 
-mutable struct Product <: Entity
+abstract type UseCountEntity <: Entity end
+
+mutable struct Product <: UseCountEntity
     id::UUID
     health::Health
     blueprint::ProductBlueprint
@@ -57,6 +34,11 @@ mutable struct Product <: Entity
 end
 
 Base.show(io::IO, e::Product) = print(io, "Product(Name: $(get_name(e)), Health: $(health(e)), Blueprint: $(e.blueprint)))")
+
+function use!(entity::UseCountEntity)
+    invoke(use!, Tuple{Entity}, entity)
+    entity.used += 1
+end
 
 """
     Producer
@@ -68,7 +50,7 @@ An Entity with the capability to produce other Entities.
 - `lifecycle`: The lifecycle of the Producer.
 - `blueprint`: The blueprint the producer is based on.
 """
-mutable struct Producer <: Entity
+mutable struct Producer <: UseCountEntity
     id::UUID
     health::Health
     blueprint::ProducerBlueprint
@@ -116,7 +98,7 @@ function extract!(source::Entities, resource_req::Dict{B1,Int64}, tool_req::Dict
             for entity in targets
                 action(entity)
 
-                if !usable(entity) && !reconstructable(entity)
+                if !usable(entity) && !restorable(entity)
                     delete!(source, entity)
                 end
             end
@@ -274,6 +256,7 @@ function restore!(entity::Entity, resources::Entities = Entities())
     return entity
 end
 
+
 maintenance_due(entity::Entity) = entity.used >= get_maintenance_interval(entity)
 
 function maintain!(entity::Entity, resources::Entities = Entities())
@@ -286,10 +269,3 @@ function maintain!(entity::Entity, resources::Entities = Entities())
         return false
     end
 end
-
-damage!(entity::Entity, damage::Real) = change_health!(entity, damage, down)
-decay!(entity::Entity) = entity
-destroy!(entity::Entity) = (entity.health = Health(0); entity)
-usable(entity::Entity) = health(entity) != 0
-reconstructable(entity::Entity) = reconstructable(get_lifecycle(entity))
-damaged(entity::Entity) = health(entity) < 1

@@ -1,5 +1,3 @@
-abstract type Entity end
-
 """
     Entities
 """

@@ -11,23 +11,41 @@ ThresholdInput = Union{<: AbstractVector{<:Tuple{<:Real, <:Real}},
                 <: AbstractSet{<:Tuple{<:Real, <:Real}}}
 Thresholds = SortedSet{Tuple{Percentage, Float64}}
 
-abstract type Lifecycle end
-
-reconstructable(lifecycle::Union{Lifecycle, Nothing}) = false
+restorable(lifecycle::Union{Lifecycle, Nothing}) = false
 get_maintenance_interval(lifecycle::Union{Lifecycle, Nothing}) = INF
-calculate_health_change(lifecycle::Union{Lifecycle, Nothing}, direction::Direction) = 0 # new function!! Needs to be implemented for Restorable.
+maintenance_due(lifecycle::Union{Lifecycle, Nothing}, uses::Integer) = uses >= get_maintenance_interval(lifecycle)
+maintenance(lifecycle::Union{Lifecycle, Nothing}, resources::Entities) = 0
+wear(lifecycle::Union{Lifecycle, Nothing}) = 0
 
-abstract type Blueprint end
+"""
+    damage(lifecycle::Union{Lifecycle, Nothing}, amount::Real)
+
+Returns the real amount of damage which is inflicted.
+"""
+damage(lifecycle::Union{Lifecycle, Nothing}, amount::Real) = 0
+
+"""
+    restore(lifecycle::Union{Lifecycle, Nothing}, resources::Entities)
+
+Returns the amount of damage which is restored with the given resources.
+"""
+restore(lifecycle::Union{Lifecycle, Nothing}, resources::Entities) = 0
 
 type_id(blueprint::Blueprint) = blueprint.type_id
 get_lifecycle(blueprint::Blueprint) = nothing
-reconstructable(blueprint::Blueprint) = reconstructable(get_lifecycle(blueprint))
+restorable(blueprint::Blueprint) = restorable(get_lifecycle(blueprint))
 get_name(blueprint::Blueprint) = blueprint.name
 get_maintenance_interval(blueprint::Blueprint) = get_maintenance_interval(get_lifecycle(blueprint))
+maintenance_due(blueprint::Blueprint, uses::Integer) = maintenance_due(get_lifecycle(blueprint), uses)
+maintenance(blueprint::Blueprint, resources::Entities) = maintenance(get_lifecycle(blueprint), entities)
 get_decay(blueprint::Blueprint) = Percentage(0)
+waste(blueprint::Blueprint) = blueprint.waste
 
 ==(x::Blueprint, y::Blueprint) = type_id(x) == type_id(y)
 Base.isless(x::Blueprint, y::Blueprint) = isless(type_id(x), type_id(y))
+
+damage(blueprint::Blueprint, amount::Real) = damage(get_lifecycle(blueprint), amount)
+restore(blueprint::Blueprint, resources::Entities) = restore(get_liefcycle(blueprint), resources)
 
 """
     Restorable
@@ -104,16 +122,25 @@ function complete(thresholds::ThresholdInput, direction::Direction)
     return thresholds
 end
 
-reconstructable(lifecycle::Restorable) = first(lifecycle.restoration_thresholds)[2] != 0
+restorable(lifecycle::Restorable) = first(lifecycle.restoration_thresholds)[2] != 0
 get_maintenance_interval(lifecycle::Restorable) = lifecycle.maintenance_interval
 
-function calculate_health_change(restorable::Restorable, change::Real, direction::Direction)
+function damage(restorable::Restorable, change::Real)
+
+end
+
+function restore(restorable::Restorable, resources::Entities)
+
 end
 
 struct ConsumableBlueprint <: Blueprint
     type_id::UUID
     name::String
-    ConsumableBlueprint(name::String) = new(uuid4(), name)
+    waste::Dict{<:Blueprint, Int64}
+    ConsumableBlueprint(
+        name::String,
+        waste::Dict{<:Blueprint, Int64} = Dict{<:Blueprint, Int64}()
+        ) = new(uuid4(), name, waste)
 end
 
 Base.show(io::IO, bp::ConsumableBlueprint) =
@@ -123,24 +150,33 @@ struct DecayableBlueprint <: Blueprint
     type_id::UUID
     name::String
     decay::Percentage
-    DecayableBlueprint(name::String, decay::Real) = new(uuid4(), name, decay)
+    waste::Dict{<:Blueprint, Int64}
+    DecayableBlueprint(
+        name::String,
+        decay::Real,
+        waste::Dict{<:Blueprint, Int64} = Dict{<:Blueprint, Int64}()
+        ) = new(uuid4(), name, decay, waste)
 end
 
 Base.show(io::IO, bp::DecayableBlueprint) =
     print(io, "DecayableBlueprint(Name: $(get_name(bp)))")
 
-get_decay(blueprint::DecayableBlueprint) = blueprint.decay
+decay(blueprint::DecayableBlueprint, health::Health) = health * blueprint.decay
 
-abstract type LifecycleBlueprint <: Blueprint
+abstract type LifecycleBlueprint <: Blueprint end
 
-get_lifecycle(lcb::LifecycleBlueprint) = lcb.lifecycle
+get_lifecycle(blueprint::LifecycleBlueprint) = blueprint.lifecycle
 
 struct ProductBlueprint <: LifecycleBlueprint
     type_id::UUID
     name::String
     lifecycle::Restorable
-    ProductBlueprint(name::String,
-        lifecycle::Restorable = Restorable()) = new(uuid4(), name, lifecycle)
+    waste::Dict{<:Blueprint, Int64}
+    ProductBlueprint(
+        name::String,
+        lifecycle::Restorable = Restorable(),
+        waste::Dict{<:Blueprint, Int64} = Dict{<:Blueprint, Int64}()
+        ) = new(uuid4(), name, lifecycle, waste)
 end
 
 Base.show(io::IO, bp::ProductBlueprint) =
@@ -163,14 +199,16 @@ struct ProducerBlueprint <: LifecycleBlueprint
     batch_res::Dict{<:Blueprint,Int64}
     batch_tools::Dict{<:Blueprint,Int64}
     batch::Dict{<:Blueprint,Int64}
+    waste::Dict{<:Blueprint, Int64}
 
     ProducerBlueprint(
         name::String,
         lifecycle::Restorable = Restorable();
         batch_res::Dict{<:Blueprint,Int64} = Dict{Blueprint,Int64}(),
         batch_tools::Dict{<:Blueprint,Int64} = Dict{Blueprint,Int64}(),
-        batch::Dict{<:Blueprint,Int64} = Dict{Blueprint,Int64}()
-    ) = new(uuid4(), name, lifecycle, batch_res, batch_tools, batch)
+        batch::Dict{<:Blueprint,Int64} = Dict{Blueprint,Int64}(),
+        waste::Dict{<:Blueprint, Int64} = Dict{<:Blueprint, Int64}()
+    ) = new(uuid4(), name, lifecycle, batch_res, batch_tools, batch, waste)
 end
 
 Base.show(io::IO, bp::ProducerBlueprint) = print(
