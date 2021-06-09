@@ -171,21 +171,23 @@ function bank_loan(creditor::Balance,
 end
 
 function process_debt!(debt::Debt)
-    interest = sum(debt.installments) * debt.interest_rate
-    installment = pop!(debt.installments)
+    if !debt_settled(debt)
+        interest = sum(debt.installments) * debt.interest_rate
+        installment = pop!(debt.installments)
 
-    # adjust debtor balance
-    book_asset!(debt.debtor, debt.money_entry, -(installment + interest))
-    book_liability!(debt.debtor, debt.debt_entry, -installment)
+        # adjust debtor balance
+        book_asset!(debt.debtor, debt.money_entry, -(installment + interest))
+        book_liability!(debt.debtor, debt.debt_entry, -installment)
 
-    #adjust creditor balance
-    if debt.bank_debt
-        book_liability!(debt.creditor, debt.money_entry, -(installment + interest))
-    else
-        book_asset!(debt.creditor, debt.money_entry, installment + interest)
+        #adjust creditor balance
+        if debt.bank_debt
+            book_liability!(debt.creditor, debt.money_entry, -(installment + interest))
+        else
+            book_asset!(debt.creditor, debt.money_entry, installment + interest)
+        end
+
+        book_asset!(debt.creditor, DEBT, -installment)
     end
-
-    book_asset!(debt.creditor, DEBT, -installment)
 
     return debt
 end
