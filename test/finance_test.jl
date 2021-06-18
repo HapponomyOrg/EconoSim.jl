@@ -51,8 +51,8 @@ end
     e2 = BalanceEntry("E2")
     b = Balance()
 
-    min_asset!(b, e1, CUR_MIN)
-    min_liability!(b, e2, CUR_MIN)
+    min_asset!(b, e1, typemin(Currency))
+    min_liability!(b, e2, typemin(Currency))
 
     @test min_asset(b, e1) < 0
     @test min_asset(b, e2) == 0
@@ -163,12 +163,12 @@ end
     e2 = BalanceEntry("E2")
 
     b1 = Balance()
-    min_asset!(b1, e1, CUR_MIN)
-    min_liability!(b1, e2, CUR_MIN)
+    min_asset!(b1, e1, typemin(Currency))
+    min_liability!(b1, e2, typemin(Currency))
 
     b2 = Balance()
-    min_asset!(b2, e1, CUR_MIN)
-    min_liability!(b2, e2, CUR_MIN)
+    min_asset!(b2, e1, typemin(Currency))
+    min_liability!(b2, e2, typemin(Currency))
 
     # 1 valid transfer
     queue_asset_transfer!(b1, b2, e1, 100)
@@ -220,7 +220,7 @@ end
     c2 = BalanceEntry("C2")
 
     b1 = Balance()
-    min_asset!(b1, c1, CUR_MIN)
+    min_asset!(b1, c1, typemin(Currency))
     book_asset!(b1, c1, 100)
     book_asset!(b1, c2, 100)
 
