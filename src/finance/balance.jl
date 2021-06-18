@@ -35,9 +35,10 @@ Used when working with transactions. All transfers in a transaction must succeed
 struct Transfer{T <: AbstractBalance}
     source::T
     source_type::EntryType
+    source_entry::BalanceEntry
     destination::T
     destination_type::EntryType
-    entry::BalanceEntry
+    destination_entry::BalanceEntry
     amount::Currency
     comment::String
 end
@@ -335,15 +336,49 @@ booking_functions = Dict(asset => book_asset!, liability => book_liability!)
 
 function check_transfer(balance1::Balance,
                 type1::EntryType,
+                entry1::BalanceEntry,
                 balance2::Balance,
                 type2::EntryType,
-                entry::BalanceEntry,
+                entry2::BalanceEntry,
                 amount::Real)
     if amount >= 0
-        return check_booking(balance1, entry, type1, -amount)
+        return check_booking(balance1, entry1, type1, -amount)
     else
-        return check_booking(balance2, entry, type2, amount)
+        return check_booking(balance2, entry2, type2, amount)
     end
+end
+
+"""
+    transfer!(balance1::Balance,
+            type1::EntryType,
+            entry1::BalanceEntry,
+            balance2::Balance,
+            type2::EntryType,
+            entry2::BalanceEntry,
+            amount::Real,
+            timestamp::Integer = 0;
+            comment::String = "")
+"""
+function transfer!(balance1::Balance,
+                type1::EntryType,
+                entry1::BalanceEntry,
+                balance2::Balance,
+                type2::EntryType,
+                entry2::BalanceEntry,
+                amount::Real,
+                timestamp::Integer = 0;
+                comment::String = "",
+                skip_check::Bool = false,
+                transaction1::Union{Transaction, Nothing} = nothing,
+                transaction2::Union{Transaction, Nothing} = nothing)
+    go = skip_check ? true : check_transfer(balance1, type1, entry1, balance2, type2, entry2, amount)
+
+    if go
+        booking_functions[type1](balance1, entry1, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
+        booking_functions[type2](balance2, entry2, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
+    end
+
+    return go
 end
 
 """
@@ -367,14 +402,9 @@ function transfer!(balance1::Balance,
                 skip_check::Bool = false,
                 transaction1::Union{Transaction, Nothing} = nothing,
                 transaction2::Union{Transaction, Nothing} = nothing)
-    go = skip_check ? true : check_transfer(balance1, type1, balance2, type2, entry, amount)
-
-    if go
-        booking_functions[type1](balance1, entry, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
-        booking_functions[type2](balance2, entry, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
-    end
-
-    return go
+    transfer!(balance1, type1, entry, balance2, type2, entry, amount, timestamp,
+            comment = comment, skip_check = skip_check,
+            transaction1 = transaction1, transaction2 = transaction2)
 end
 
 """
@@ -391,7 +421,26 @@ function transfer_asset!(balance1::Balance,
                         amount::Real,
                         timestamp::Integer = 0;
                         comment::String = "")
-    transfer!(balance1, asset, balance2, asset, entry, amount, timestamp, comment = comment)
+    transfer!(balance1, asset, entry, balance2, asset, entry, amount, timestamp, comment = comment)
+end
+
+"""
+    transfer_asset!(balance1::Balance,
+                    entry1::BalanceEntry,
+                    balance2::Balance,
+                    entry2::BalanceEntry,
+                    amount::Real,
+                    timestamp::Integer = 0;
+                    comment::String = "")
+"""
+function transfer_asset!(balance1::Balance,
+                        entry1::BalanceEntry,
+                        balance2::Balance,
+                        entry2::BalanceEntry,
+                        amount::Real,
+                        timestamp::Integer = 0;
+                        comment::String = "")
+    transfer!(balance1, asset, entry1, balance2, asset, entry2, amount, timestamp, comment = comment)
 end
 
 """
@@ -408,7 +457,26 @@ function transfer_liability!(balance1::Balance,
                             amount::Real,
                             timestamp::Integer = 0;
                             comment::String = "")
-    transfer!(balance1, liability, balance2, liability, entry, amount, timestamp, comment = comment)
+    transfer!(balance1, liability, entry, balance2, liability, entry, amount, timestamp, comment = comment)
+end
+
+"""
+    transfer_liability!(balance1::Balance,
+                        entry1::BalanceEntry,
+                        balance2::Balance,
+                        entry::BalanceEntry,
+                        amount::Real,
+                        timestamp::Integer = 0;
+                        comment::String = "")
+"""
+function transfer_liability!(balance1::Balance,
+                            entry1::BalanceEntry,
+                            balance2::Balance,
+                            entry2::BalanceEntry,
+                            amount::Real,
+                            timestamp::Integer = 0;
+                            comment::String = "")
+    transfer!(balance1, liability, entry1, balance2, liability, entry2, amount, timestamp, comment = comment)
 end
 
 """
@@ -425,12 +493,22 @@ Queues a transfer to be executed later. The transfer is queued in the source bal
 """
 function queue_transfer!(balance1::Balance,
                 type1::EntryType,
+                entry1::BalanceEntry,
                 balance2::Balance,
                 type2::EntryType,
-                entry::BalanceEntry,
+                entry2::BalanceEntry,
                 amount::Real;
                 comment::String = "")
-    push!(balance1.transfer_queue, Transfer(balance1, type1, balance2, type2, entry, Currency(amount), comment))
+    push!(balance1.transfer_queue, Transfer(balance1, type1, entry1, balance2, type2, entry2, Currency(amount), comment))
+end
+
+function queue_asset_transfer!(balance1::Balance,
+                            entry1::BalanceEntry,
+                            balance2::Balance,
+                            entry2::BalanceEntry,
+                            amount::Real;
+                            comment::String = "")
+    queue_transfer!(balance1, asset, entry1, balance2, asset, entry2, amount, comment = comment)
 end
 
 function queue_asset_transfer!(balance1::Balance,
@@ -438,7 +516,16 @@ function queue_asset_transfer!(balance1::Balance,
                             entry::BalanceEntry,
                             amount::Real;
                             comment::String = "")
-    queue_transfer!(balance1, asset, balance2, asset, entry, amount, comment = comment)
+    queue_asset_transfer!(balance1, entry, balance2, entry, amount, comment = comment)
+end
+
+function queue_liability_transfer!(balance1::Balance,
+                            entry1::BalanceEntry,
+                            balance2::Balance,
+                            entry2::BalanceEntry,
+                            amount::Real;
+                            comment::String = "")
+    queue_transfer!(balance1, liability, entry1, balance2, liability, entry2, amount, comment = comment)
 end
 
 function queue_liability_transfer!(balance1::Balance,
@@ -446,14 +533,14 @@ function queue_liability_transfer!(balance1::Balance,
                             entry::BalanceEntry,
                             amount::Real;
                             comment::String = "")
-    queue_transfer!(balance1, liability, balance2, liability, entry, amount, comment = comment)
+    queue_liability_transfer!(balance1, entry, balance2, entry, amount, comment = comment)
 end
 
 function execute_transfers!(balance::Balance, timestamp::Integer = 0)
     go = true
 
     for transfer in balance.transfer_queue
-        go &= check_transfer(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.entry, transfer.amount)
+        go &= check_transfer(transfer.source, transfer.source_type, transfer.source_entry, transfer.destination, transfer.destination_type, transfer.destination_entry, transfer.amount)
     end
 
     if go
@@ -461,7 +548,7 @@ function execute_transfers!(balance::Balance, timestamp::Integer = 0)
         t2 = Transaction(timestamp)
 
         for transfer in balance.transfer_queue
-            transfer!(transfer.source, transfer.source_type, transfer.destination, transfer.destination_type, transfer.entry, transfer.amount, timestamp, comment = transfer.comment, skip_check = true, transaction1 = t1, transaction2 = t2)
+            transfer!(transfer.source, transfer.source_type, transfer.source_entry, transfer.destination, transfer.destination_type, transfer.destination_entry, transfer.amount, timestamp, comment = transfer.comment, skip_check = true, transaction1 = t1, transaction2 = t2)
         end
     end
 
