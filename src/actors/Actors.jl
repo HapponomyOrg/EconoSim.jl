@@ -20,7 +20,3 @@ export actor_step!
 include("marginal_actor.jl")
 export make_marginal
 export process_needs, process_usage, process_wants
-
-include("model.jl")
-export create_econo_model, econo_step!, econo_model_step!
-export get_step, get_price, set_price!
