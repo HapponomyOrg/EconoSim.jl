@@ -132,7 +132,7 @@ function process_sumsy!(sumsy::SuMSy, balance::Balance, step::Int)
     income = 0
     demurrage = 0
 
-    if process_ready(step, sumsy)
+    if process_ready(sumsy, step)
         demurrage = calculate_demurrage(sumsy, balance, step)
 
         if has_guaranteed_income(balance)
