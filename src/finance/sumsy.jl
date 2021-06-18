@@ -113,6 +113,13 @@ function calculate_demurrage(sumsy::SuMSy, balance::Balance, step::Int)
 end
 
 """
+    process_ready(sumsy::SuMSy, step::Int)
+
+Check whether processing needs to be done.
+"""
+process_ready(sumsy::SuMSy, step::Int) = mod(step, sumsy.interval) == 0
+
+"""
     process_sumsy!(sumsy::SuMSy, timestamp::Int64, balance::Balanace)
 
 Processes demurrage and guaranteed income if the timestamp is a multiple of the SuMSy interval. Otherwise this function does nothing. Returns the deposited guaranteed income amount and the subtracted demurrage. When this function is called with timestamp == 0, the balance will be 'seeded'. The seed amount is added to the returned income.
@@ -125,7 +132,7 @@ function process_sumsy!(sumsy::SuMSy, balance::Balance, step::Int)
     income = 0
     demurrage = 0
 
-    if mod(step, sumsy.interval) == 0
+    if process_ready(step, sumsy)
         demurrage = calculate_demurrage(sumsy, balance, step)
 
         if has_guaranteed_income(balance)
