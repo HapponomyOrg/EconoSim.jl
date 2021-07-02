@@ -8,8 +8,6 @@ ThresholdInput = Union{<: AbstractVector{<:Tuple{<:Real, <:Real}},
                 <: AbstractSet{<:Tuple{<:Real, <:Real}}}
 Thresholds = SortedSet{Tuple{Interval, Float64}}
 
-Thresholds(input::ThresholdInput, direction::Direction) = convert_thresholds(input, direction)
-
 """
     restorable(lifecycle::Union{Lifecycle, Nothing})
 

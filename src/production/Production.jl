@@ -7,7 +7,7 @@ export num_entities
 
 include("lifecycle.jl")
 export up, down
-export ThresholdInput, Thresholds
+export ThresholdInput, Thresholds, convert_thresholds
 export Restorable
 
 include("blueprint.jl")

@@ -3,19 +3,19 @@ using EconoSim
 using Intervals
 
 @testset "Thresholds" begin
-    threshold_up = collect(EconoSim.convert_thresholds([(0, 1)], EconoSim.up))
+    threshold_up = collect(convert_thresholds([(0, 1)], EconoSim.up))
     @test isclosed(threshold_up[1][1])
 
-    threshold_down = collect(EconoSim.convert_thresholds([(1, 1)], EconoSim.down))
+    threshold_down = collect(convert_thresholds([(1, 1)], EconoSim.down))
     @test isclosed(threshold_down[1][1])
 
-    thresholds_up = collect(EconoSim.convert_thresholds([(0.2, 0.5), (1, 0)], up))
+    thresholds_up = collect(convert_thresholds([(0.2, 0.5), (1, 0)], up))
     @test EconoSim.is_left_closed(thresholds_up[1][1])
     @test EconoSim.is_right_open(thresholds_up[1][1])
     @test EconoSim.is_left_closed(thresholds_up[2][1])
     @test EconoSim.is_right_closed(thresholds_up[2][1])
 
-    thresholds_down = collect(EconoSim.convert_thresholds([(0.2, 0.5), (1, 0)], down))
+    thresholds_down = collect(convert_thresholds([(0.2, 0.5), (1, 0)], down))
     @test EconoSim.is_left_closed(thresholds_down[1][1])
     @test EconoSim.is_right_closed(thresholds_down[1][1])
     @test EconoSim.is_left_open(thresholds_down[2][1])
@@ -26,8 +26,8 @@ end
     bp = ConsumableBlueprint("C")
 
     r = Restorable()
-    @test r.damage_thresholds == Thresholds([(1, 1.0)], down)
-    @test r.restoration_thresholds == Thresholds([(0, 1.0)], up)
+    @test r.damage_thresholds == convert_thresholds([(1, 1.0)], down)
+    @test r.restoration_thresholds == convert_thresholds([(0, 1.0)], up)
     @test r.restore == 0
     @test r.maintenance_interval == INF
     @test isempty(r.maintenance_res)
@@ -43,8 +43,8 @@ end
         neglect_damage = 0.5,
         wear = 0.1,
     )
-    @test r.damage_thresholds == Thresholds([(1, 1), (0.8, 2)], down)
-    @test r.restoration_thresholds == Thresholds([(1, 2), (0.6, 1), (0.2, 0)], up)
+    @test r.damage_thresholds == convert_thresholds([(1, 1), (0.8, 2)], down)
+    @test r.restoration_thresholds == convert_thresholds([(1, 2), (0.6, 1), (0.2, 0)], up)
     @test r.restore == 0.1
     @test r.maintenance_interval == 10
     @test length(r.maintenance_res) == 1
