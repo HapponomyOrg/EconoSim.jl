@@ -1,12 +1,33 @@
 using Test
 using EconoSim
+using Intervals
+
+@testset "Thresholds" begin
+    threshold_up = collect(EconoSim.convert_thresholds([(0, 1)], EconoSim.up))
+    @test isclosed(threshold_up[1][1])
+
+    threshold_down = collect(EconoSim.convert_thresholds([(1, 1)], EconoSim.down))
+    @test isclosed(threshold_down[1][1])
+
+    thresholds_up = collect(EconoSim.convert_thresholds([(0.2, 0.5), (1, 0)], up))
+    @test EconoSim.is_left_closed(thresholds_up[1][1])
+    @test EconoSim.is_right_open(thresholds_up[1][1])
+    @test EconoSim.is_left_closed(thresholds_up[2][1])
+    @test EconoSim.is_right_closed(thresholds_up[2][1])
+
+    thresholds_down = collect(EconoSim.convert_thresholds([(0.2, 0.5), (1, 0)], down))
+    @test EconoSim.is_left_closed(thresholds_down[1][1])
+    @test EconoSim.is_right_closed(thresholds_down[1][1])
+    @test EconoSim.is_left_open(thresholds_down[2][1])
+    @test EconoSim.is_right_closed(thresholds_down[2][1])
+end
 
 @testset "Restorable" begin
     bp = ConsumableBlueprint("C")
 
     r = Restorable()
-    @test r.damage_thresholds == Thresholds([(0, 0), (1, 1.0)])
-    @test r.restoration_thresholds == Thresholds([(0, 0), (1, 1.0)])
+    @test r.damage_thresholds == Thresholds([(1, 1.0)], down)
+    @test r.restoration_thresholds == Thresholds([(0, 1.0)], up)
     @test r.restore == 0
     @test r.maintenance_interval == INF
     @test isempty(r.maintenance_res)
@@ -22,8 +43,8 @@ using EconoSim
         neglect_damage = 0.5,
         wear = 0.1,
     )
-    @test r.damage_thresholds == Thresholds([(1, 1), (0.8, 2), (0, 0)])
-    @test r.restoration_thresholds == Thresholds([(1, 2), (0.6, 1), (0.2, 0)])
+    @test r.damage_thresholds == Thresholds([(1, 1), (0.8, 2)], down)
+    @test r.restoration_thresholds == Thresholds([(1, 2), (0.6, 1), (0.2, 0)], up)
     @test r.restore == 0.1
     @test r.maintenance_interval == 10
     @test length(r.maintenance_res) == 1
@@ -45,19 +66,25 @@ end
     @test typeof(type_id(f1)) == Base.UUID
     @test id(f1) != type_id(f1)
     @test health(f1) == 1
-    @test health(use!(f1)) == 0
-    @test health(restore!(f1)) == 0
+    use!(f1)
+    @test health(f1) == 0
+    restore!(f1)
+    @test health(f1) == 0
 
     f2 = Consumable(bp)
     @test type_id(f1) == type_id(f2)
     @test id(f1) != id(f2)
     @test health(f2) == 1
-    @test health(restore!(f2)) == 1
-    @test health(use!(f2)) == 0
+    restore!(f2)
+    @test health(f2) == 1
+    use!(f2)
+    @test health(f2) == 0
 
     f2 = Consumable(bp)
-    @test health(decay!(f2)) == 1
-    @test health(destroy!(f2)) == 0
+    decay!(f2)
+    @test health(f2) == 1
+    destroy!(f2)
+    @test health(f2) == 0
 end
 
 @testset "Decayable" begin
@@ -70,8 +97,10 @@ end
 
     decayable = Decayable(bp)
     @test health(decayable) == 1
-    @test health(decay!(decayable)) == 0.5
-    @test health(use!(decayable)) == 0.25
+    decay!(decayable)
+    @test health(decayable) == 0.5
+    use!(decayable)
+    @test health(decayable) == 0.25
 end
 
 @testset "Product" begin
@@ -89,37 +118,49 @@ end
     @test type_id(t1) == type_id(t2)
     @test id(t1) != id(t2)
     @test health(t1) == 1
-    @test health(use!(t1)) == 0.9
-    @test health(restore!(t1)) == 1
+    use!(t1)
+    @test health(t1) == 0.9
+    restore!(t1)
+    @test health(t1) == 1
 
     entities = Entities()
     push!(entities, Consumable(oil_bp))
-    @test !maintenance_due(t1)
-    @test maintenance_due(use!(t1))
-    @test !maintain!(t1, entities)
-    @test health(use!(t1)) == 0
     push!(entities, Consumable(oil_bp))
-    @test maintain!(t1, entities)
-    @test t1.used == 0
+    @test !maintenance_due(t1)
+    use!(t1)
+    @test maintenance_due(t1)
+    @test maintain!(t1, entities)[1]
+    @test isempty(entities)
+    use!(t1)
+    use!(t1)
+    use!(t1)
+    @test restorable(t1)
+    @test health(t1) == 0
+    push!(entities, Consumable(oil_bp))
+    push!(entities, Consumable(oil_bp))
+    @test maintain!(t1, entities)[1]
+    @test t1.uses == 0
     @test isempty(entities)
 end
 
 @testset "Reconstructable" begin
     cb = ConsumableBlueprint("C")
-    @test !reconstructable(cb)
-    @test !reconstructable(Consumable(cb))
+    @test !restorable(cb)
+    @test !restorable(Consumable(cb))
 
     pb = ProductBlueprint("P")
-    @test !reconstructable(pb)
-    @test !reconstructable(Product(pb))
+    @test !restorable(pb)
+    @test !restorable(Product(pb))
 
     rec_pb = ProductBlueprint("Rec_P", Restorable(restore = 0.1, restoration_thresholds = [(0, 1)]))
     rec = Product(rec_pb)
 
-    @test reconstructable(rec_pb)
-    @test reconstructable(rec)
-    @test health(damage!(rec, 1)) == 0
-    @test health(restore!(rec)) == 0.1
+    @test restorable(rec_pb)
+    @test restorable(rec)
+    damage!(rec, 1)
+    @test health(rec) == 0
+    restore!(rec)
+    @test health(rec) == 0.1
 end
 
 @testset "Resourceless producer" begin
@@ -131,21 +172,21 @@ end
 
     products = produce!(p, Entities())
 
-    for product in products
+    for product in collect(collect(values(products)))
         @test get_blueprint(product) == cb
     end
-    @test length(products) == 2
+    @test length(collect(collect(values(products)))) == 2
 end
 
 @testset "Producer" begin
     labour_bp = ConsumableBlueprint("Labour")
     machine_bp = ProductBlueprint("Machine",
-                    Restorable(restoration_thresholds = [(0, 0.1)], wear = 0.1))
+                    Restorable(restoration_thresholds = [(0, 0.1)], restore = 0.1, wear = 0.1))
     food_bp = ConsumableBlueprint("Food")
 
-    @test !reconstructable(labour_bp)
-    @test reconstructable(machine_bp)
-    @test !reconstructable(food_bp)
+    @test !restorable(labour_bp)
+    @test restorable(machine_bp)
+    @test !restorable(food_bp)
 
     factory_bp = ProducerBlueprint(
         "Factory",
@@ -158,7 +199,7 @@ end
     push!(resources, [Consumable(labour_bp), Consumable(labour_bp), Product(machine_bp)])
     factory = Producer(factory_bp)
 
-    products = produce!(factory, resources)
+    products = produce!(factory, resources)[1]
 
     @test !(labour_bp in keys(resources))
     @test machine_bp in keys(resources)
@@ -231,12 +272,21 @@ end
 
     h1_0 = false
     h0_9 = false
+
     for p in e[pb]
         h1_0 |= health(p) == 1
         h0_9 |= health(p) == 0.9
     end
 
     @test h1_0 && h0_9
+
+    e2 = Entities()
+    push!(e2, Consumable(cb))
+    push!(e2, Consumable(cb))
+
+    merge!(e, e2)
+    @test length(e[cb]) == 3
+    @test length(e[pb]) == 2
 end
 
 @testset "extract!" begin
