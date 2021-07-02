@@ -1,18 +1,21 @@
-include("abstract_types.jl")
+include("types.jl")
 export Lifecycle, Blueprint, Entity, Enhancer
 
 include("entities.jl")
 export Entities
 export num_entities
 
-include("blueprint.jl")
-export Direction, down, up, Thresholds
+include("lifecycle.jl")
+export up, down
+export ThresholdInput, Thresholds
 export Restorable
+
+include("blueprint.jl")
 export ConsumableBlueprint, DecayableBlueprint, LifecycleBlueprint, ProductBlueprint, ProducerBlueprint
 export type_id, get_name, get_lifecycle, get_maintenance_interval
 
 include("entity.jl")
-export health, damaged, usable, reconstructable, use!, restore!, maintenance_due, maintain!, damage!, decay!, destroy!, destroyed
+export health, damaged, usable, restorable, use!, restore!, maintenance_due, maintain!, damage!, decay!, destroy!, destroyed
 
 include("stock.jl")
 export Stock
