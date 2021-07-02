@@ -1,4 +1,5 @@
 using FixedPointDecimals
+using Intervals
 
 """
     Percentage
@@ -27,6 +28,9 @@ mutable struct Health
 end
 
 Base.round(x::Health; digits::Integer = 6, base = 10) = Health(round(value(x), digits = digits, base = base))
+
+Base.convert(::Type{Health}, x::Real) = Health(x)
+Base.convert(::Type{Health}, x::Health) = x
 
 value(x::Percentage) = x.value
 value(x::Health) = value(x.current)
@@ -82,3 +86,7 @@ Fixed(digits::Integer) = FixedDecimal{Int128, digits}
 Convenience type for working with currencies.
 """
 Currency = Fixed(2)
+
+LeftInterval = Interval{Percentage, Closed, Open}
+RightInterval = Interval{Percentage, Open, Closed}
+ClosedInterval = Interval{Percentage, Closed, Closed}
