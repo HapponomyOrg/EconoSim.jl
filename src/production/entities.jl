@@ -60,6 +60,20 @@ function Base.delete!(entities::Entities, entity::Entity)
     return entities
 end
 
+function Base.merge!(entities::Entities, others::Entities...)
+    for other in others
+        for bp in keys(other)
+            if bp in keys(entities)
+                union!(entities[bp], other[bp])
+            else
+                entities[bp] = other[bp]
+            end
+        end
+    end
+
+    return entities
+end
+
 """
     num_entities(entities::Entities, bp::Blueprint)
 """
