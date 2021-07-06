@@ -84,3 +84,13 @@ function num_entities(entities::Entities, bp::Blueprint)
         return 0
     end
 end
+
+function num_entities(entities::Entities)
+    total = 0
+
+    for bp in keys(entities)
+        total += num_entities(entities, bp)
+    end
+
+    return total
+end
