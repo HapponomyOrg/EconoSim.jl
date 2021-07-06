@@ -59,8 +59,8 @@ function destroy!(entity::RestorableEntity)
     return invoke(destroy!, Tuple{Entity}, entity)
 end
 
-destroyed(entity::Entity) = entity.health == 0
-destroyed(entity::RestorableEntity) = entity.destroyed || !restorable(entity)
+destroyed(entity::Entity) = health(entity) == 0
+destroyed(entity::RestorableEntity) = entity.destroyed || (health(entity) == 0 && !restorable(entity))
 
 usable(entity::Entity) = !destroyed(entity)
 
@@ -75,35 +75,3 @@ function produce_waste(waste_bps::Blueprints)
 
     return wastes
 end
-
-
-# Old functions
-
-
-#
-# """
-# Restores damage according to the restoration thresholds.
-# """
-# function restore!(entity::Entity, resources::Entities = Entities())
-#     lifecycle = get_lifecycle(entity)
-#
-#     if isempty(lifecycle.restore_res) || extract!(lifecycle.restore_res, resources)
-#         change_health!(entity, lifecycle.restore, up)
-#     end
-#
-#     return entity
-# end
-#
-#
-# maintenance_due(entity::Entity) = entity.uses >= get_maintenance_interval(entity)
-#
-# function maintain!(entity::Entity, resources::Entities = Entities())
-#     lifecycle = get_lifecycle(entity)
-#
-#     if (isempty(lifecycle.maintenance_res) && isempty(lifecycle.maintenance_tools)) || extract!(resources, lifecycle.maintenance_res, lifecycle.maintenance_tools)
-#         entity.uses = 0
-#         return true
-#     else
-#         return false
-#     end
-# end
