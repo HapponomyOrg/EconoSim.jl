@@ -25,21 +25,44 @@ max_stock(stock::Stock, bp::Blueprint) = stock_limits(stock, bp)[2]
 max_stock!(stock::Stock, bp::Blueprint, units::Integer) = stock_limits!(stock, bp, min(min_stock(stock, bp), units), units)
 
 function add_stock!(stock::Stock,
-                products::Union{<:AbstractSet{E}, <:AbstractVector{E}};
+                products::Entities;
                 force::Bool = false) where E <: Entity
-    for product in collect(products)
-        bp = get_blueprint(product)
-
-        if force || current_stock(stock, bp) < max_stock(stock, bp)
-            delete_element!(products, product)
-            push!(stock.stock, product)
+    for bp in keys(products)
+        for product in products[bp]
+            if add_product(stock, product, force)
+                delete!(products, product)
+            else
+                break
+            end
         end
     end
 
     return stock
 end
 
-add_stock!(stock::Stock, product::Entity; force::Bool = false) = add_stock!(stock, [product], force = force)
+function add_stock!(stock::Stock,
+                    products::Union{<:AbstractSet{E}, <:AbstractVector{E}};
+                    force::Bool = false) where E <: Entity
+
+    for product in collect(products)
+        if add_product(stock, product, force)
+            delete_element!(products, product)
+        end
+    end
+end
+
+add_stock!(stock::Stock, product::Entity; force::Bool = false) = add_product(stock, product, force)
+
+function add_product(stock::Stock, product::Entity, force::Bool)
+    bp = get_blueprint(product)
+
+    if force || current_stock(stock, bp) < max_stock(stock, bp)
+        push!(stock.stock, product)
+        return true
+    else
+        return false
+    end
+end
 
 function retrieve_stock!(stock::Stock, bp::Blueprint, units::Integer)
     products = Set{Entity}()
