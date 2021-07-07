@@ -6,7 +6,7 @@ using Intervals
 # Convenience aliases
 ThresholdInput = Union{<: AbstractVector{<:Tuple{<:Real, <:Real}},
                 <: AbstractSet{<:Tuple{<:Real, <:Real}}}
-Thresholds = SortedSet{Tuple{Interval, Float64}}
+Thresholds = Vector{Tuple{Interval, Float64}}
 
 """
     restorable(lifecycle::Union{Lifecycle, Nothing})
@@ -149,21 +149,29 @@ function convert_thresholds(thresholds_input::ThresholdInput, direction::Directi
                 upper_bound = t[1]
                 multiplier = t[2]
 
-                if index == 1 && direction == down
-                    push!(thresholds, (ClosedInterval(0, upper_bound), multiplier))
-                elseif index == length(thresholds_input) && direction == up
-                    push!(thresholds, (ClosedInterval(lower_bound, 1), multiplier))
+                if index == 1
+                    if direction == down
+                        push!(thresholds, (ClosedInterval(0, upper_bound), multiplier))
+                    else
+                        push!(thresholds, (IntervalType(0, upper_bound), multiplier))
+                    end
+                elseif index == length(thresholds_input)
+                    if direction == up
+                        push!(thresholds, (ClosedInterval(lower_bound, 1), multiplier))
+                    else
+                        push!(thresholds, (IntervalType(lower_bound, 1), multiplier))
+                    end
                 else
                     push!(thresholds, (IntervalType(lower_bound, upper_bound), multiplier))
-                    lower_bound = upper_bound
                 end
 
+                lower_bound = upper_bound
                 index += 1
             end
         end
     end
 
-    return thresholds
+    return sort!(thresholds, rev = direction == down)
 end
 
 function restorable(lifecycle::Restorable, health::Health)
@@ -255,9 +263,9 @@ end
 
 function change_health!(lifecycle::Restorable, health::Health, change::Real, direction::Direction)
     if direction == up
-        thresholds = collect(lifecycle.restoration_thresholds)
+        thresholds = lifecycle.restoration_thresholds
     else
-        thresholds = reverse!(collect(lifecycle.damage_thresholds))
+        thresholds = lifecycle.damage_thresholds
     end
 
     change_to_process = change
