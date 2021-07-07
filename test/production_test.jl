@@ -3,23 +3,42 @@ using EconoSim
 using Intervals
 
 @testset "Thresholds" begin
-    threshold_up = collect(convert_thresholds([(0, 1)], EconoSim.up))
+    threshold_up = convert_thresholds([(0, 1)], EconoSim.up)
+    @test length(threshold_up) == 1
     @test isclosed(threshold_up[1][1])
+    @test first(threshold_up[1][1]) == 0
+    @test last(threshold_up[1][1]) == 1
 
-    threshold_down = collect(convert_thresholds([(1, 1)], EconoSim.down))
+    threshold_down = convert_thresholds([(1, 1)], EconoSim.down)
+    @test length(threshold_down) == 1
     @test isclosed(threshold_down[1][1])
+    @test first(threshold_down[1][1]) == 0
+    @test last(threshold_down[1][1]) == 1
 
-    thresholds_up = collect(convert_thresholds([(0.2, 0.5), (1, 0)], up))
+    thresholds_up = convert_thresholds([(0.5, 1), (1, 0.5)], up)
+    @test length(thresholds_up) == 2
     @test EconoSim.is_left_closed(thresholds_up[1][1])
     @test EconoSim.is_right_open(thresholds_up[1][1])
+    @test first(thresholds_up[1][1]) == 0
+    @test last(thresholds_up[1][1]) == 0.5
+    @test thresholds_up[1][2] == 1
     @test EconoSim.is_left_closed(thresholds_up[2][1])
     @test EconoSim.is_right_closed(thresholds_up[2][1])
+    @test first(thresholds_up[2][1]) == 0.5
+    @test last(thresholds_up[2][1]) == 1
+    @test thresholds_up[2][2] == 0.5
 
-    thresholds_down = collect(convert_thresholds([(0.2, 0.5), (1, 0)], down))
-    @test EconoSim.is_left_closed(thresholds_down[1][1])
+    thresholds_down = convert_thresholds([(0.5, 1), (1, 0.5)], down)
+    @test EconoSim.is_left_open(thresholds_down[1][1])
     @test EconoSim.is_right_closed(thresholds_down[1][1])
-    @test EconoSim.is_left_open(thresholds_down[2][1])
+    @test first(thresholds_down[1][1]) == 0.5
+    @test last(thresholds_down[1][1]) == 1
+    @test thresholds_down[1][2] == 0.5
+    @test EconoSim.is_left_closed(thresholds_down[2][1])
     @test EconoSim.is_right_closed(thresholds_down[2][1])
+    @test first(thresholds_down[2][1]) == 0
+    @test last(thresholds_down[2][1]) == 0.5
+    @test thresholds_down[2][2] == 1
 end
 
 @testset "Restorable" begin
@@ -171,11 +190,16 @@ end
     p = Producer(pb)
 
     products = produce!(p, Entities())
+    counter = 0
 
-    for product in collect(collect(values(products)))
-        @test get_blueprint(product) == cb
+    for set in collect(values(products))
+        for product in set
+            @test get_blueprint(product) == cb
+            counter += 1
+        end
     end
-    @test length(collect(collect(values(products)))) == 2
+
+    @test counter == 2
 end
 
 @testset "Producer" begin
@@ -199,16 +223,17 @@ end
     push!(resources, [Consumable(labour_bp), Consumable(labour_bp), Product(machine_bp)])
     factory = Producer(factory_bp)
 
-    products = produce!(factory, resources)[1]
+    products = produce!(factory, resources)
 
     @test !(labour_bp in keys(resources))
     @test machine_bp in keys(resources)
 
     @test health(collect(resources[machine_bp])[1]) == 0.9
 
-    @test length(products) == 1
+    @test num_entities(products) == 1
+    @test num_entities(products, food_bp) == 1
 
-    for food in products
+    for food in products[food_bp]
         @test get_name(food) == "Food"
         @test typeof(food) == Consumable
     end
@@ -218,7 +243,7 @@ end
     @test health(machine) == 0.1
 
     push!(resources, [Consumable(labour_bp), Consumable(labour_bp)])
-    @test length(produce!(factory, resources)) == 1
+    @test num_entities(produce!(factory, resources)) == 1
     @test health(machine) == 0
     @test machine_bp in keys(resources)
 end
@@ -236,21 +261,39 @@ end
         wear = 0.1,
     )
 
-    @test last(r.damage_thresholds) == (1, 1)
+    @test first(r.damage_thresholds)[1] == RightInterval(0.8, 1)
+    @test first(r.damage_thresholds)[2] == 1
+    @test last(r.damage_thresholds)[1] == ClosedInterval(0, 0.8)
+    @test last(r.damage_thresholds)[2] == 2
+
+    @test first(r.restoration_thresholds)[1] == LeftInterval(0, 0.2)
+    @test first(r.restoration_thresholds)[2] == 0
+    @test r.restoration_thresholds[2][1] == LeftInterval(0.2, 0.6)
+    @test r.restoration_thresholds[2][2] == 1
+    @test last(r.restoration_thresholds)[1] == ClosedInterval(0.6, 1)
+    @test last(r.restoration_thresholds)[2] == 2
 
     pb = ProductBlueprint("P", r)
     product = Product(pb)
 
-    @test !reconstructable(product)
+    @test restorable(product)
     @test health(product) == 1
-    @test health(damage!(product, 0.1)) == 0.9
-    @test health(damage!(product, 0.2)) == 0.6
-    @test health(use!(product)) == 0.4
-    @test health(restore!(product)) == 0.5
-    @test health(restore!(product)) == 0.6
-    @test health(restore!(product)) == 0.8
-    @test health(restore!(product)) == 1
-    @test health(damage!(product, 0.3)) == 0.6
+    damage!(product, 0.1)
+    @test health(product) == 0.9
+    damage!(product, 0.2)
+    @test health(product) == 0.6
+    use!(product)
+    @test health(product) == 0.4
+    restore!(product)
+    @test health(product) == 0.5
+    restore!(product)
+    @test health(product) == 0.6
+    restore!(product)
+    @test health(product) == 0.8
+    restore!(product)
+    @test health(product) == 1
+    damage!(product, 0.3)
+    @test health(product) == 0.6
 end
 
 @testset "Entities" begin
@@ -266,7 +309,10 @@ end
     push!(e, c)
     push!(e, p1)
     push!(e, p2)
+    @test num_entities(e) == 3
+    @test num_entities(e, cb) == 1
     @test length(e[cb]) == 1
+    @test num_entities(e, pb) == 2
     @test length(e[pb]) == 2
     use!(p1)
 
@@ -285,8 +331,9 @@ end
     push!(e2, Consumable(cb))
 
     merge!(e, e2)
-    @test length(e[cb]) == 3
-    @test length(e[pb]) == 2
+    @test num_entities(e) == 5
+    @test num_entities(e, cb) == 3
+    @test num_entities(e, pb) == 2
 end
 
 @testset "extract!" begin
@@ -303,13 +350,55 @@ end
     push!(e, p2)
     req_res = Dict(cb => 1)
     req_tools = Dict(pb => 2)
-    @test EconoSim.extract!(e, req_res, req_tools)
+    result = EconoSim.extract!(e, req_res, req_tools)
+    @test result[1]
     @test length(keys(e)) == 1
     @test !(cb in keys(e))
+    @test num_entities(e) == 1
+    @test num_entities(e, pb) == 1
 
     for product in e[pb]
         @test health(product) == 0.9
     end
+end
+
+@testset "waste" begin
+    w_bp = ConsumableBlueprint("Waste")
+    wp_bp = ProductBlueprint("Waste product")
+    res_bp = ConsumableBlueprint("Resource", Dict([w_bp => 1, wp_bp => 2]))
+
+    res = Consumable(res_bp)
+    e = destroy!(res)
+    @test num_entities(e) == 3
+    @test num_entities(e, w_bp) == 1
+    @test num_entities(e, wp_bp) == 2
+
+    tw_bp = ConsumableBlueprint("Tool waste")
+    tool_bp = ConsumableBlueprint("One use tool", Dict(tw_bp => 1))
+    p_bp = ConsumableBlueprint("Product")
+
+    prod_bp = ProducerBlueprint("Producer", Restorable(),
+            batch_res = Dict([res_bp => 1]),
+            batch_tools = Dict([tool_bp => 1]),
+            batch = Dict([p_bp => 2]),
+            waste = Dict([w_bp => 1]))
+
+    producer = Producer(prod_bp)
+    e = Entities()
+    push!(e, Consumable(res_bp))
+    push!(e, Consumable(tool_bp))
+    production = produce!(producer, e)
+
+    @test num_entities(e) == 0
+    @test num_entities(production) == 6
+    @test num_entities(production, w_bp) == 1
+    @test num_entities(production, wp_bp) == 2
+    @test num_entities(production, tw_bp) == 1
+    @test num_entities(production, p_bp) == 2
+
+    w = destroy!(producer)
+    @test num_entities(w) == 1
+    @test num_entities(w, w_bp) == 1
 end
 
 @testset "Stock" begin
