@@ -275,17 +275,24 @@ function change_health!(lifecycle::Restorable, health::Health, change::Real, dir
         interval = threshold[1]
         multiplier = threshold[2]
 
-        if change_to_process > 0 && (health + real_change) in interval
-            max_change = value(direction == up ? last(interval) - health : health - first(interval))
-            interval_change = min(max_change, change_to_process * multiplier)
-            change_to_process -= interval_change / multiplier
-            real_change += interval_change
+        if change_to_process > 0 
+            if (health + real_change) in interval
+                max_change = value(direction == up ? last(interval) - health : health - first(interval))
+                interval_change = min(max_change, change_to_process * multiplier)
+                change_to_process -= interval_change / multiplier
+
+                if direction == up
+                    real_change += interval_change
+                else
+                    real_change -= interval_change
+                end
+            end
         else
             break
         end
     end
 
-    health.current += direction == up ? real_change : -real_change
+    health.current += real_change
 
     return health
 end
