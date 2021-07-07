@@ -109,7 +109,7 @@ function marginal_behavior(model, actor::Actor)
                 use!(product)
                 i += 1
 
-                if !usable(product) && !reconstructable(product)
+                if !usable(product) && !restorable(product)
                     delete!(actor.posessions, product)
                 end
             else
