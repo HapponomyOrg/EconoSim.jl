@@ -459,4 +459,16 @@ end
     @test stocked(stock, bp)
     @test !overstocked(stock, bp)
     @test current_stock(stock, bp) == 5
+
+    e = Entities()
+
+    for i in 1:6
+        push!(e, Consumable(bp))
+    end
+
+    add_stock!(stock, e, force = true)
+    @test isempty(e)
+    @test stocked(stock, bp)
+    @test overstocked(stock, bp)
+    @test current_stock(stock, bp) == 11
 end
