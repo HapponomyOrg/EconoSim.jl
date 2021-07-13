@@ -87,6 +87,6 @@ Convenience type for working with currencies.
 """
 Currency = Fixed(2)
 
-LeftInterval = Interval{Percentage, Closed, Open}
-RightInterval = Interval{Percentage, Open, Closed}
-ClosedInterval = Interval{Percentage, Closed, Closed}
+LeftInterval{T} = Interval{T, Closed, Open}
+RightInterval{T} = Interval{T, Open, Closed}
+ClosedInterval{T} = Interval{T, Closed, Closed}
