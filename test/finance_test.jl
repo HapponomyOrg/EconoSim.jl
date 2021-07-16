@@ -127,10 +127,54 @@ end
     @test b2.transactions[1].transactions[1].comment == "transfer"
 end
 
+@testset "SuMSy dem tiers" begin
+    tiers = EconoSim.make_tiers([(0, 0.1), (10, 0.2), (20, 0.3)])
+    @test length(tiers) == 3
+    @test tiers[1][1] isa Interval
+
+    @test first(tiers[1][1]) == 0
+    @test last(tiers[1][1]) == 10
+    @test is_left_open(tiers[1][1])
+    @test is_right_closed(tiers[1][1])
+    @test tiers[1][2] == 0.1
+
+    @test first(tiers[2][1]) == 10
+    @test last(tiers[2][1]) == 20
+    @test is_left_open(tiers[2][1])
+    @test is_right_closed(tiers[2][1])
+    @test tiers[2][2] == 0.2
+
+    @test first(tiers[3][1]) == 20
+    @test last(tiers[3][1]) == nothing
+    @test is_left_open(tiers[3][1])
+    @test is_right_unbounded(tiers[3][1])
+    @test tiers[3][2] == 0.3
+
+    tiers = EconoSim.make_tiers([(0, 0.1), (10, 0.2)])
+    @test first(tiers[1][1]) == 0
+    @test last(tiers[1][1]) == 10
+    @test is_left_open(tiers[1][1])
+    @test is_right_closed(tiers[1][1])
+    @test tiers[1][2] == 0.1
+
+    @test first(tiers[2][1]) == 10
+    @test last(tiers[2][1]) == nothing
+    @test is_left_open(tiers[2][1])
+    @test is_right_unbounded(tiers[2][1])
+    @test tiers[2][2] == 0.2
+
+    tiers = EconoSim.make_tiers([(0, 0.1)])
+    @test length(tiers) == 1
+    @test first(tiers[1][1]) == 0
+    @test last(tiers[1][1]) == nothing
+    @test is_left_open(tiers[1][1])
+    @test is_right_unbounded(tiers[1][1])
+    @test tiers[1][2] == 0.1
+end
+
 @testset "SuMSy demurrage - single" begin
     balance = Balance()
     sumsy = SuMSy(2000, 25000, 0.1, 30, seed = 5000)
-    set_guaranteed_income!(sumsy, balance, true)
     process_sumsy!(sumsy, balance, 0)
 
     @test sumsy_balance(balance) == 7000
@@ -147,15 +191,10 @@ end
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
     balance = Balance()
 
-    @test !has_guaranteed_income(balance)
-    @test dem_free(balance) == 0
+    book_asset!(balance, SUMSY_DEP, 210000, 0)
 
-    set_guaranteed_income!(sumsy, balance, true)
-    book_asset!(balance, SUMSY_DEP, 160000, 0)
-
-    @test has_guaranteed_income(balance)
-    @test dem_free(balance) == 50000
-    @test calculate_demurrage(sumsy, balance, 10) == 17000
+    @test get_dem_free(sumsy, balance) == 50000
+    @test calculate_demurrage(sumsy, balance, 10) == 30000
 end
 
 @testset "Transfer queues" begin
