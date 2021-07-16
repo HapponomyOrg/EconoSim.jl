@@ -9,9 +9,9 @@ export queue_transfer!, queue_asset_transfer!, queue_liability_transfer!, execut
 
 include("sumsy.jl")
 export SUMSY_DEP
-export SuMSy
+export SuMSy, DemTiers
 export calculate_demurrage, process_sumsy!, sumsy_balance, sumsy_transfer!
-export set_guaranteed_income!, has_guaranteed_income, dem_free, transfer_dem_free
+export set_sumsy_active!, is_sumsy_active, set_sumsy!, set_seed!, get_seed, set_guaranteed_income!, get_guaranteed_income, set_dem_free!, get_dem_free, transfer_dem_free!, set_dem_tiers, get_dem_tiers
 
 include("debt.jl")
 export DEPOSIT, DEBT
