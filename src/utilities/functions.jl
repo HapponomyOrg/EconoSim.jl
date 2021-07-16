@@ -24,5 +24,9 @@ end
 
 is_left_closed(interval::AbstractInterval{T,L,R}) where {T,L,R} = L === Closed
 is_right_closed(interval::AbstractInterval{T,L,R}) where {T,L,R} = R === Closed
+
 is_left_open(interval::AbstractInterval{T,L,R}) where {T,L,R} = L === Open
 is_right_open(interval::AbstractInterval{T,L,R}) where {T,L,R} = R === Open
+
+is_left_unbounded(interval::AbstractInterval{T,L,R}) where {T,L,R} = L === Unbounded
+is_right_unbounded(interval::AbstractInterval{T,L,R}) where {T,L,R} = R === Unbounded
