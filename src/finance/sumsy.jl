@@ -184,6 +184,13 @@ function get_dem_tiers(sumsy::SuMSy, balance::Balance)
     end
 end
 
+function book_sumsy!(balance::Balance,
+                    amount::Real,
+                    timestamp::Integer = 0;
+                    comment::String = "")
+    return book_asset!(balance, SUMSY_DEP, amount, timestamp, comment = comment)
+end
+
 function sumsy_balance(balance)
     return asset_value(balance, SUMSY_DEP)
 end
