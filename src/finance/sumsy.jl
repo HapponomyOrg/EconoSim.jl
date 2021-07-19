@@ -290,12 +290,14 @@ function process_sumsy!(sumsy::SuMSy, balance::Balance, step::Int)
         demurrage = calculate_demurrage(sumsy, balance, step)
 
         if step == 0
-            income += get_seed(sumsy, balance)
-            book_asset!(balance, SUMSY_DEP, sumsy.seed, step, comment = "Seed")
+            seed = get_seed(sumsy, balance)
+            income += seed
+            book_asset!(balance, SUMSY_DEP, seed, step, comment = "Seed")
         end
 
-        income += sumsy.guaranteed_income
-        book_asset!(balance, SUMSY_DEP, sumsy.guaranteed_income, step, comment = "Guaranteed income")
+        guaranteed_income = get_guaranteed_income(sumsy, balance)
+        income += guaranteed_income
+        book_asset!(balance, SUMSY_DEP, guaranteed_income, step, comment = "Guaranteed income")
 
         book_asset!(balance, SUMSY_DEP, -demurrage, step, comment = "Demurrage")
     end
