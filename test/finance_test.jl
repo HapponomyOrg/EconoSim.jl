@@ -187,6 +187,18 @@ end
     @test calculate_demurrage(sumsy, balance, 30) == 8000
 end
 
+@testset "SuMSY demurrage - multiple asset bookings" begin
+    balance = Balance()
+    sumsy = SuMSy(2000, 0, 0.1, 30)
+
+    book_asset!(balance, SUMSY_DEP, 3000, 0)
+    book_asset!(balance, SUMSY_DEP, 3000, 10)
+    book_asset!(balance, SUMSY_DEP, 3000, 20)
+
+    @test sumsy_balance(balance) == 9000
+    @test calculate_demurrage(sumsy, balance, 30) == 600
+end
+
 @testset "SuMSy demurrage - tiers" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
     balance = Balance()
