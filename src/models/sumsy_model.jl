@@ -71,9 +71,14 @@ function collect_contribution!(model)
         i = 1
 
         for actor in allagents(model)
-            max_contribution = calculate_demurrage(model.contribution_settings, actor, model.step)
-            contributions[i] = ([0, max_contribution], actor)
-            max_total_contribution += max_contribution
+            if is_sumsy_active(actor)
+                max_contribution = calculate_demurrage(model.contribution_settings, actor, model.step)
+                contributions[i] = ([0, max_contribution], actor)
+                max_total_contribution += max_contribution
+            else
+                contributions[i] = ([0, 0], actor)
+            end
+
             i += 1
         end
 
