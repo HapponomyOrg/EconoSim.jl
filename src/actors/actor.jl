@@ -57,7 +57,7 @@ function Actor(;id::Integer = ID_COUNTER,
     if isnothing(types)
         typeset = Set{Symbol}()
     elseif types isa Symbol
-        typeset = Set([type])
+        typeset = Set([types])
     else
         typeset = types
     end
