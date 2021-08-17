@@ -98,11 +98,11 @@ NO_DEM_TIER = make_tiers([(0, 0)])
 make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 
 """
-    set_sumsy_active!(sumsy::SuMSy, balance::Balance, flag::Bool)
+    set_sumsy_active!(balance::Balance, flag::Bool)
 
 Indicate whether the balance participates in SuMSy or not.
 """
-function set_sumsy_active!(sumsy::SuMSy, balance::Balance, flag::Bool)
+function set_sumsy_active!(balance::Balance, flag::Bool)
     balance.sumsy_active = flag
 end
 
