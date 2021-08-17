@@ -261,16 +261,16 @@ end
         wear = 0.1,
     )
 
-    @test first(r.damage_thresholds)[1] == RightInterval(0.8, 1)
+    @test first(r.damage_thresholds)[1] == RightInterval{Percentage}(0.8, 1)
     @test first(r.damage_thresholds)[2] == 1
-    @test last(r.damage_thresholds)[1] == ClosedInterval(0, 0.8)
+    @test last(r.damage_thresholds)[1] == ClosedInterval{Percentage}(0, 0.8)
     @test last(r.damage_thresholds)[2] == 2
 
-    @test first(r.restoration_thresholds)[1] == LeftInterval(0, 0.2)
+    @test first(r.restoration_thresholds)[1] == LeftInterval{Percentage}(0, 0.2)
     @test first(r.restoration_thresholds)[2] == 0
-    @test r.restoration_thresholds[2][1] == LeftInterval(0.2, 0.6)
+    @test r.restoration_thresholds[2][1] == LeftInterval{Percentage}(0.2, 0.6)
     @test r.restoration_thresholds[2][2] == 1
-    @test last(r.restoration_thresholds)[1] == ClosedInterval(0.6, 1)
+    @test last(r.restoration_thresholds)[1] == ClosedInterval{Percentage}(0.6, 1)
     @test last(r.restoration_thresholds)[2] == 2
 
     pb = ProductBlueprint("P", r)
