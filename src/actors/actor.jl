@@ -46,7 +46,7 @@ end
 * producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}() - the production facilities of the agent.
 """
 function Actor(;id::Integer = ID_COUNTER,
-        type::Union{Symbol, Nothing} = nothing,
+        types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
         model_behavior::Union{Function, Nothing} = nothing,
         behavior::Union{Function, Nothing} = nothing,
         balance::Balance = Balance(),
@@ -54,7 +54,14 @@ function Actor(;id::Integer = ID_COUNTER,
         stock::Stock = Stock(),
         producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
         prices::D = Dict{Blueprint, Price}()) where {D <: Dict{<: Blueprint, Price}}
-    typeset = isnothing(type) ? Set{Symbol}() : Set([type])
+    if isnothing(types)
+        typeset = Set{Symbol}()
+    elseif types isa Symbol
+        typeset = Set([type])
+    else
+        typeset = types
+    end
+
     model_behaviors = isnothing(model_behavior) ? Vector{Function}() : Vector([model_behavior])
     behaviors = isnothing(behavior) ? Vector{Function}() : Vector([behavior])
     global ID_COUNTER += 1
