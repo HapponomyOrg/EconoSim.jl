@@ -133,13 +133,13 @@ The edges 0 and 1 are always closed.
 function convert_thresholds(thresholds_input::ThresholdInput, direction::Direction)
     thresholds_input = SortedSet(thresholds_input)
     thresholds = Thresholds()
-    IntervalType = direction == up ? LeftInterval : RightInterval
+    IntervalType = direction == up ? LeftInterval{Percentage} : RightInterval{Percentage}
 
     if isempty(thresholds_input)
-        push!(thresholds, (ClosedInterval(0, 1), 1))
+        push!(thresholds, (ClosedInterval{Percentage}(0, 1), 1))
     else
         if length(thresholds_input) == 1
-            push!(thresholds, (ClosedInterval(0, 1), first(thresholds_input)[2]))
+            push!(thresholds, (ClosedInterval{Percentage}(0, 1), first(thresholds_input)[2]))
         else
             index = 1
             lower_bound = 0
@@ -151,13 +151,13 @@ function convert_thresholds(thresholds_input::ThresholdInput, direction::Directi
 
                 if index == 1
                     if direction == down
-                        push!(thresholds, (ClosedInterval(0, upper_bound), multiplier))
+                        push!(thresholds, (ClosedInterval{Percentage}(0, upper_bound), multiplier))
                     else
                         push!(thresholds, (IntervalType(0, upper_bound), multiplier))
                     end
                 elseif index == length(thresholds_input)
                     if direction == up
-                        push!(thresholds, (ClosedInterval(lower_bound, 1), multiplier))
+                        push!(thresholds, (ClosedInterval{Percentage}(lower_bound, 1), multiplier))
                     else
                         push!(thresholds, (IntervalType(lower_bound, 1), multiplier))
                     end
@@ -275,7 +275,7 @@ function change_health!(lifecycle::Restorable, health::Health, change::Real, dir
         interval = threshold[1]
         multiplier = threshold[2]
 
-        if change_to_process > 0 
+        if change_to_process > 0
             if (health + real_change) in interval
                 max_change = value(direction == up ? last(interval) - health : health - first(interval))
                 interval_change = min(max_change, change_to_process * multiplier)
