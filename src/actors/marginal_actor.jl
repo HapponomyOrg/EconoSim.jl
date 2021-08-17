@@ -9,7 +9,7 @@ MARGINAL = :marginal
 * needs::Needs
 """
 function make_marginal(actor::Actor, needs::Needs = Needs())
-    actor.type = MARGINAL
+    add_type!(actor, MARGINAL)
     actor.needs = needs
     add_behavior!(actor, marginal_behavior)
 
