@@ -4,7 +4,6 @@ SUMSY_DEP = BalanceEntry("SuMSy deposit")
 SUMSY_DEBT = BalanceEntry("SuMSy debt")
 
 DemTiers = Vector{Tuple{Interval, Percentage}}
-NO_DEM_TIER = make_tiers([(0, 0)])
 
 """
     struct SuMSy
@@ -24,15 +23,24 @@ mutable struct SuMSy
     dem_tiers::DemTiers
     interval::Int64
     seed::Currency
+    seed_comment::String
+    guaranteed_income_comment::String
+    demurrage_comment::String
     SuMSy(guaranteed_income::Real,
         dem_free::Real,
         dem_tuples::Union{DemTiers, Vector{T}},
         interval::Integer;
-        seed::Real = 0) where {T <: Tuple{Real, Real}} = new(guaranteed_income,
+        seed::Real = 0,
+        seed_comment = "Seed",
+        guaranteed_income_comment = "Guarenteed income",
+        demurrage_comment = "Demurrage") where {T <: Tuple{Real, Real}} = new(guaranteed_income,
                         dem_free,
                         make_tiers(dem_tuples),
                         interval,
-                        seed)
+                        seed,
+                        seed_comment,
+                        guaranteed_income_comment,
+                        demurrage_comment)
 end
 
 """
@@ -83,6 +91,9 @@ function make_tiers(dem_tuples::Vector{T}) where  {T <: Tuple{Real, Real}}
     return tiers
 end
 
+dem_tier(demurrage_percentage::Real) = make_tiers([(0, demurrage_percentage)])
+
+NO_DEM_TIER = make_tiers([(0, 0)])
 make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 
 """
@@ -194,14 +205,14 @@ end
 Transfer an amount of SuMSy money from one balance sheet to another. No more than the available amount of money can be transferred.
 Negative amounts result in a transfer from destination to source.
 """
-function sumsy_transfer!(source::Balance, destination::Balance, amount::Real, timestamp::Int = 0)
+function sumsy_transfer!(source::Balance, destination::Balance, amount::Real, timestamp::Int = 0; comment = "")
     if amount > 0
         amount = min(amount, sumsy_balance(source))
     else
         amount = min(-amount, sumsy_balance(destination))
     end
 
-    transfer_asset!(source, destination, SUMSY_DEP, amount, timestamp)
+    transfer_asset!(source, destination, SUMSY_DEP, amount, timestamp, comment = comment)
 end
 
 """
@@ -292,14 +303,14 @@ function process_sumsy!(sumsy::SuMSy, balance::Balance, step::Int)
         if step == 0
             seed = get_seed(sumsy, balance)
             income += seed
-            book_asset!(balance, SUMSY_DEP, seed, step, comment = "Seed")
+            book_asset!(balance, SUMSY_DEP, seed, step, comment = sumsy.seed_comment)
         end
 
         guaranteed_income = get_guaranteed_income(sumsy, balance)
         income += guaranteed_income
-        book_asset!(balance, SUMSY_DEP, guaranteed_income, step, comment = "Guaranteed income")
+        book_asset!(balance, SUMSY_DEP, guaranteed_income, step, comment = sumsy.guaranteed_income_comment)
 
-        book_asset!(balance, SUMSY_DEP, -demurrage, step, comment = "Demurrage")
+        book_asset!(balance, SUMSY_DEP, -demurrage, step, comment = sumsy.demurrage_comment)
     end
 
     return income, demurrage
