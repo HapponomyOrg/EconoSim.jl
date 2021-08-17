@@ -1,5 +1,6 @@
 using Test
 using EconoSim
+using Intervals
 
 @testset "Balance" begin
     b = Balance()
