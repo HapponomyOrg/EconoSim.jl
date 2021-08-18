@@ -156,6 +156,9 @@ function entry_dict(balance::Balance, type::EntryType)
     end
 end
 
+has_asset(balance::Balance, entry::BalanceEntry) = haskey(entry_dict(balance, asset), entry)
+has_liability(balance::Balance, entry::BalanceEntry) = haskey(entry_dict(balance, liability), entry)
+
 """
     clear!(balance::Balance)
 
@@ -234,10 +237,11 @@ True if the booking can be executed, false if it violates minimum value constric
 function check_booking(balance::Balance,
                     entry::BalanceEntry,
                     type::EntryType,
+                    set_to_value::Bool,
                     amount::Real)
     dict = entry_dict(balance, type)
 
-    if entry in keys(dict)
+    if !set_to_value && entry in keys(dict)
         new_amount = dict[entry] + amount
     else
         new_amount = amount
@@ -256,6 +260,7 @@ Books the amount. Checks on allowance of negative balances need to be made prior
 function book_amount!(balance::Balance,
                     entry::BalanceEntry,
                     type::EntryType,
+                    set_to_value::Bool,
                     amount::Real,
                     timestamp::Integer,
                     comment::String,
@@ -263,7 +268,7 @@ function book_amount!(balance::Balance,
                     transaction::Union{Transaction, Nothing})
     dict = entry_dict(balance, type)
 
-    if entry in keys(dict)
+    if !set_to_value && entry in keys(dict)
         dict[entry] += amount
     else
         dict[entry] = amount
@@ -294,11 +299,12 @@ function book_asset!(balance::Balance,
                     entry::BalanceEntry,
                     amount::Real,
                     timestamp::Integer = 0;
+                    set_to_value = false,
                     comment::String = "",
                     skip_check::Bool = false,
                     transaction::Union{Transaction, Nothing} = nothing)
-    if skip_check || check_booking(balance, entry, asset, amount)
-        book_amount!(balance, entry, asset, amount, timestamp, comment, asset_value, transaction)
+    if skip_check || check_booking(balance, entry, asset, set_to_value, amount)
+        book_amount!(balance, entry, asset, set_to_value, amount, timestamp, comment, asset_value, transaction)
 
         return true
     else
@@ -320,11 +326,12 @@ function book_liability!(balance::Balance,
                         entry::BalanceEntry,
                         amount::Real,
                         timestamp::Integer = 0;
+                        set_to_value = false,
                         comment::String = "",
                         skip_check::Bool = false,
                         transaction::Union{Transaction, Nothing} = nothing)
-    if skip_check || check_booking(balance, entry, liability, amount)
-        book_amount!(balance, entry, liability, amount, timestamp, comment, liability_value, transaction)
+    if skip_check || check_booking(balance, entry, liability, set_to_value, amount)
+        book_amount!(balance, entry, liability, set_to_value, amount, timestamp, comment, liability_value, transaction)
 
         return true
     else
@@ -342,9 +349,9 @@ function check_transfer(balance1::Balance,
                 entry2::BalanceEntry,
                 amount::Real)
     if amount >= 0
-        return check_booking(balance1, entry1, type1, -amount)
+        return check_booking(balance1, entry1, type1, false, -amount)
     else
-        return check_booking(balance2, entry2, type2, amount)
+        return check_booking(balance2, entry2, type2, false, amount)
     end
 end
 
