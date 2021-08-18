@@ -5,14 +5,20 @@ CONTRIBUTION_SHORTAGE = :contribution_shortage
 
 @enum ContributionMode no_contribution fixed_contribution on_demand_contribution
 
-is_sumsy_active(actor::Actor, sumsy::SuMSy) = is_sumsy_active(actor.balance, sumsy)
+function set_sumsy_active!(actor::Actor, model, flag::Bool)
+    set_sumsy_active!(actor.balance, model.sumsy, flag)
+    set_sumsy_active!(actor.balance, model.contribution_settings, flag)
+end
+
+is_sumsy_active(actor::Actor, model) = is_sumsy_active(actor.balance, model.sumsy)
 process_sumsy!(actor::Actor, sumsy::SuMSy, step::Int) = process_sumsy!(actor.balance, sumsy, step)
 calculate_demurrage(actor::Actor, sumsy::SuMSy, step::Int) = calculate_demurrage(actor.balance, sumsy, step)
-sumsy_balance(actor::Actor, sumsy::SuMSy) = sumsy_balance(actor.balance, sumsy)
+sumsy_balance(actor::Actor, model) = sumsy_balance(actor.balance, model.sumsy)
+sumsy_balance(balance::Balance, model) = sumsy_balance(balance, model.sumsy)
 
 function create_sumsy_model(sumsy::SuMSy,
-                            contribution_mode::ContributionMode = no_contribution,
-                            contribution_free::Real = 0,
+                            contribution_mode::ContributionMode = no_contribution;
+                            contribution_free::Real = sumsy.dem_free,
                             contribution_tiers::DemSettings = 0,
                             contribution_balance::Balance = Balance(),
                             interval::Int = sumsy.interval)
@@ -69,7 +75,7 @@ function collect_contribution!(model)
         i = 1
 
         for actor in allagents(model)
-            if is_sumsy_active(actor, model.sumsy)
+            if is_sumsy_active(actor, model)
                 max_contribution = calculate_demurrage(actor, model.contribution_settings, model.step)
                 contributions[i] = ([0, max_contribution], actor)
                 max_total_contribution += max_contribution
