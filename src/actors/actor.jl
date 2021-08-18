@@ -66,7 +66,13 @@ function Actor(;id::Integer = ID_COUNTER,
     behaviors = isnothing(behavior) ? Vector{Function}() : Vector([behavior])
     global ID_COUNTER += 1
 
-    return Actor(id, typeset, model_behaviors, behaviors, balance, posessions, stock, Set(producers), prices, Dict{Symbol, Any}())
+    actor = Actor(id, typeset, model_behaviors, behaviors, balance, posessions, stock, Set(producers), prices, Dict{Symbol, Any}())
+
+    if !isempty(actor.producers)
+        add_model_behavior!(actor, produce_stock!)
+    end
+
+    return actor
 end
 
 function Base.getproperty(actor::Actor, s::Symbol)
