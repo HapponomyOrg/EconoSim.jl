@@ -77,7 +77,7 @@ function marginal_behavior(model, actor::Actor)
 
                 cur_health = health(entity)
 
-                while damaged(entity) && health(restore!(entity, dict)) > cur_health
+                while damaged(entity) && (restore!(entity, dict); health(entity)) > cur_health
                     cur_health = health(entity)
                 end
             end
