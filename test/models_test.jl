@@ -9,7 +9,7 @@ using Agents
 
     run!(model, actor_step!, sumsy_model_step!, 40)
 
-    @test sumsy_balance(actor) == 8350
+    @test sumsy_balance(actor, model.sumsy) == 8350
     @test !(:contribution_balance in keys(model.properties))
 end
 
@@ -21,8 +21,8 @@ end
 
     run!(model, actor_step!, sumsy_model_step!, 40)
 
-    @test sumsy_balance(actor) == 7160
-    @test sumsy_balance(model.contribution_balance) == 1257.5
+    @test sumsy_balance(actor, model.sumsy) == 7160
+    @test sumsy_balance(model.contribution_balance, model.sumsy) == 1257.5
 end
 
 @testset "SuMSy contribution - on demand" begin
@@ -34,28 +34,28 @@ end
     request_contribution!(model, 100)
     sumsy_step!(model, 10)
 
-    @test sumsy_balance(actor) == 2500
-    @test sumsy_balance(model.contribution_balance) == 0
+    @test sumsy_balance(actor, model.sumsy) == 2500
+    @test sumsy_balance(model.contribution_balance, model.sumsy) == 0
     @test model.contribution_shortage == 100
 
     request_contribution!(model, 100)
     sumsy_step!(model, 10)
 
-    @test sumsy_balance(actor) == 4400
-    @test sumsy_balance(model.contribution_balance) == 100
+    @test sumsy_balance(actor, model.sumsy) == 4400
+    @test sumsy_balance(model.contribution_balance, model.sumsy) == 100
     @test model.contribution_shortage == 0
 
     request_contribution!(model, 500)
     sumsy_step!(model, 10)
 
-    @test sumsy_balance(actor) == 5960
-    @test sumsy_balance(model.contribution_balance) == 540
+    @test sumsy_balance(actor, model.sumsy) == 5960
+    @test sumsy_balance(model.contribution_balance, model.sumsy) == 540
     @test model.contribution_shortage == 60
 
     request_contribution!(model, 1000)
     sumsy_step!(model, 10)
 
-    @test sumsy_balance(actor) == 7268
-    @test sumsy_balance(model.contribution_balance) == 1136
+    @test sumsy_balance(actor, model.sumsy) == 7268
+    @test sumsy_balance(model.contribution_balance, model.sumsy) == 1136
     @test model.contribution_shortage == 404
 end

@@ -45,6 +45,16 @@ using Intervals
     @test liabilities_net_value(b) == 11
     @test equity(b) == 4
     @test validate(b)
+
+    book_asset!(b, asset1, 100, set_to_value = true)
+    @test asset_value(b, asset1) == 100
+    @test assets_value(b) == 105
+
+    book_liability!(b, liability1, 200, set_to_value = true)
+    @test liability_value(b, liability1) == 200
+    @test assets_value(b) == 105
+    @test liabilities_value(b) == 105
+    @test liabilities_net_value(b) == 201
 end
 
 @testset "Min balances" begin
@@ -176,16 +186,20 @@ end
 @testset "SuMSy demurrage - single" begin
     balance = Balance()
     sumsy = SuMSy(2000, 25000, 0.1, 30, seed = 5000)
-    process_sumsy!(sumsy, balance, 0)
+    process_sumsy!(balance, sumsy, 0)
 
-    @test sumsy_balance(balance) == 7000
+    @test sumsy_balance(balance, sumsy) == 7000
 
     book_asset!(balance, SUMSY_DEP, 93000)
-    @test calculate_demurrage(sumsy, balance, 30) == 7500
+    @test calculate_demurrage(balance, sumsy, 30) == 7500
 
     # Test correct calculation of average weighted balance.
     book_asset!(balance, SUMSY_DEP, 10000, 15)
-    @test calculate_demurrage(sumsy, balance, 30) == 8000
+    @test sumsy_balance(balance, sumsy) == 110000
+    @test calculate_demurrage(balance, sumsy, 30) == 8000
+
+    process_sumsy!(balance, sumsy, 30)
+    @test sumsy_balance(balance, sumsy) == 104000
 end
 
 @testset "SuMSY demurrage - multiple asset bookings" begin
@@ -196,8 +210,11 @@ end
     book_asset!(balance, SUMSY_DEP, 3000, 10)
     book_asset!(balance, SUMSY_DEP, 3000, 20)
 
-    @test sumsy_balance(balance) == 9000
-    @test calculate_demurrage(sumsy, balance, 30) == 600
+    @test sumsy_balance(balance, sumsy) == 9000
+    @test calculate_demurrage(balance, sumsy, 30) == 600
+
+    process_sumsy!(balance, sumsy, 30)
+    @test sumsy_balance(balance, sumsy) == 10400
 end
 
 @testset "SuMSy demurrage - tiers" begin
@@ -206,8 +223,51 @@ end
 
     book_asset!(balance, SUMSY_DEP, 210000, 0)
 
-    @test get_dem_free(sumsy, balance) == 50000
-    @test calculate_demurrage(sumsy, balance, 10) == 30000
+    @test get_dem_free(balance, sumsy) == 50000
+    @test calculate_demurrage(balance, sumsy, 10) == 30000
+
+    process_sumsy!(balance, sumsy, 10)
+    @test sumsy_balance(balance, sumsy) == 182000
+end
+
+@testset "SuMSy inactive" begin
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    balance = Balance()
+
+    book_asset!(balance, SUMSY_DEP, 210000, 0)
+    set_sumsy_active!(balance, sumsy, false)
+
+    process_sumsy!(balance, sumsy, 10)
+    @test sumsy_balance(balance, sumsy) == 210000
+end
+
+@testset "SuMSy overrides" begin
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    balance = Balance()
+
+    set_seed!(balance, sumsy, 1000)
+    process_sumsy!(balance, sumsy, 0)
+    @test sumsy_balance(balance, sumsy) == 3000
+
+    set_guaranteed_income!(balance, sumsy, 5000)
+    process_sumsy!(balance, sumsy, 10)
+    @test sumsy_balance(balance, sumsy) == 8000
+
+    set_initial_dem_free!(balance, sumsy, 3000)
+    @test get_dem_free(balance, sumsy) == 3000
+    @test calculate_demurrage(balance, sumsy, 20) == 500
+    process_sumsy!(balance, sumsy, 20)
+    @test sumsy_balance(balance, sumsy) == 12500
+end
+
+@testset "SuMSy demurrage free transfer" begin
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    balance1 = Balance()
+    balance2 = Balance()
+
+    transfer_dem_free!(balance1, balance2, sumsy, 10000)
+    @test get_dem_free(balance1, sumsy) == 40000
+    @test get_dem_free(balance2, sumsy) == 60000
 end
 
 @testset "Transfer queues" begin
