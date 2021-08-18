@@ -5,27 +5,25 @@ CONTRIBUTION_SHORTAGE = :contribution_shortage
 
 @enum ContributionMode no_contribution fixed_contribution on_demand_contribution
 
-is_sumsy_active(actor::Actor) = is_sumsy_active(actor.balance)
-process_sumsy!(sumsy::SuMSy, actor::Actor, step::Int) = process_sumsy!(sumsy, actor.balance, step)
-calculate_demurrage(sumsy::SuMSy, actor::Actor, step::Int) = calculate_demurrage(sumsy, actor.balance, step)
-sumsy_balance(actor::Actor) = sumsy_balance(actor.balance)
+is_sumsy_active(actor::Actor, sumsy::SuMSy) = is_sumsy_active(actor.balance, sumsy)
+process_sumsy!(actor::Actor, sumsy::SuMSy, step::Int) = process_sumsy!(actor.balance, sumsy, step)
+calculate_demurrage(actor::Actor, sumsy::SuMSy, step::Int) = calculate_demurrage(actor.balance, sumsy, step)
+sumsy_balance(actor::Actor, sumsy::SuMSy) = sumsy_balance(actor.balance, sumsy)
 
 function create_sumsy_model(sumsy::SuMSy,
                             contribution_mode::ContributionMode = no_contribution,
                             contribution_free::Real = 0,
-                            contribution_tiers::Union{DemTiers, Vector{T}, Real} = dem_tier(0),
+                            contribution_tiers::DemSettings = 0,
                             contribution_balance::Balance = Balance(),
-                            interval::Int = sumsy.interval) where {T <: Tuple{Real, Real}}
+                            interval::Int = sumsy.interval)
     model = create_econo_model()
+    sumsy.id = :sumsy
+    sumsy.dem_free_entry = SUMSY_DEM_FREE(sumsy.id)
     model.properties[:sumsy] = sumsy
     model.properties[:contribution_mode] = contribution_mode
 
     if contribution_mode != no_contribution
-        if contribution_tiers isa Real
-            contribution_tiers = dem_tier(contribution_tiers)
-        end
-
-        contribution_settings = SuMSy(0, contribution_free, contribution_tiers, interval, demurrage_comment = "Contribution")
+        contribution_settings = SuMSy(:contribution, 0, contribution_free, contribution_tiers, interval, demurrage_comment = "Contribution")
         model.properties[:contribution_settings] = contribution_settings
         model.properties[:contribution_balance] = contribution_balance
 
@@ -43,7 +41,7 @@ function sumsy_model_step!(model)
 
     if model.contribution_mode == fixed_contribution
         for actor in allagents(model)
-            _, contribution = process_sumsy!(model.contribution_settings, actor, model.step)
+            _, contribution = process_sumsy!(actor, model.contribution_settings, model.step)
             book_asset!(model.contribution_balance, SUMSY_DEP, contribution, model.step, comment = model.contribution_settings.demurrage_comment)
         end
     elseif model.contribution_mode == on_demand_contribution
@@ -51,7 +49,7 @@ function sumsy_model_step!(model)
     end
 
     for actor in allagents(model)
-        process_sumsy!(model.sumsy, actor, model.step)
+        process_sumsy!(actor, model.sumsy, model.step)
     end
 end
 
@@ -71,8 +69,8 @@ function collect_contribution!(model)
         i = 1
 
         for actor in allagents(model)
-            if is_sumsy_active(actor)
-                max_contribution = calculate_demurrage(model.contribution_settings, actor, model.step)
+            if is_sumsy_active(actor, model.sumsy)
+                max_contribution = calculate_demurrage(actor, model.contribution_settings, model.step)
                 contributions[i] = ([0, max_contribution], actor)
                 max_total_contribution += max_contribution
             else
@@ -114,7 +112,7 @@ function collect_contribution!(model)
             end
 
             for contribution in contributions
-                sumsy_transfer!(contribution[2].balance, model.contribution_balance, contribution[1][1], model.step, comment = model.contribution_settings.demurrage_comment)
+                sumsy_transfer!(contribution[2].balance, model.contribution_balance, model.sumsy, contribution[1][1], model.step, comment = model.contribution_settings.demurrage_comment)
             end
         end
 
