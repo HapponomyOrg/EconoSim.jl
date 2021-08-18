@@ -15,7 +15,7 @@ process_sumsy!(actor::Actor, sumsy::SuMSy, step::Int) = process_sumsy!(actor.bal
 calculate_demurrage(actor::Actor, sumsy::SuMSy, step::Int) = calculate_demurrage(actor.balance, sumsy, step)
 sumsy_balance(actor::Actor, model) = sumsy_balance(actor.balance, model.sumsy)
 sumsy_balance(balance::Balance, model) = sumsy_balance(balance, model.sumsy)
-collected_contribution(model) = sumsy_balance(model.contribution_balance, model)
+collected_contributions(model) = sumsy_balance(model.contribution_balance, model)
 
 function create_sumsy_model(sumsy::SuMSy,
                             contribution_mode::ContributionMode = no_contribution;

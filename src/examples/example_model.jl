@@ -56,7 +56,7 @@ function run_example()
     sumsy_data[CONSUMER] = Currency(sumsy_data[CONSUMER] / 380,)
     sumsy_data[BAKER] = Currency(sumsy_data[BAKER] / 15)
     sumsy_data[TV_MERCHANT] = Currency(sumsy_data[TV_MERCHANT] / 20)
-    sumsy_data[:contribution] = collected_contribution(model)
+    sumsy_data[:contribution] = collected_contributions(model)
 
     return sumsy_data
 end
