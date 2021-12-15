@@ -85,7 +85,7 @@ function Base.delete!(needs::Needs,
                     priority::Integer = nothing)
     data = needs_data(needs, type)
 
-    if priority == nothing
+    if priority === nothing
         # Delete all priorities
         for key in keys(target.data)
             if key[2] == bp
