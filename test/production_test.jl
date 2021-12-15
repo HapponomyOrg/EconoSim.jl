@@ -75,7 +75,7 @@ end
 @testset "Consumable" begin
     name = "Food"
     bp = ConsumableBlueprint(name)
-    @test get_lifecycle(bp) == nothing
+    @test get_lifecycle(bp) === nothing
     @test get_maintenance_interval(bp) == INF
 
     f1 = Consumable(bp)
@@ -108,7 +108,7 @@ end
 
 @testset "Decayable" begin
     bp = DecayableBlueprint("D", 0.5)
-    @test get_lifecycle(bp) == nothing
+    @test get_lifecycle(bp) === nothing
     @test get_maintenance_interval(bp) == INF
 
     @test bp.name == "D"

@@ -156,7 +156,7 @@ end
     @test tiers[2][2] == 0.2
 
     @test first(tiers[3][1]) == 20
-    @test last(tiers[3][1]) == nothing
+    @test last(tiers[3][1]) === nothing
     @test is_left_open(tiers[3][1])
     @test is_right_unbounded(tiers[3][1])
     @test tiers[3][2] == 0.3
@@ -169,7 +169,7 @@ end
     @test tiers[1][2] == 0.1
 
     @test first(tiers[2][1]) == 10
-    @test last(tiers[2][1]) == nothing
+    @test last(tiers[2][1]) === nothing
     @test is_left_open(tiers[2][1])
     @test is_right_unbounded(tiers[2][1])
     @test tiers[2][2] == 0.2
@@ -177,7 +177,7 @@ end
     tiers = EconoSim.make_tiers([(0, 0.1)])
     @test length(tiers) == 1
     @test first(tiers[1][1]) == 0
-    @test last(tiers[1][1]) == nothing
+    @test last(tiers[1][1]) === nothing
     @test is_left_open(tiers[1][1])
     @test is_right_unbounded(tiers[1][1])
     @test tiers[1][2] == 0.1
