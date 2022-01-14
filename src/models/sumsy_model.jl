@@ -69,7 +69,7 @@ request_contribution!(model, amount::Real) = (model.requested_contribution += am
 function collect_contribution!(model)
     if mod(model.step, model.contribution_settings.interval) == 0 &&
         model.contribution_mode != no_contribution
-        # Tuple is: [real contribution, max contribution], actor. This way sorting on highest contribution is posible.
+        # Tuple is: [real contribution, max contribution], actor. This way sorting on highest contribution is possible.
         contributions = Vector{Tuple{Vector{Currency}, Actor}}(undef, nagents(model))
         max_total_contribution = Currency(0)
         total_contribution = Currency(0)
@@ -98,7 +98,8 @@ function collect_contribution!(model)
             if model.contribution_mode == fixed_contribution
                 fraction = 1
             else
-                fraction = Percentage(requested_contribution / max_total_contribution)
+                # Make sure no more than the maximum contribution can be gathererd
+                fraction = min(Percentage(requested_contribution / max_total_contribution), 1)
             end
 
             for contribution in contributions
@@ -111,7 +112,8 @@ function collect_contribution!(model)
             sort!(contributions, rev = true)
             i = 1
 
-            # make sure the requested amount is collected. Extra contributions are gathered from the accounts with highest balance first.
+            # Make sure the requested amount, up to the maximum contribution, is collected.
+            # Extra contributions, to compensate for rounding errors, are gathered from the accounts with highest balance first.
             while total_contribution < requested_total_contribution
                 contributions[i][1][1] += 0.01
                 total_contribution += 0.01
