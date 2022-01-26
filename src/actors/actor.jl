@@ -6,18 +6,18 @@ global ID_COUNTER = 0
     Actor - agent representing an economic actor.
 
 # Fields
-* id::Int - the id of the agent.
+* id::Int - the id of the actor.
 * types::Set{Symbol} - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
 * model_behaviors::Vector{Function} - the list of functions which are called by econo_model_step!, which is the default model_step! function.
 * behaviors::Vector{Function} - the list of behavior functions which is called when the actor is activated.
-* balance::Balance - the balance sheet of the agent.
-* posessions::Entities - the entities in personal posession of the agent.
-* stock::Stock - the stock held by the agent. The stock is considered to be used for business purposes.
-* producers::Set{Producer} - the production facilities of the agent.
+* balance::Balance - the balance sheet of the actor.
+* posessions::Entities - the entities in personal posession of the actor.
+* stock::Stock - the stock held by the actor. The stock is considered to be used for business purposes.
+* producers::Set{Producer} - the production facilities of the actor.
 * prices::D where D <: Dict{<:Blueprint, Price} - the prices of the products sold by the actor.
 * properties::Dict{Symbol, Any} - for internal use.
 
-After creation, ant field can be set on the actor, even those which are not part of the structure. This can come in handy when when specific state needs to be stored with the actor.
+After creation, any field can be set on the actor, even those which are not part of the structure. This can come in handy when when specific state needs to be stored with the actor.
 """
 mutable struct Actor <: AbstractAgent
     id::Int64
@@ -36,14 +36,14 @@ end
     Actor - creation function for a generic actor.
 
 # Parameters
-* id::Int = ID_COUNTER - the id of the agent. When no id is given, the standard sequence of id's is used. Mixing the standard sequence and user defined id's is not advised.
+* id::Int = ID_COUNTER - the id of the actor. When no id is given, the standard sequence of id's is used. Mixing the standard sequence and user defined id's is not advised.
 * type::Union{Symbol, Nothing} = nothing - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
 * model_behavior::Union{Function, Nothing} = nothing - the default function to be called by econo_model_step!, which is the default model_step! function.
 * behavior::Union{Function, Nothing} = nothing - the default behavior function which is called when the actor is activated.
-* balance::Balance = Balance() - the balance sheet of the agent.
-* posessions::Entities = Entities() - the entities in personal posession of the agent.
-* stock::Stock = Stock() - the stock held by the agent. The stock is considered to be used for business purposes.
-* producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}() - the production facilities of the agent.
+* balance::Balance = Balance() - the balance sheet of the actor.
+* posessions::Entities = Entities() - the entities in personal posession of the actor.
+* stock::Stock = Stock() - the stock held by the actor. The stock is considered to be used for business purposes.
+* producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}() - the production facilities of the actor.
 """
 function Actor(;id::Integer = ID_COUNTER,
         types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
