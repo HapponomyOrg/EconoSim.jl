@@ -41,6 +41,6 @@ function econo_step!(model, steps::Integer = 1)
     step!(model, actor_step!, econo_model_step!, steps, false)
 end
 
-function run_econo_model!(model, steps, kwargs...)
+function run_econo_model!(model, steps::Integer; kwargs...)
     run!(model, actor_step!, econo_model_step!, steps, agents_first = false; kwargs...)
 end
