@@ -18,12 +18,13 @@ sumsy_balance(balance::Balance, model) = sumsy_balance(balance, model.sumsy)
 collected_contributions(model) = sumsy_balance(model.contribution_balance, model)
 
 function create_sumsy_model(sumsy::SuMSy,
-                            contribution_mode::ContributionMode = no_contribution;
+                            contribution_mode::ContributionMode = no_contribution,
+                            model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing;
                             contribution_free::Real = sumsy.dem_free,
                             contribution_tiers::DemSettings = 0,
                             contribution_balance::Balance = Balance(),
                             interval::Int = sumsy.interval)
-    model = create_econo_model()
+    model = create_econo_model(append!(behavior_vector(process_all_sumsy!), behavior_vector(model_behaviors)))
     sumsy.id = :sumsy
     sumsy.dem_free_entry = SUMSY_DEM_FREE(sumsy.id)
     model.properties[:sumsy] = sumsy
@@ -43,9 +44,7 @@ function create_sumsy_model(sumsy::SuMSy,
     return model
 end
 
-function sumsy_model_step!(model)
-    econo_model_step!(model)
-
+function process_all_sumsy!(model)
     if model.contribution_mode == fixed_contribution
         for actor in allagents(model)
             _, contribution = process_sumsy!(actor, model.contribution_settings, model.step)
@@ -58,10 +57,6 @@ function sumsy_model_step!(model)
     for actor in allagents(model)
         process_sumsy!(actor, model.sumsy, model.step)
     end
-end
-
-function sumsy_step!(model, steps::Integer = 1)
-    step!(model, actor_step!, sumsy_model_step!, steps, false)
 end
 
 request_contribution!(model, amount::Real) = (model.requested_contribution += amount)
