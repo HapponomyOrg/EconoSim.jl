@@ -14,6 +14,7 @@ export SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export SuMSyOverrides
 export calculate_demurrage, process_sumsy!, sumsy_balance, sumsy_transfer!
 export set_sumsy_active!, is_sumsy_active, set_sumsy_overrides!, set_seed!, get_seed, set_guaranteed_income!, get_guaranteed_income, set_initial_dem_free!, get_initial_dem_free, get_dem_free, transfer_dem_free!, set_dem_tiers, get_dem_tiers
+export process_ready
 
 include("debt.jl")
 export DEPOSIT, DEBT
