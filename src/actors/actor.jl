@@ -8,7 +8,6 @@ global ID_COUNTER = 0
 # Fields
 * id::Int - the id of the actor.
 * types::Set{Symbol} - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
-* model_behaviors::Vector{Function} - the list of functions which are called by econo_model_step!, which is the default model_step! function.
 * behaviors::Vector{Function} - the list of behavior functions which is called when the actor is activated.
 * balance::Balance - the balance sheet of the actor.
 * posessions::Entities - the entities in personal posession of the actor.
@@ -22,7 +21,6 @@ After creation, any field can be set on the actor, even those which are not part
 mutable struct Actor <: AbstractAgent
     id::Int64
     types::Set{Symbol}
-    model_behaviors::Vector{Function}
     behaviors::Vector{Function}
     balance::Balance
     posessions::Entities
@@ -38,7 +36,6 @@ end
 # Parameters
 * id::Int = ID_COUNTER - the id of the actor. When no id is given, the standard sequence of id's is used. Mixing the standard sequence and user defined id's is not advised.
 * type::Union{Symbol, Nothing} = nothing - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
-* model_behavior::Union{Function, Nothing} = nothing - the default function to be called by econo_model_step!, which is the default model_step! function.
 * behavior::Union{Function, Nothing} = nothing - the default behavior function which is called when the actor is activated.
 * balance::Balance = Balance() - the balance sheet of the actor.
 * posessions::Entities = Entities() - the entities in personal posession of the actor.
@@ -47,7 +44,6 @@ end
 """
 function Actor(;id::Integer = ID_COUNTER,
         types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
-        model_behavior::Union{Function, Nothing} = nothing,
         behavior::Union{Function, Nothing} = nothing,
         balance::Balance = Balance(),
         posessions::Entities = Entities(),
@@ -62,15 +58,10 @@ function Actor(;id::Integer = ID_COUNTER,
         typeset = types
     end
 
-    model_behaviors = isnothing(model_behavior) ? Vector{Function}() : Vector([model_behavior])
     behaviors = isnothing(behavior) ? Vector{Function}() : Vector([behavior])
     global ID_COUNTER += 1
 
-    actor = Actor(id, typeset, model_behaviors, behaviors, balance, posessions, stock, Set(producers), prices, Dict{Symbol, Any}())
-
-    if !isempty(actor.producers)
-        add_model_behavior!(actor, produce_stock!)
-    end
+    actor = Actor(id, typeset, behaviors, balance, posessions, stock, Set(producers), prices, Dict{Symbol, Any}())
 
     return actor
 end
@@ -100,11 +91,6 @@ end
 add_type!(actor::Actor, type::Symbol) = (push!(actor.types, type); actor)
 delete_type!(actor::Actor, type::Symbol) = (delete!(actor.types, type); actor)
 has_type(actor::Actor, type::Symbol) = type in actor.types
-
-has_model_behavior(actor::Actor, behavior::Function) = behavior in actor.model_behaviors
-add_model_behavior!(actor::Actor, behavior::Function) = (push!(actor.model_behaviors, behavior); actor)
-delete_model_behavior!(actor::Actor, behavior::Function) = (delete_element!(actor.model_behaviors, behavior); actor)
-clear_model_behaviors(actor::Actor) = (empty!(actor.model_behaviors); actor)
 
 has_behavior(actor::Actor, behavior::Function) = behavior in actor.behaviors
 add_behavior!(actor::Actor, behavior::Function) = (push!(actor.behaviors, behavior); actor)
