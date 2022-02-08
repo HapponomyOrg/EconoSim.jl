@@ -148,6 +148,10 @@ function Base.setproperty!(balance::Balance, s::Symbol, value)
     return value
 end
 
+function Base.hasproperty(balance::Balance, s::Symbol)
+    return s in fieldnames(Balance) || s in keys(balance.properties)
+end
+
 function entry_dict(balance::Balance, type::EntryType)
     if type == asset
         return balance.assets
