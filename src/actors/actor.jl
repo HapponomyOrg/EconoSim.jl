@@ -89,7 +89,7 @@ function Base.setproperty!(actor::Actor, s::Symbol, value)
 end
 
 function Base.hasproperty(actor::Actor, s::Symbol)
-    return s in fieldnames(actor) || s in keys(actor.properties)
+    return s in fieldnames(Actor) || s in keys(actor.properties)
 end
 
 add_type!(actor::Actor, type::Symbol) = (push!(actor.types, type); actor)
