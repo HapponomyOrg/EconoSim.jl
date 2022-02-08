@@ -88,6 +88,10 @@ function Base.setproperty!(actor::Actor, s::Symbol, value)
     return value
 end
 
+function Base.hasproperty(actor::Actor, s::Symbol)
+    return s in fieldnames(actor) || s in keys(actor.properties)
+end
+
 add_type!(actor::Actor, type::Symbol) = (push!(actor.types, type); actor)
 delete_type!(actor::Actor, type::Symbol) = (delete!(actor.types, type); actor)
 has_type(actor::Actor, type::Symbol) = type in actor.types
