@@ -230,8 +230,14 @@ end
     @test sumsy_balance(balance, sumsy) == 182000
 end
 
+@testset "SuMSy telo" begin
+    sumsy = SuMSy(4000, 50000, [(0, 0.01), (50000, 0.02), (150000, 0.05)], 10)
+
+    @test telo(sumsy) == 230000
+end
+
 @testset "SuMSy inactive" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    sumsy = SuMSy(4000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
     balance = Balance()
 
     book_asset!(balance, SUMSY_DEP, 210000, 0)

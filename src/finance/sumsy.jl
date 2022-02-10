@@ -417,6 +417,23 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
     return demurrage
 end
 
+function telo(sumsy::SuMSy)
+    total_dem = 0
+    telo = 0
+
+    for tier in sumsy.dem_tiers
+        if is_right_unbounded(tier[1]) || total_dem + span(tier[1]) * tier[2] > sumsy.guaranteed_income
+            telo += (sumsy.guaranteed_income - total_dem) / tier[2]
+            break
+        else
+            telo += span(tier[1])
+            total_dem += span(tier[1]) * tier[2]
+        end
+    end
+
+    return telo + sumsy.dem_free
+end
+
 """
     process_ready(sumsy::SuMSy, step::Int)
 
