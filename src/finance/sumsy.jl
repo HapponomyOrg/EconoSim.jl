@@ -414,7 +414,7 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
         end
     end
 
-    return Currency(demurrage)
+    return demurrage
 end
 
 function telo(sumsy::SuMSy)
@@ -431,7 +431,7 @@ function telo(sumsy::SuMSy)
         end
     end
 
-    return Currency(telo + sumsy.dem_free)
+    return telo + sumsy.dem_free
 end
 
 """

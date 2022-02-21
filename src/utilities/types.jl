@@ -87,6 +87,11 @@ Convenience type for working with currencies.
 """
 Currency = Fixed(2)
 
+*(x::Real, y::Currency) = Currency(x * y)
+*(x::Currency, y::Real) = Currency(x * y)
+/(x::Real, y::Currency) = Currency(x / y)
+/(x::Currency, y::Real) = Currency(x / y)
+
 LeftInterval{T} = Interval{T, Closed, Open}
 RightInterval{T} = Interval{T, Open, Closed}
 ClosedInterval{T} = Interval{T, Closed, Closed}
