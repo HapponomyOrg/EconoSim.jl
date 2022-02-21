@@ -132,11 +132,11 @@ function make_tiers(dem_settings::Vector{T}) where  {T <: Tuple{Real, Real}}
     demurrage = dem_settings[1][2]
 
     if length(dem_settings) > 1
-        upper_bound = 0
+        upper_bound = Currency(0)
 
         for index in 2:length(dem_settings)
             tuple = dem_settings[index]
-            upper_bound = tuple[1]
+            upper_bound = Currency(tuple[1])
 
             push!(tiers,
                 (Interval{Currency, Open, Closed}(lower_bound, upper_bound),
@@ -414,7 +414,7 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
         end
     end
 
-    return demurrage
+    return Currency(demurrage)
 end
 
 function telo(sumsy::SuMSy)
@@ -431,7 +431,7 @@ function telo(sumsy::SuMSy)
         end
     end
 
-    return telo + sumsy.dem_free
+    return Currency(telo + sumsy.dem_free)
 end
 
 """
