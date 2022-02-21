@@ -427,7 +427,12 @@ function telo(sumsy::SuMSy)
 
     for tier in sumsy.dem_tiers
         if is_right_unbounded(tier[1]) || total_dem + span(tier[1]) * tier[2] > sumsy.guaranteed_income
-            telo += (sumsy.guaranteed_income - total_dem) / tier[2]
+            if tier[2] != 0
+                telo += (sumsy.guaranteed_income - total_dem) / tier[2]
+            else
+                telo = CUR_MAX
+            end
+            
             break
         else
             telo += span(tier[1])
