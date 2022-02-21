@@ -396,6 +396,10 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
 
     avg_balance = max(weighted_balance / period - get_dem_free(balance, sumsy), 0)
 
+    return calculate_demurrage(avg_balance, sumsy)
+end
+
+function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy)
     demurrage = Currency(0)
 
     for tier in sumsy.dem_tiers
