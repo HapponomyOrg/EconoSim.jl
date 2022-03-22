@@ -184,8 +184,9 @@ end
 end
 
 @testset "SuMSy demurrage - single" begin
-    balance = Balance()
     sumsy = SuMSy(2000, 25000, 0.1, 30, seed = 5000)
+    @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
+    balance = Balance()
     process_sumsy!(balance, sumsy, 0)
 
     @test sumsy_balance(balance, sumsy) == 7000
@@ -203,8 +204,9 @@ end
 end
 
 @testset "SuMSY demurrage - multiple asset bookings" begin
-    balance = Balance()
     sumsy = SuMSy(2000, 0, 0.1, 30)
+    @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
+    balance = Balance()
 
     book_asset!(balance, SUMSY_DEP, 3000, 0)
     book_asset!(balance, SUMSY_DEP, 3000, 10)
@@ -219,6 +221,7 @@ end
 
 @testset "SuMSy demurrage - tiers" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
     balance = Balance()
 
     book_asset!(balance, SUMSY_DEP, 210000, 0)
@@ -233,6 +236,7 @@ end
 @testset "SuMSy telo" begin
     sumsy = SuMSy(4000, 50000, [(0, 0.01), (50000, 0.02), (150000, 0.05)], 10)
 
+    @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
     @test telo(sumsy) == 230000
 end
 
