@@ -411,7 +411,7 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy)
                 avg_balance = 0
             else
                 amount = min(span(tier[1]), avg_balance)
-                avg_balance -= span(tier[1])
+                avg_balance -= amount
             end
 
             demurrage += amount * tier[2]
