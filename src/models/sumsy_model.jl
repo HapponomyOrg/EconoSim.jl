@@ -1,7 +1,4 @@
 using Agents
-using Random
-
-CONTRIBUTION_SHORTAGE = :contribution_shortage
 
 @enum ContributionMode no_contribution fixed_contribution on_demand_contribution
 
@@ -37,7 +34,7 @@ function create_sumsy_model(sumsy::SuMSy,
 
         if contribution_mode == on_demand_contribution
             model.properties[:requested_contribution] = Currency(0)
-            model.properties[CONTRIBUTION_SHORTAGE] = Currency(0)
+            model.properties[:contribution_shortage] = Currency(0)
         end
     end
 
