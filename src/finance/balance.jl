@@ -343,7 +343,7 @@ function book_liability!(balance::Balance,
     end
 end
 
-booking_functions = Dict(asset => book_asset!, liability => book_liability!)
+booking_functions = [book_asset!, book_liability!]
 
 function check_transfer(balance1::Balance,
                 type1::EntryType,
@@ -385,8 +385,8 @@ function transfer!(balance1::Balance,
     go = skip_check ? true : check_transfer(balance1, type1, entry1, balance2, type2, entry2, amount)
 
     if go
-        booking_functions[type1](balance1, entry1, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
-        booking_functions[type](balance2, entry2, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
+        booking_functions[Int(type1)](balance1, entry1, -amount, timestamp, comment = comment, skip_check = true, transaction = transaction1)
+        booking_functions[Int(type2)](balance2, entry2, amount, timestamp, comment = comment, skip_check = true, transaction = transaction2)
     end
 
     return go
