@@ -3,7 +3,7 @@ using EconoSim
 using Intervals
 
 @testset "Balance" begin
-    b = Balance()
+    b = Balance(log_transactions = true)
     asset1 = BalanceEntry("Asset 1")
     asset2 = BalanceEntry("Asset 2")
     liability1 = BalanceEntry("Liability 1")
@@ -60,7 +60,7 @@ end
 @testset "Min balances" begin
     e1 = BalanceEntry("E1")
     e2 = BalanceEntry("E2")
-    b = Balance()
+    b = Balance(log_transactions = true)
 
     min_asset!(b, e1, typemin(Currency))
     min_liability!(b, e2, typemin(Currency))
@@ -86,13 +86,13 @@ end
     l = BalanceEntry("Liability")
     d = BalanceEntry("Dual")
 
-    b1 = Balance()
+    b1 = Balance(log_transactions = true)
     book_asset!(b1, a, 10)
     book_liability!(b1, l, 10)
     book_asset!(b1, d, 20)
     book_liability!(b1, d, 20)
 
-    b2 = Balance()
+    b2 = Balance(log_transactions = true)
 
     transfer_asset!(b1, b2, a, 5)
     @test asset_value(b1, a) == 5
@@ -111,8 +111,8 @@ end
 end
 
 @testset "Transactions" begin
-    b1 = Balance()
-    b2 = Balance()
+    b1 = Balance(log_transactions = true)
+    b2 = Balance(log_transactions = true)
     a = BalanceEntry("Asset")
 
     book_asset!(b1, a, 100, comment = "book")
@@ -186,7 +186,7 @@ end
 @testset "SuMSy demurrage - single" begin
     sumsy = SuMSy(2000, 25000, 0.1, 30, seed = 5000)
     @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
-    balance = Balance()
+    balance = Balance(log_transactions = true)
     process_sumsy!(balance, sumsy, 0)
 
     @test sumsy_balance(balance, sumsy) == 7000
@@ -206,7 +206,7 @@ end
 @testset "SuMSY demurrage - multiple asset bookings" begin
     sumsy = SuMSy(2000, 0, 0.1, 30)
     @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
-    balance = Balance()
+    balance = Balance(log_transactions = true)
 
     book_asset!(balance, SUMSY_DEP, 3000, 0)
     book_asset!(balance, SUMSY_DEP, 3000, 10)
@@ -222,7 +222,7 @@ end
 @testset "SuMSy demurrage - tiers" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
     @test calculate_demurrage(telo(sumsy), sumsy) == sumsy.guaranteed_income
-    balance = Balance()
+    balance = Balance(log_transactions = true)
 
     book_asset!(balance, SUMSY_DEP, 210000, 0)
 
@@ -242,7 +242,7 @@ end
 
 @testset "SuMSy inactive" begin
     sumsy = SuMSy(4000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
-    balance = Balance()
+    balance = Balance(log_transactions = true)
 
     book_asset!(balance, SUMSY_DEP, 210000, 0)
     set_sumsy_active!(balance, sumsy, false)
@@ -253,7 +253,7 @@ end
 
 @testset "SuMSy overrides" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
-    balance = Balance()
+    balance = Balance(log_transactions = true)
 
     set_seed!(balance, sumsy, 1000)
     process_sumsy!(balance, sumsy, 0)
@@ -272,8 +272,8 @@ end
 
 @testset "SuMSy demurrage free transfer" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
-    balance1 = Balance()
-    balance2 = Balance()
+    balance1 = Balance(log_transactions = true)
+    balance2 = Balance(log_transactions = true)
 
     transfer_dem_free!(balance1, balance2, sumsy, 10000)
     @test get_dem_free(balance1, sumsy) == 40000
@@ -284,11 +284,11 @@ end
     e1 = BalanceEntry("E1")
     e2 = BalanceEntry("E2")
 
-    b1 = Balance()
+    b1 = Balance(log_transactions = true)
     min_asset!(b1, e1, typemin(Currency))
     min_liability!(b1, e2, typemin(Currency))
 
-    b2 = Balance()
+    b2 = Balance(log_transactions = true)
     min_asset!(b2, e1, typemin(Currency))
     min_liability!(b2, e2, typemin(Currency))
 
@@ -341,12 +341,12 @@ end
     c1 = BalanceEntry("C1")
     c2 = BalanceEntry("C2")
 
-    b1 = Balance()
+    b1 = Balance(log_transactions = true)
     min_asset!(b1, c1, typemin(Currency))
     book_asset!(b1, c1, 100)
     book_asset!(b1, c2, 100)
 
-    b2 = Balance()
+    b2 = Balance(log_transactions = true)
 
     p1 = Price([c1 => 50, c2 => 150])
     @test p1[c1] == 50
