@@ -125,7 +125,6 @@ end
     p2 = Producer(pbp2)
 
     actor1 = Actor(producers = [p1])
-    add_model_behavior!(actor1, produce_stock!)
     book_asset!(actor1.balance, money, 100)
     needs = Needs()
     push_want!(needs, cbp2, [(2, 1)])
@@ -134,7 +133,6 @@ end
     min_stock!(actor1.stock, cbp1, 10)
 
     actor2 = Actor(producers = [p2])
-    add_model_behavior!(actor2, produce_stock!)
     book_asset!(actor2.balance, money, 100)
     needs = Needs()
     push_want!(needs, cbp1, [(2, 1)])
@@ -142,7 +140,7 @@ end
     make_marginal(actor2, needs)
     min_stock!(actor2.stock, cbp2, 10)
 
-    model = create_econo_model()
+    model = create_econo_model(update_stock!)
     set_price!(model, cbp1, Price([money => 10]))
     set_price!(model, cbp2, Price([money => 20]))
 
