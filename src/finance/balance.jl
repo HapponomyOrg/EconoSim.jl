@@ -111,7 +111,7 @@ struct Balance <: AbstractBalance
     log_transactions::Bool
     transactions::Vector{Transaction}
     properties::Dict
-    Balance(;def_min_asset = 0, def_min_liability = 0, log_transactions = true, properties = Dict()) = new(
+    Balance(;def_min_asset = 0, def_min_liability = 0, log_transactions = false, properties = Dict()) = new(
                 Dict{BalanceEntry, Currency}(),
                 def_min_asset,
                 Dict{BalanceEntry, Currency}(),
