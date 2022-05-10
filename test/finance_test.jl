@@ -233,6 +233,19 @@ end
     @test sumsy_balance(balance, sumsy) == 182000
 end
 
+@testset "SuMSy demurrage - tiers - multiple deposits" begin
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    balance = Balance(log_transactions = true)
+
+    book_asset!(balance, SUMSY_DEP, 210000, 0)
+    book_asset!(balance, SUMSY_DEP, 100000, 5)
+
+    @test calculate_demurrage(balance, sumsy, 10) == 55000
+
+    process_sumsy!(balance, sumsy, 10)
+    @test sumsy_balance(balance, sumsy) == 257000
+end
+
 @testset "SuMSy telo" begin
     sumsy = SuMSy(4000, 50000, [(0, 0.01), (50000, 0.02), (150000, 0.05)], 10)
 
