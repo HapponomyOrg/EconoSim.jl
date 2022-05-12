@@ -14,17 +14,17 @@ using Agents
 end
 
 @testset "SuMSy contribution - fixed" begin
-    model = create_sumsy_model(SuMSy(2000, 5000, 0.1, 10, seed = 500),
-                        fixed_contribution,
-                        contribution_free = 0,
-                        contribution_tiers = 0.1)
+    model = create_sumsy_model(SuMSy(2000, 0, 0.1, 10),
+                                fixed_contribution,
+                                contribution_free = 0,
+                                contribution_tiers = 0.2)
     actor = Actor()
     add_agent!(actor, model)
 
-    run_econo_model!(model, 40)
+    book_asset!(actor.balance, SUMSY_DEP, 100, 0)
 
-    @test sumsy_balance(actor, model) == 7160
-    @test sumsy_balance(model.contribution_balance, model) == 1257.5
+    econo_step!(model, 10)
+    @test sumsy_balance(actor, model) == 2070
 end
 
 @testset "SuMSy contribution - on demand" begin
