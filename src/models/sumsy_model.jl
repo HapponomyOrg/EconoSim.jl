@@ -15,8 +15,8 @@ sumsy_balance(balance::Balance, model) = sumsy_balance(balance, model.sumsy)
 collected_contributions(model) = sumsy_balance(model.contribution_balance, model)
 
 function create_sumsy_model(sumsy::SuMSy,
-                            contribution_mode::ContributionMode = no_contribution,
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing;
+                            contribution_mode::ContributionMode = no_contribution,
                             contribution_free::Real = sumsy.dem_free,
                             contribution_tiers::DemSettings = 0,
                             contribution_balance::Balance = Balance(),
