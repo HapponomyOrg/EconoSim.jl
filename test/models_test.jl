@@ -15,7 +15,7 @@ end
 
 @testset "SuMSy contribution - fixed" begin
     model = create_sumsy_model(SuMSy(2000, 0, 0.1, 10),
-                                fixed_contribution,
+                                contribution_mode = fixed_contribution,
                                 contribution_free = 0,
                                 contribution_tiers = 0.2)
     actor = Actor()
@@ -29,7 +29,7 @@ end
 
 @testset "SuMSy contribution - on demand" begin
     model = create_sumsy_model(SuMSy(2000, 5000, 0.1, 10, seed = 500),
-                        on_demand_contribution,
+                        contribution_mode = on_demand_contribution,
                         contribution_free = 0,
                         contribution_tiers = 0.1)
     actor = Actor()
