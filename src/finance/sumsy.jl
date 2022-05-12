@@ -32,6 +32,7 @@ mutable struct SuMSy
     seed_comment::String
     guaranteed_income_comment::String
     demurrage_comment::String
+    net_income_comment::String
     dep_entry::BalanceEntry
     dem_free_entry::BalanceEntry
     SuMSy(id,
@@ -43,6 +44,7 @@ mutable struct SuMSy
         seed_comment = "Seed",
         guaranteed_income_comment = "Guaranteed income",
         demurrage_comment = "Demurrage",
+        net_income_comment = "Net income",
         dep_entry = SUMSY_DEP,
         dem_free_entry = SUMSY_DEM_FREE(id)
         ) = new(Symbol(id),
@@ -54,6 +56,7 @@ mutable struct SuMSy
                 seed_comment,
                 guaranteed_income_comment,
                 demurrage_comment,
+                net_income_comment,
                 dep_entry,
                 dem_free_entry)
 end
@@ -67,6 +70,7 @@ end
             seed_comment = "Seed",
             guaranteed_income_comment = "Guaranteed income",
             demurrage_comment = "Demurrage",
+            net_income_comment = "Net income",
             dep_entry = SUMSY_DEP,
             dem_free_entry = nothing)
 
@@ -80,6 +84,7 @@ function SuMSy(guaranteed_income::Real,
                 seed_comment = "Seed",
                 guaranteed_income_comment = "Guaranteed income",
                 demurrage_comment = "Demurrage",
+                net_income_comment = "Net income",
                 dep_entry = SUMSY_DEP,
                 dem_free_entry = nothing)
     id = string(:sumsy, "-", uuid4())
@@ -94,6 +99,7 @@ function SuMSy(guaranteed_income::Real,
                 seed_comment = seed_comment,
                 guaranteed_income_comment = guaranteed_income_comment,
                 demurrage_comment = demurrage_comment,
+                net_income_comment = net_income_comment,
                 dep_entry = dep_entry,
                 dem_free_entry = dem_free_entry)
 end
@@ -402,7 +408,7 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_f
         avg_balance = max(0, avg_balance - sumsy.dem_free)
     end
 
-    demurrage = Currency(0)
+    demurrage = CUR_0
 
     for tier in sumsy.dem_tiers
         if avg_balance <= 0
@@ -452,6 +458,22 @@ Check whether processing needs to be done.
 """
 process_ready(sumsy::SuMSy, step::Int) = mod(step, sumsy.interval) == 0
 
+function book_net_result!(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)    
+    book_asset!(balance, sumsy.dep_entry, seed + guaranteed_income - demurrage, step, comment = sumsy.net_income_comment)
+end
+
+function book_atomic_results!(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)
+    if step == 0
+        book_asset!(balance, sumsy.dep_entry, seed, step, comment = sumsy.seed_comment)
+    end
+
+    book_asset!(balance, sumsy.dep_entry, guaranteed_income, step, comment = sumsy.guaranteed_income_comment)
+    book_asset!(balance, sumsy.dep_entry, -demurrage, step, comment = sumsy.demurrage_comment)
+end
+
+function book_nothing(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)
+end
+
 """
     process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int)
 
@@ -461,27 +483,17 @@ Processes demurrage and guaranteed income if the timestamp is a multiple of the 
 * balance: the balance on which to apply SuMSy.
 * timestamp: the current timestamp. Used to determine whether action needs to be taken.
 """
-function process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int)
-    income = 0
-    demurrage = 0
-
-    if is_sumsy_active(balance, sumsy) && process_ready(sumsy, step)
+function process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int; booking_function = book_net_result!)
+   if is_sumsy_active(balance, sumsy) && process_ready(sumsy, step)
+        seed = step == 0 ? get_seed(balance, sumsy) : CUR_0
+        income = get_guaranteed_income(balance, sumsy)
         demurrage = calculate_demurrage(balance, sumsy, step)
+        booking_function(balance, sumsy, seed, income, demurrage, step)
 
-        if step == 0
-            seed = get_seed(balance, sumsy)
-            income += seed
-            book_asset!(balance, sumsy.dep_entry, seed, step, comment = sumsy.seed_comment)
-        end
-
-        guaranteed_income = get_guaranteed_income(balance, sumsy)
-        income += guaranteed_income
-        book_asset!(balance, sumsy.dep_entry, guaranteed_income, step, comment = sumsy.guaranteed_income_comment)
-
-        book_asset!(balance, sumsy.dep_entry, -demurrage, step, comment = sumsy.demurrage_comment)
-    end
-
-    return income, demurrage
+        return seed, income, demurrage
+   else
+        return CUR_0, CUR_0, CUR_0
+   end
 end
 
 function sumsy_loan(creditor::Balance,
