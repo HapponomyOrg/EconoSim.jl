@@ -8,7 +8,7 @@ function set_sumsy_active!(actor::Actor, model, flag::Bool)
 end
 
 is_sumsy_active(actor::Actor, model) = is_sumsy_active(actor.balance, model.sumsy)
-process_sumsy!(actor::Actor, sumsy::SuMSy, step::Int) = process_sumsy!(actor.balance, sumsy, step)
+process_sumsy(actor::Actor, sumsy::SuMSy, step::Int) = process_sumsy!(actor.balance, sumsy, step, booking_function = book_nothing)
 calculate_demurrage(actor::Actor, sumsy::SuMSy, step::Int) = calculate_demurrage(actor.balance, sumsy, step)
 sumsy_balance(actor::Actor, model) = sumsy_balance(actor.balance, model.sumsy)
 sumsy_balance(balance::Balance, model) = sumsy_balance(balance, model.sumsy)
@@ -20,12 +20,14 @@ function create_sumsy_model(sumsy::SuMSy,
                             contribution_free::Real = sumsy.dem_free,
                             contribution_tiers::DemSettings = 0,
                             contribution_balance::Balance = Balance(),
-                            interval::Int = sumsy.interval)
+                            interval::Int = sumsy.interval,
+                            booking_function::Function = book_net_result!)
     model = create_econo_model(append!(behavior_vector(process_all_sumsy!), behavior_vector(model_behaviors)))
     sumsy.id = :sumsy
     sumsy.dem_free_entry = SUMSY_DEM_FREE(sumsy.id)
     model.properties[:sumsy] = sumsy
     model.properties[:contribution_mode] = contribution_mode
+    model.properties[:book_sumsy] = booking_function
 
     if contribution_mode != no_contribution
         contribution_settings = SuMSy(:contribution, 0, contribution_free, contribution_tiers, interval, demurrage_comment = "Contribution")
@@ -42,26 +44,27 @@ function create_sumsy_model(sumsy::SuMSy,
 end
 
 function process_all_sumsy!(model)
-    if model.contribution_mode == fixed_contribution
+    if model.contribution_mode != on_demand_contribution
         for actor in allagents(model)
-            _, contribution = process_sumsy!(actor, model.contribution_settings, model.step)
-            book_asset!(model.contribution_balance, SUMSY_DEP, contribution, model.step, comment = model.contribution_settings.demurrage_comment)
-        end
-    elseif model.contribution_mode == on_demand_contribution
-        collect_contribution!(model)
-    end
+            seed, income, demurrage = process_sumsy(actor, model.sumsy, model.step)
+            contribution = CUR_0
 
-    for actor in allagents(model)
-        process_sumsy!(actor, model.sumsy, model.step)
+            if model.contribution_mode == fixed_contribution
+                _, _, contribution = process_sumsy(actor, model.contribution_settings, model.step)
+            end
+
+            book_sumsy!(model, actor, seed, income, demurrage, contribution)
+        end
+    else
+        process_sumsy_collect_contribution!(model)
     end
 end
 
 request_contribution!(model, amount::Real) = (model.requested_contribution += amount)
 
-function collect_contribution!(model)
-    if mod(model.step, model.contribution_settings.interval) == 0 &&
-        model.contribution_mode != no_contribution
-        # Tuple is: [real contribution, max contribution], actor. This way sorting on highest contribution is possible.
+function process_sumsy_collect_contribution!(model)
+    if mod(model.step, model.contribution_settings.interval) == 0
+        # Tuple is: [seed, income, demurrage, real contribution, max contribution], actor. This way sorting on highest contribution is possible.
         contributions = Vector{Tuple{Vector{Currency}, Actor}}(undef, nagents(model))
         max_total_contribution = Currency(0)
         total_contribution = Currency(0)
@@ -69,34 +72,27 @@ function collect_contribution!(model)
 
         for actor in allagents(model)
             if is_sumsy_active(actor, model)
+                seed, income, demurrage = process_sumsy(actor, model.sumsy, model.step)
                 max_contribution = calculate_demurrage(actor, model.contribution_settings, model.step)
-                contributions[i] = ([0, max_contribution], actor)
+                contributions[i] = ([seed, income, demurrage, 0, max_contribution], actor)
                 max_total_contribution += max_contribution
             else
-                contributions[i] = ([0, 0], actor)
+                contributions[i] = ([0, 0, 0, 0, 0], actor)
             end
 
             i += 1
         end
-
-        if model.contribution_mode == fixed_contribution
-            requested_contribution = max_total_contribution
-        else
-            requested_contribution = model.requested_contribution
-            model.requested_contribution = Currency(0)
-        end
+        
+        requested_contribution = model.requested_contribution
+        model.requested_contribution = CUR_0
 
         if max_total_contribution > 0
-            if model.contribution_mode == fixed_contribution
-                fraction = 1
-            else
-                # Make sure no more than the maximum contribution can be gathererd
-                fraction = min(Percentage(requested_contribution / max_total_contribution), 1)
-            end
+            # Make sure no more than the maximum contribution can be gathererd
+            fraction = min(Percentage(requested_contribution / max_total_contribution), 1)
 
             for contribution in contributions
-                contribution[1][1] = contribution[1][2] * fraction
-                total_contribution += contribution[1][1]
+                contribution[1][4] = contribution[1][5] * fraction
+                total_contribution += contribution[1][4]
             end
 
             # No more than the maximum contribution can be gathered
@@ -107,19 +103,34 @@ function collect_contribution!(model)
             # Make sure the requested amount, up to the maximum contribution, is collected.
             # Extra contributions, to compensate for rounding errors, are gathered from the accounts with highest balance first.
             while total_contribution < requested_total_contribution
-                contributions[i][1][1] += 0.01
+                contributions[i][1][4] += 0.01
                 total_contribution += 0.01
                 i < nagents(model) ? i += 1 : i = 0
             end
 
             for contribution in contributions
-                sumsy_transfer!(contribution[2].balance, model.contribution_balance, model.sumsy, contribution[1][1], model.step, comment = model.contribution_settings.demurrage_comment)
+                book_sumsy!(model, contribution[2], contribution[1][1], contribution[1][2], contribution[1][3], contribution[1][4])
+            end
+        else
+            # No contributions but standard SuMSy still needs to be processed.
+            for contribution in contributions
+                model.book_sumsy(contribution[2].balance, model.sumsy, contribution[1][1], contribution[1][2], contribution[1][3], model.step)
             end
         end
 
-        if model.contribution_mode == on_demand_contribution
-            # Store contribution shortage, if any.
-            model.contribution_shortage = requested_contribution - total_contribution
-        end
+        # Store contribution shortage, if any.
+        model.contribution_shortage = requested_contribution - total_contribution
+    end
+end
+
+function book_sumsy!(model, actor::Actor, seed::Currency, income::Currency, demurrage::Currency, contribution::Currency)
+    model.book_sumsy(actor.balance, model.sumsy, seed, income, demurrage, model.step)
+
+    if model.contribution_mode != no_contribution
+        sumsy_transfer!(actor.balance,
+                        model.contribution_balance,
+                        model.sumsy, contribution,
+                        model.step,
+                        comment = model.contribution_settings.demurrage_comment)
     end
 end
