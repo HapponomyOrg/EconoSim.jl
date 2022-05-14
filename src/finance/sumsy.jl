@@ -430,13 +430,17 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_f
 end
 
 function telo(sumsy::SuMSy)
+    return telo(sumsy.guaranteed_income, sumsy.dem_free, sumsy.dem_tiers)
+end
+
+function telo(income::Currency, dem_free::Currency, dem_tiers::DemTiers)
     total_dem = 0
     telo = 0
 
-    for tier in sumsy.dem_tiers
-        if is_right_unbounded(tier[1]) || total_dem + span(tier[1]) * tier[2] > sumsy.guaranteed_income
+    for tier in dem_tiers
+        if is_right_unbounded(tier[1]) || total_dem + span(tier[1]) * tier[2] > income
             if tier[2] != 0
-                telo += (sumsy.guaranteed_income - total_dem) / tier[2]
+                telo += (income - total_dem) / tier[2]
             else
                 telo = CUR_MAX
             end
@@ -448,7 +452,7 @@ function telo(sumsy::SuMSy)
         end
     end
 
-    return Currency(telo + sumsy.dem_free)
+    return Currency(telo + dem_free)
 end
 
 """
