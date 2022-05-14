@@ -433,6 +433,10 @@ function telo(sumsy::SuMSy)
     return telo(sumsy.guaranteed_income, sumsy.dem_free, sumsy.dem_tiers)
 end
 
+function telo(income::Real, dem_free::Real, dem_settings::DemSettings)
+    return telo(Currency(income), Currency(dem_free), make_tiers(dem_settings))
+end
+
 function telo(income::Currency, dem_free::Currency, dem_tiers::DemTiers)
     total_dem = 0
     telo = 0
