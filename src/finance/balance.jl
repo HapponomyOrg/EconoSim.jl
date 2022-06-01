@@ -1,6 +1,9 @@
 using UUIDs
+using Todo
 
 import Base: ==
+
+todo"Move comments to seperate functions"
 
 @enum EntryType asset=1 liability=2
 
