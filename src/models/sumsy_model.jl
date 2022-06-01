@@ -23,8 +23,6 @@ function create_sumsy_model(sumsy::SuMSy,
                             interval::Int = sumsy.interval,
                             booking_function::Function = book_net_result!)
     model = create_econo_model(append!(behavior_vector(process_all_sumsy!), behavior_vector(model_behaviors)))
-    sumsy.id = :sumsy
-    sumsy.dem_free_entry = SUMSY_DEM_FREE(sumsy.id)
     model.properties[:sumsy] = sumsy
     model.properties[:contribution_mode] = contribution_mode
     model.properties[:book_sumsy] = booking_function
