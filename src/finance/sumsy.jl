@@ -1,6 +1,7 @@
 using DataStructures
 using Intervals
 using UUIDs
+using Todo
 
 SUMSY_DEP = BalanceEntry("SuMSy deposit")
 SUMSY_DEBT = BalanceEntry("SuMSy debt")
@@ -21,6 +22,11 @@ Representation of the parameters of a SuMSy implementation.
 The lower bound of the first tuple is always set to 0.
 * interval: the size of the period after which the next demurrage is calculated and the next guaranteed income is issued.
 * seed: the amount whith which new accounts start.
+* guaranteed_income_comment: The transaction comment for guaranteed income bookings.
+* demurrage_comment: The transaction comment for demurrage bookings.
+* net_income_comment: The transaction comment for net income bookings. These transactions combine demurrage and guaranteed income in one transaction.
+* dep_entry: The balance entry used for depositing GI.
+* dem_free_entry: The balance entry for the demurrage free buffer. Needs to change.
 """
 mutable struct SuMSy
     id::Symbol
@@ -242,6 +248,7 @@ function get_guaranteed_income(balance::Balance, sumsy::SuMSy)
     end
 end
 
+todo"Move demurrage free buffer off balance sheet."
 function set_initial_dem_free!(balance::Balance, sumsy::SuMSy, dem_free::Real)
     if has_overrides(balance, sumsy)
         balance.properties[sumsy.id][2].dem_free = dem_free
