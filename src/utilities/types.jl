@@ -92,6 +92,8 @@ for op in (:+, :-, :*, :/, :max, :min)
     eval(quote
         Base.$op(x::Currency, y::Number) = Currency(Base.$op(Float64(x), y))
         Base.$op(x::Number, y::Currency) = Currency(Base.$op(x, Float64(y)))
+        Base.$op(x::Currency, y::Percentage) = Currency(Base.$op(Float64(x), y))
+        Base.$op(x::Percentage, y::Currency) = Currency(Base.$op(x, Float64(y)))
     end)
 end
 
