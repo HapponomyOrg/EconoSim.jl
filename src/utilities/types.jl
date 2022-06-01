@@ -1,5 +1,6 @@
 using FixedPointDecimals
 using Intervals
+using Todo
 
 """
     Percentage
@@ -86,6 +87,13 @@ Fixed(digits::Integer) = FixedDecimal{Int128, digits}
 Convenience type for working with currencies.
 """
 Currency = Fixed(2)
+
+for op in (:+, :-, :*, :/, :max, :min)
+    eval(quote
+        Base.$op(x::Currency, y::Number) = Currency(Base.$op(Float64(x), y))
+        Base.$op(x::Number, y::Currency) = Currency(Base.$op(x, Float64(y)))
+    end)
+end
 
 LeftInterval{T} = Interval{T, Closed, Open}
 RightInterval{T} = Interval{T, Open, Closed}
