@@ -131,6 +131,14 @@ mutable struct SuMSyOverrides
                         )
 end
 
+function sumsy_overrides(sumsy::SuMSy;
+                        seed = sumsy.seed,
+                        guaranteed_income = sumsy.guaranteed_income,
+                        dem_free = sumsy.dem_free,
+                        dem_tiers = sumsy.dem_tiers)
+    return SuMSyOverrides(seed, guaranteed_income, dem_free, dem_tiers)
+end
+
 """
     make_tiers(dem_settings::Vector{T}) where  {T <: Tuple{Real, Real}}
 
