@@ -116,14 +116,17 @@ end
 SuMSy overrides to be used for individual balances.
 """
 mutable struct SuMSyOverrides
+    sumsy_id::Symbol
     seed::Currency
     guaranteed_income::Currency
     dem_free::Currency
     dem_tiers::DemTiers
-    SuMSyOverrides(seed::Real,
+    SuMSyOverrides(sumsy_id::Symbol,
+                    seed::Real,
                     guaranteed_income::Real,
                     dem_free::Real,
                     dem_settings::DemSettings) = new(
+                        sumsy_id,
                         seed,
                         guaranteed_income,
                         dem_free,
@@ -136,7 +139,7 @@ function sumsy_overrides(sumsy::SuMSy;
                         guaranteed_income = sumsy.guaranteed_income,
                         dem_free = sumsy.dem_free,
                         dem_tiers = sumsy.dem_tiers)
-    return SuMSyOverrides(seed, guaranteed_income, dem_free, dem_tiers)
+    return SuMSyOverrides(sumsy.id, seed, guaranteed_income, dem_free, dem_tiers)
 end
 
 """
@@ -202,11 +205,11 @@ end
 
 has_overrides(balance::Balance, sumsy::SuMSy) = haskey(balance.properties, sumsy.id) && !isnothing(balance.properties[sumsy.id][2])
 
-function set_sumsy_overrides!(balance::Balance, sumsy::SuMSy, overrides::SuMSyOverrides)
-    if haskey(balance.properties, sumsy.id)
-        balance.properties[sumsy.id][2] = overrides
+function set_sumsy_overrides!(balance::Balance, overrides::SuMSyOverrides)
+    if haskey(balance.properties, overrides.sumsy_id)
+        balance.properties[overrides.sumsy_id][2] = overrides
     else
-        balance.properties[sumsy.id] = [true, overrides]
+        balance.properties[overrides.sumsy_id] = [true, overrides]
     end
 
     return balance
@@ -217,10 +220,7 @@ function set_seed!(balance::Balance, sumsy::SuMSy, seed::Real)
             balance.properties[sumsy.id][2].seed = seed
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        SuMSyOverrides(seed,
-                        sumsy.guaranteed_income,
-                        sumsy.dem_free,
-                        sumsy.dem_tiers)]
+        sumsy_overrides(sumsy, seed = seed)]
     end
 
     return balance
@@ -239,10 +239,7 @@ function set_guaranteed_income!(balance, sumsy::SuMSy, guaranteed_income::Real)
             balance.properties[sumsy.id][2].guaranteed_income = guaranteed_income
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        SuMSyOverrides(sumsy.seed,
-                        guaranteed_income,
-                        sumsy.dem_free,
-                        sumsy.dem_tiers)]
+        sumsy_overrides(sumsy, guaranteed_income = guaranteed_income)]
     end
 
     return balance
@@ -262,10 +259,7 @@ function set_initial_dem_free!(balance::Balance, sumsy::SuMSy, dem_free::Real)
         balance.properties[sumsy.id][2].dem_free = dem_free
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        SuMSyOverrides(sumsy.seed,
-                        sumsy.guaranteed_income,
-                        dem_free,
-                        sumsy.dem_tiers)]
+        sumsy_overrides(sumsy, dem_free = dem_free)]
     end
 
     book_asset!(balance, sumsy.dem_free_entry, dem_free, set_to_value = true)
@@ -329,10 +323,7 @@ function set_dem_tiers!(balance::Balance, sumsy::SuMSy, dem_settings::DemSetting
             balance.properties[sumsy.id][2].dem_tiers = dem_tiers
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        SuMSyOverrides(sumsy.seed,
-                        sumsy.guaranteed_income,
-                        sumsy.dem_free,
-                        dem_tiers)]
+        sumsy_overrides(sumsy, dem_tiers = dem_tiers)]
     end
 
     return balance
