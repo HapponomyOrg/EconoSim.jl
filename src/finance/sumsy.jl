@@ -465,6 +465,19 @@ function telo(income::Currency, dem_free::Currency, dem_tiers::DemTiers)
     return Currency(telo + dem_free)
 end
 
+function time_telo(sumsy::SuMSy, balance::Balance = Balance())
+    t = 0
+    eq = telo(sumsy)
+
+    while asset_value(balance, SUMSY_DEP) < eq - 1
+        dem = calculate_demurrage(balance, sumsy, 0)
+        book_asset!(balance, SUMSY_DEP, sumsy.guaranteed_income - dem)
+        t += 1
+    end
+
+    return t
+end
+
 """
     process_ready(sumsy::SuMSy, step::Int)
 
