@@ -21,8 +21,9 @@ function create_sumsy_model(sumsy::SuMSy,
                             contribution_tiers::DemSettings = 0,
                             contribution_balance::Balance = Balance(),
                             interval::Int = sumsy.interval,
-                            booking_function::Function = book_net_result!)
-    model = create_econo_model(append!(behavior_vector(process_all_sumsy!), behavior_vector(model_behaviors)))
+                            booking_function::Function = book_net_result!,
+                            sumsy_processing = process_all_sumsy!)
+    model = create_econo_model(append!(behavior_vector(sumsy_processing), behavior_vector(model_behaviors)))
     model.properties[:sumsy] = sumsy
     model.properties[:contribution_mode] = contribution_mode
     model.properties[:book_sumsy] = booking_function
