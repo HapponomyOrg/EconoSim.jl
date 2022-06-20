@@ -7,6 +7,7 @@ export validate, assets, liabilities, asset_value, assets_value, liability_value
 export book_asset!, book_liability!
 export transfer!, transfer_asset!, transfer_liability!
 export queue_transfer!, queue_asset_transfer!, queue_liability_transfer!, execute_transfers!
+export initialize_transaction_logging, log_transaction
 
 include("sumsy.jl")
 export SUMSY_DEP, SUMSY_DEBT
