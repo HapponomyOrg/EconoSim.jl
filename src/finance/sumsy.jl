@@ -379,7 +379,7 @@ end
 Calculates the demurrage due at the current timestamp. This is not restricted to timestamps which correspond to multiples of the interval.
 """
 function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
-    transactions = balance.transactions
+    transactions = balance.transaction_log
     cur_balance = asset_value(balance, sumsy.dep_entry)
     period = mod(step, sumsy.interval) == 0 ? sumsy.interval : mod(step, sumsy.interval)
     period_start = step - period
