@@ -563,8 +563,8 @@ function execute_transfers!(balance::Balance, timestamp::Integer = 0)
     return go
 end
 
-# Log trigger
-function initialize_logging(b::Balance)
+# Transaction log trigger
+function initialize_transaction_logging(b::Balance)
     b.transaction_log = Vector{Transaction}()
 
     return log_transaction
