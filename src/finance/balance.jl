@@ -130,6 +130,8 @@ function Balance(;def_min_asset = 0,
                         properties)
                     
     balance.trigger_actions = initialize_triggers(balance, trigger_initializers)
+
+    return balance
 end
 
 function initialize_triggers(balance::Balance, nothing) end
