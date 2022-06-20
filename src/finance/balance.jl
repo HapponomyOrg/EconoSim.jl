@@ -111,10 +111,9 @@ struct Balance <: AbstractBalance
     def_min_liability::Currency
     min_liabilities::Dict{BalanceEntry, Currency}
     transfer_queue::Vector{Transfer}
-    log_transactions::Bool
-    transactions::Vector{Transaction}
+    trigger_actions::Union{Nothing, Function, Vector{Function}}
     properties::Dict
-    Balance(;def_min_asset = 0, def_min_liability = 0, log_transactions = false, properties = Dict()) = new(
+    Balance(;def_min_asset = 0, def_min_liability = 0, trigger_actions = nothing, properties = Dict()) = new(
                 Dict{BalanceEntry, Currency}(),
                 def_min_asset,
                 Dict{BalanceEntry, Currency}(),
@@ -122,8 +121,7 @@ struct Balance <: AbstractBalance
                 def_min_liability,
                 Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
                 Vector{Transfer{Balance}}(),
-                log_transactions,
-                Vector{Transaction}(),
+                trigger_actions,
                 properties)
 end
 
@@ -283,13 +281,7 @@ function book_amount!(balance::Balance,
 
     balance.liabilities[EQUITY] += type == asset ? amount : -amount
 
-    if balance.log_transactions && amount != 0
-        if isnothing(transaction)
-            push!(balance.transactions, Transaction(timestamp, asset, entry, amount, value_function(balance, entry), comment))
-        else
-            push!(transaction, AtomicTransaction(asset, entry, amount, value_function(balance, entry), comment))
-        end
-    end
+    trigger(balance, entry, type, amount, timestamp, comment, value_function(balance, entry), transaction)
 end
 
 """
@@ -569,4 +561,28 @@ function execute_transfers!(balance::Balance, timestamp::Integer = 0)
     empty!(balance.transfer_queue)
 
     return go
+end
+
+# Log trigger
+function initialize_logging(b::Balance)
+    b.transaction_log = Vector{Transaction}()
+
+    return log_transaction
+end
+
+function log_transaction(balance::Balance,
+                        entry::BalanceEntry,
+                        type::EntryType,
+                        amount::Real,
+                        timestamp::Integer,
+                        comment::String,
+                        value::Currency,
+                        transaction::Union{Transaction, Nothing})
+    if amount != 0
+        if isnothing(transaction)
+            push!(balance.transaction_log, Transaction(timestamp, asset, entry, amount, value, comment))
+        else
+            push!(transaction, AtomicTransaction(asset, entry, amount, value, comment))
+        end
+    end
 end
