@@ -90,7 +90,7 @@ end
 """
     struct Balance
 
-A balance sheet, including a history of transactions which led to the current state of the balance sheet.
+A balance sheet, including an optional history of transactions which led to the current state of the balance sheet.
 
 # Properties
 * assets: the asset side of the balance sheet.
@@ -99,7 +99,7 @@ A balance sheet, including a history of transactions which led to the current st
 * liabilities: the liability side of the balance sheet.
 * def_min_liability: the default lower bound for liability balance entries.
 * min_liabilities:  minimum liability values. Used to validate transactions. Entries override def_min_liability.
-* log_transactions: flag indicating whether transactions are logged. Not logging transactions improves performance.
+* triggers: triggers which are called when a booking occurs.
 * transactions: a chronological list of transaction tuples. Each tuple is constructed as follows: timestamp, entry type (asset or liability), balance entry, amount, new balance value, comment.
 * properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by balance.symbol.
 """
@@ -111,19 +111,43 @@ struct Balance <: AbstractBalance
     def_min_liability::Currency
     min_liabilities::Dict{BalanceEntry, Currency}
     transfer_queue::Vector{Transfer}
-    trigger_actions::Union{Nothing, Function, Vector{Function}}
+    triggers::Union{Nothing, Function, Vector{Function}}
     properties::Dict
-    Balance(;def_min_asset = 0, def_min_liability = 0, trigger_actions = nothing, properties = Dict()) = new(
-                Dict{BalanceEntry, Currency}(),
-                def_min_asset,
-                Dict{BalanceEntry, Currency}(),
-                Dict{BalanceEntry, Currency}(EQUITY => 0),
-                def_min_liability,
-                Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
-                Vector{Transfer{Balance}}(),
-                trigger_actions,
-                properties)
 end
+
+function Balance(;def_min_asset = 0,
+                def_min_liability = 0,
+                trigger_initializers = nothing,
+                properties = Dict())
+    balance = Balance(Dict{BalanceEntry, Currency}(),
+                        def_min_asset,
+                        Dict{BalanceEntry, Currency}(),
+                        Dict{BalanceEntry, Currency}(EQUITY => 0),
+                        def_min_liability,
+                        Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
+                        Vector{Transfer{Balance}}(),
+                        nothing,
+                        properties)
+                    
+    balance.trigger_actions = initialize_triggers(balance, trigger_initializers)
+end
+
+function initialize_triggers(balance::Balance, nothing) end
+
+function initialize_triggers(balance::Balance, initializer::Function)
+    return initializer(balance)
+end
+
+function initialize_triggers(balance::Balance, initializers::Vector{Function})
+    triggers = Vector{Function}()
+
+    for initializer in initializers
+        push!(triggers, initializer(balance))
+    end
+
+    return triggers
+end
+
 
 Base.show(io::IO, balance::Balance) = print(io, "Balance(\nAssets:\n$(balance.assets) \nLiabilities:\n$(balance.liabilities) \nTransactions:\n$(balance.transactions))")
 
