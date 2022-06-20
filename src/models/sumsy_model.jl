@@ -10,7 +10,14 @@ function sumsy_actor(;id::Integer = ID_COUNTER,
                         stock::Stock = Stock(),
                         producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
                         prices::D = Dict{Blueprint, Price}()) where {D <: Dict{<: Blueprint, Price}}
-    return Actor(id, types, behavior, balance, posessions, stock, producers, prices)
+    return Actor(id = id,
+                    types = types,
+                    behavior = behavior,
+                    balance = balance,
+                    posessions = posessions,
+                    stock = stock,
+                    producers = producers,
+                    prices = prices)
 end
 
 function set_sumsy_active!(actor::Actor, model, flag::Bool)
