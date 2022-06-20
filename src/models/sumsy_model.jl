@@ -2,6 +2,17 @@ using Agents
 
 @enum ContributionMode no_contribution fixed_contribution on_demand_contribution
 
+function sumsy_actor(;id::Integer = ID_COUNTER,
+                        types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
+                        behavior::Union{Function, Nothing} = nothing,
+                        balance::Balance = Balance(trigger_initializers = initialize_transaction_logging),
+                        posessions::Entities = Entities(),
+                        stock::Stock = Stock(),
+                        producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
+                        prices::D = Dict{Blueprint, Price}()) where {D <: Dict{<: Blueprint, Price}}
+    return Actor(id, types, behavior, balance, posessions, stock, producers, prices)
+end
+
 function set_sumsy_active!(actor::Actor, model, flag::Bool)
     set_sumsy_active!(actor.balance, model.sumsy, flag)
     set_sumsy_active!(actor.balance, model.contribution_settings, flag)
