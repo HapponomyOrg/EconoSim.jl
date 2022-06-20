@@ -20,7 +20,8 @@ Representation of the parameters of a SuMSy implementation.
 * dem_free_buffer: the demurrage free buffer which is allocated to all accounts which have a right to a guaranteed income.
 * dem_settings: the demurrage tiers. This is a list of tuples consisting of a lower bound and a demurrage percentage. The demurrage percentage is applied to the amounts above the lower bound up to the the next higher lower bound. If the demurrage free buffer of an account is larger than 0, all bounds are shifted up with this amount and no demurrage is applied to the amount up to the available demurrage free buffer.
 The lower bound of the first tuple is always set to 0.
-* interval: the size of the period after which the next demurrage is calculated and the next guaranteed income is issued.
+* sumsy_interval: the size of the period over which the full demurrage and guaranteed income apply.
+* gi_dem_interval: the interval after which demurrage is calculated and guaranteed income is dposited. If this interval is smaller than the sumsy_interval, partial demurrage and guaranteed income are applied. The scaling factor being equal to gi_dem_interval/sumsy_interval.
 * seed: the amount whith which new accounts start.
 * guaranteed_income_comment: The transaction comment for guaranteed income bookings.
 * demurrage_comment: The transaction comment for demurrage bookings.
@@ -33,7 +34,8 @@ mutable struct SuMSy
     guaranteed_income::Currency
     dem_free::Currency
     dem_tiers::DemTiers
-    interval::Int64
+    sumsy_interval::Int64
+    gi_dem_interval::Int64
     seed::Currency
     seed_comment::String
     guaranteed_income_comment::String
@@ -45,7 +47,8 @@ mutable struct SuMSy
         guaranteed_income::Real,
         dem_free::Real,
         dem_settings::DemSettings,
-        interval::Integer;
+        sumsy_interval::Integer;
+        gi_dem_interval = sumsy_interval,
         seed::Real = 0,
         seed_comment = "Seed",
         guaranteed_income_comment = "Guaranteed income",
@@ -57,7 +60,8 @@ mutable struct SuMSy
                 guaranteed_income,
                 dem_free,
                 make_tiers(dem_settings),
-                interval,
+                sumsy_interval,
+                gi_dem_interval,
                 seed,
                 seed_comment,
                 guaranteed_income_comment,
@@ -85,7 +89,8 @@ Create a SuMSy struct with a default id. The id is set to :sumsy-uuid where uuid
 function SuMSy(guaranteed_income::Real,
                 dem_free::Real,
                 dem_settings::DemSettings,
-                interval::Integer;
+                sumsy_interval::Integer;
+                gi_dem_interval::Integer = sumsy_interval,
                 seed::Real = 0,
                 seed_comment = "Seed",
                 guaranteed_income_comment = "Guaranteed income",
@@ -100,7 +105,8 @@ function SuMSy(guaranteed_income::Real,
     end
 
     return SuMSy(id,
-                guaranteed_income, dem_free, dem_settings, interval,
+                guaranteed_income, dem_free, dem_settings, sumsy_interval,
+                gi_dem_interval = gi_dem_interval,
                 seed = seed,
                 seed_comment = seed_comment,
                 guaranteed_income_comment = guaranteed_income_comment,
@@ -370,12 +376,12 @@ end
 """
     calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
 
-Calculates the demurrage due at the current timestamp. This is not restricted to timestamps which correspond to multiples of the SuMSy interval.
+Calculates the demurrage due at the current timestamp. This is not restricted to timestamps which correspond to multiples of the gi_dem_interval.
 """
 function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
     transactions = balance.transactions
     cur_balance = asset_value(balance, sumsy.dep_entry)
-    period = mod(step, sumsy.interval) == 0 ? sumsy.interval : mod(step, sumsy.interval)
+    period = mod(step, sumsy.gi_dem_interval) == 0 ? sumsy.gi_dem_interval : mod(step, sumsy.gi_dem_interval)
     period_start = step - period
     weighted_balance = 0
     i = length(transactions)
@@ -414,7 +420,7 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_f
         avg_balance = max(0, avg_balance - sumsy.dem_free)
     end
 
-    demurrage = CUR_0
+    demurrage = 0
 
     for tier in sumsy.dem_tiers
         if avg_balance <= 0
@@ -428,7 +434,7 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_f
                 avg_balance -= amount
             end
 
-            demurrage += amount * tier[2]
+            demurrage += amount * sumsy.gi_dem_interval / sumsy.sumsy_interval * tier[2]
         end
     end
 
@@ -483,7 +489,7 @@ end
 
 Check whether processing needs to be done.
 """
-process_ready(sumsy::SuMSy, step::Int) = mod(step, sumsy.interval) == 0
+process_ready(sumsy::SuMSy, step::Int) = mod(step, sumsy.gi_dem_interval) == 0
 
 function book_net_result!(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)    
     book_asset!(balance, sumsy.dep_entry, seed + guaranteed_income - demurrage, step, comment = sumsy.net_income_comment)
@@ -513,7 +519,7 @@ Processes demurrage and guaranteed income if the timestamp is a multiple of the 
 function process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int; booking_function = book_net_result!)
    if is_sumsy_active(balance, sumsy) && process_ready(sumsy, step)
         seed = step == 0 ? get_seed(balance, sumsy) : CUR_0
-        income = get_guaranteed_income(balance, sumsy)
+        income = Currency(get_guaranteed_income(balance, sumsy) * sumsy.gi_dem_interval / sumsy.sumsy_interval)
         demurrage = calculate_demurrage(balance, sumsy, step)
         booking_function(balance, sumsy, seed, income, demurrage, step)
 
