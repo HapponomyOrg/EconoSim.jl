@@ -20,7 +20,6 @@ Representation of the parameters of a SuMSy implementation.
 * dem_free_buffer: the demurrage free buffer which is allocated to all accounts which have a right to a guaranteed income.
 * dem_settings: the demurrage tiers. This is a list of tuples consisting of a lower bound and a demurrage percentage. The demurrage percentage is applied to the amounts above the lower bound up to the the next higher lower bound. If the demurrage free buffer of an account is larger than 0, all bounds are shifted up with this amount and no demurrage is applied to the amount up to the available demurrage free buffer.
 The lower bound of the first tuple is always set to 0.
-* period: the size of the period over which the full demurrage and guaranteed income apply.
 * interval: the interval after which demurrage is calculated and guaranteed income is dposited. If this interval is smaller than the period, partial demurrage and guaranteed income are applied. The scaling factor being equal to interval/period.
 * seed: the amount whith which new accounts start.
 * guaranteed_income_comment: The transaction comment for guaranteed income bookings.
@@ -34,7 +33,6 @@ mutable struct SuMSy
     guaranteed_income::Currency
     dem_free::Currency
     dem_tiers::DemTiers
-    period::Int64
     interval::Int64
     seed::Currency
     seed_comment::String
@@ -43,24 +41,38 @@ mutable struct SuMSy
     net_income_comment::String
     dep_entry::BalanceEntry
     dem_free_entry::BalanceEntry
-    SuMSy(id,
-        guaranteed_income::Real,
-        dem_free::Real,
-        dem_settings::DemSettings,
-        period::Integer;
-        interval = period,
-        seed::Real = 0,
-        seed_comment = "Seed",
-        guaranteed_income_comment = "Guaranteed income",
-        demurrage_comment = "Demurrage",
-        net_income_comment = "Net income",
-        dep_entry = SUMSY_DEP,
-        dem_free_entry = SUMSY_DEM_FREE(id)
-        ) = new(Symbol(id),
+end
+
+function SuMSy(id,
+                guaranteed_income::Real,
+                dem_free::Real,
+                dem_settings::DemSettings,
+                period::Integer;
+                interval = period,
+                seed::Real = 0,
+                seed_comment = "Seed",
+                guaranteed_income_comment = "Guaranteed income",
+                demurrage_comment = "Demurrage",
+                net_income_comment = "Net income",
+                dep_entry = SUMSY_DEP,
+                dem_free_entry = SUMSY_DEM_FREE(id))
+    dem_tiers = make_tiers(dem_settings)
+
+    if interval / period != 1
+        guaranteed_income *= interval/period
+        new_tiers = DemTiers()
+                
+        for tier in dem_tiers
+            push!(new_tiers, (tier[1], tier[2] * interval / period))
+        end
+
+        dem_tiers = new_tiers
+    end
+
+    return SuMSy(Symbol(id),
                 guaranteed_income,
                 dem_free,
-                make_tiers(dem_settings),
-                period,
+                dem_tiers,
                 interval,
                 seed,
                 seed_comment,
@@ -434,7 +446,7 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_f
                 avg_balance -= amount
             end
 
-            demurrage += amount * sumsy.interval / sumsy.period * tier[2]
+            demurrage += amount * tier[2]
         end
     end
 
@@ -519,7 +531,7 @@ Processes demurrage and guaranteed income if the timestamp is a multiple of the 
 function process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int; booking_function = book_net_result!)
    if is_sumsy_active(balance, sumsy) && process_ready(sumsy, step)
         seed = step == 0 ? get_seed(balance, sumsy) : CUR_0
-        income = Currency(get_guaranteed_income(balance, sumsy) * sumsy.interval / sumsy.period)
+        income = get_guaranteed_income(balance, sumsy)
         demurrage = calculate_demurrage(balance, sumsy, step)
         booking_function(balance, sumsy, seed, income, demurrage, step)
 
