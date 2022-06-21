@@ -8,10 +8,10 @@ A float which remains between 0 and 1, representing 0% - 100%.
 """
 struct Percentage <: Real
     value::Float64
-    Percentage(x, precision::Integer=6) = x < 0 ? new(0) : x > 1 ? new(1) : new(round(x, digits=precision))
+    Percentage(x) = x < 0 ? new(0) : x > 1 ? new(1) : new(x)
 end
 
-Base.show(io::IO, x::Percentage) = print(io, "Percentage($(x.value * 100)%)")
+Base.show(io::IO, x::Percentage) = print(io, "Percentage($(round(x.value) * 100)%)")
 
 Base.convert(::Type{Percentage}, x::Real) = Percentage(x)
 Base.convert(::Type{Percentage}, x::Percentage) = x
