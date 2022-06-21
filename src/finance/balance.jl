@@ -134,10 +134,12 @@ function Balance(;def_min_asset = 0,
     return balance
 end
 
-function initialize_triggers(balance::Balance, nothing) end
+function initialize_triggers(balance::Balance, nothing)
+    return Vector{Function}()
+end
 
 function initialize_triggers(balance::Balance, initializer::Function)
-    return initializer(balance)
+    return Vector{Function}([initializer(balance)])
 end
 
 function initialize_triggers(balance::Balance, initializers::Vector{Function})
@@ -307,43 +309,8 @@ function book_amount!(balance::Balance,
 
     balance.liabilities[EQUITY] += type == asset ? amount : -amount
 
-    trigger(balance.trigger_actions, balance, entry, type, amount, timestamp, comment, value_function(balance, entry), transaction)
-end
-
-function trigger(trigger_actions::Nothing,
-                    balance::Balance,
-                    entry::BalanceEntry,
-                    type::EntryType,
-                    amount::Real,
-                    timestamp::Integer,
-                    comment::String,
-                    value::Currency,
-                    transaction::Union{Transaction, Nothing})
-end
-
-function trigger(trigger_action::Function,
-                    balance::Balance,
-                    entry::BalanceEntry,
-                    type::EntryType,
-                    amount::Real,
-                    timestamp::Integer,
-                    comment::String,
-                    value::Currency,
-                    transaction::Union{Transaction, Nothing})
-    trigger_action(balance, entry, type, amount, timestamp, comment, value, transaction)
-end
-
-function trigger(trigger_actions::Vector{Function},
-                    balance::Balance,
-                    entry::BalanceEntry,
-                    type::EntryType,
-                    amount::Real,
-                    timestamp::Integer,
-                    comment::String,
-                    value::Currency,
-                    transaction::Union{Transaction, Nothing})
-    for trigger in trigger_actions
-        trigger(balance, entry, type, amount, timestamp, comment, value, transaction)
+    for trigger in balance.trigger_actions
+        trigger(balance, entry, type, amount, timestamp, comment, value_function(balance, entry), transaction)
     end
 end
 
