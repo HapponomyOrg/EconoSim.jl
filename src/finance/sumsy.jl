@@ -399,15 +399,15 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
     i = length(transactions)
     t_step = step
 
-    while i > 0 && transactions[i].timestamp >= period_start
+    while transactions[i].timestamp >= period_start && i > 0
         t_step = transactions[i].timestamp
         amount = 0
 
-        while i > 0 && transactions[i].timestamp == t_step
+        while transactions[i].timestamp == t_step && i > 0
             t = transactions[i]
 
             for transaction in t.transactions
-                if transaction.type == asset && transaction.entry == SUMSY_DEP
+                if transaction.type == asset && transaction.entry == sumsy.dep_entry
                     amount += transaction.amount
                 end
             end
