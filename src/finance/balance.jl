@@ -128,30 +128,23 @@ function Balance(;def_min_asset = 0,
                         Vector{Transfer{Balance}}(),
                         nothing,
                         properties)
-                    
-    balance.trigger_actions = initialize_triggers(balance, trigger_initializers)
+    
+    if isnothing(trigger_initializers)
+        balance.trigger_actions = Vector{Function}()
+    elseif trigger_initializers isa Function
+        balance.trigger_actions = Vector{Function}([trigger_initializers(balance)])
+    else
+        triggers = Vector{Function}()
+    
+        for initializer in trigger_initializers
+            push!(triggers, initializer(balance))
+        end
+
+        balance.trigger_actions = triggers
+    end
 
     return balance
 end
-
-function initialize_triggers(balance::Balance, nothing)
-    return Vector{Function}()
-end
-
-function initialize_triggers(balance::Balance, initializer::Function)
-    return Vector{Function}([initializer(balance)])
-end
-
-function initialize_triggers(balance::Balance, initializers::Vector{Function})
-    triggers = Vector{Function}()
-
-    for initializer in initializers
-        push!(triggers, initializer(balance))
-    end
-
-    return triggers
-end
-
 
 Base.show(io::IO, balance::Balance) = print(io, "Balance(\nAssets:\n$(balance.assets) \nLiabilities:\n$(balance.liabilities) \nTransactions:\n$(balance.transactions))")
 
