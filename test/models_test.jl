@@ -24,7 +24,14 @@ end
     book_asset!(actor.balance, SUMSY_DEP, 100, 0)
 
     econo_step!(model, 10)
-    @test sumsy_balance(actor, model) == 2070
+    @test sumsy_balance(actor, model) == 2100
+    @test asset_value(model.contribution_balance, SUMSY_DEP) == 0
+    @test liability_value(model.contribution_balance, SUMSY_DEP) == 0
+
+    econo_step!(model, 10)
+    @test sumsy_balance(actor, model) == 3470
+    @test asset_value(model.contribution_balance, SUMSY_DEP) == 420
+    @test liability_value(model.contribution_balance, SUMSY_DEP) == 0
 end
 
 @testset "SuMSy contribution - on demand" begin
