@@ -98,9 +98,9 @@ A balance sheet, including an optional history of transactions which led to the 
 * min_assets: minimum asset values. Used to validate transactions. Entries override def_min_asset.
 * liabilities: the liability side of the balance sheet.
 * def_min_liability: the default lower bound for liability balance entries.
-* min_liabilities:  minimum liability values. Used to validate transactions. Entries override def_min_liability.
+* min_liabilities: minimum liability values. Used to validate transactions. Entries override def_min_liability.
+* transfer_queue: transfers to other balances whcih are queued. When the queue is executed, all transfers are executed in the same transaction.
 * triggers: triggers which are called when a booking occurs.
-* transactions: a chronological list of transaction tuples. Each tuple is constructed as follows: timestamp, entry type (asset or liability), balance entry, amount, new balance value, comment.
 * properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by balance.symbol.
 """
 struct Balance <: AbstractBalance
@@ -117,7 +117,7 @@ end
 
 function Balance(;def_min_asset = 0,
                 def_min_liability = 0,
-                trigger_initializers = nothing,
+                trigger_initializers = initialize_transaction_logging,
                 properties = Dict())
     balance = Balance(Dict{BalanceEntry, Currency}(),
                         def_min_asset,
@@ -608,4 +608,9 @@ function log_transaction(balance::Balance,
             push!(transaction, AtomicTransaction(asset, entry, amount, value, comment))
         end
     end
+end
+
+# DB transaction log trigger
+todo"DB transaction trigger"
+function initialize_db_transaction_logging(b::Balance)
 end
