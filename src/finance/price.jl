@@ -11,8 +11,8 @@ struct Price
     Price(components::Dict{BalanceEntry, <:Real}, main_currency::BalanceEntry) = new(Dict{BalanceEntry, Currency}(components), main_currency)
 end
 
-function Price(main_currency::BalanceEntry)
-    Price(Dict{BalanceEntry, Currency}(), main_currency)
+function Price(main_currency::BalanceEntry, amount::Real)
+    Price(Dict{BalanceEntry, Currency}(main_currency => amount), main_currency)
 end
 
 function Price(components::AbstractVector{<:Pair{BalanceEntry, <:Real}}, main_currency::BalanceEntry = components[1][1])
