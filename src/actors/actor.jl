@@ -26,7 +26,7 @@ mutable struct Actor <: AbstractAgent
     posessions::Entities
     stock::Stock
     producers::Set{Producer}
-    prices::Dict{Blueprint, Price}
+    prices::Prices
     properties::D where {D <: Dict{Symbol, <:Any}}
 end
 
@@ -49,7 +49,7 @@ function Actor(;id::Integer = ID_COUNTER,
         posessions::Entities = Entities(),
         stock::Stock = Stock(),
         producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
-        prices::D = Dict{Blueprint, Price}()) where {D <: Dict{<: Blueprint, Price}}
+        prices::D = Dict{Blueprint, Price}()) where {D <: Prices}
     if isnothing(types)
         typeset = Set{Symbol}()
     elseif types isa Symbol
