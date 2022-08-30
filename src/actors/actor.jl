@@ -2,6 +2,8 @@ using Agents
 
 global ID_COUNTER = 0
 
+Prices = Dict{<:Blueprint, Price}
+
 """
     Actor - agent representing an economic actor.
 

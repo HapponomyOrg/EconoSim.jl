@@ -102,5 +102,3 @@ todo"Fix operations type casting"
 LeftInterval{T} = Interval{T, Closed, Open}
 RightInterval{T} = Interval{T, Open, Closed}
 ClosedInterval{T} = Interval{T, Closed, Closed}
-
-Prices = Dict{<:Blueprint, Price}

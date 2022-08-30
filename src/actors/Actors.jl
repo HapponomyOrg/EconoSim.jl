@@ -9,6 +9,7 @@ export is_prioritised, usage_prioritised, wants_prioritised
 
 include("actor.jl")
 export Actor
+export Prices
 export has_type, add_type!, delete_type!
 export has_behavior, add_behavior!, delete_bahavior!, clear_behaviors
 export has_model_behavior, add_model_behavior!, delete_model_bahavior!, clear_model_behaviors
