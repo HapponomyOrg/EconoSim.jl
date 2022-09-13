@@ -4,7 +4,7 @@ export Marginality, process
 include("needs.jl")
 export Needs, NeedType
 export want, usage
-export push_usage!, push_want!, delete_usage!, delete_want!
+export push_usage!, push_want!, get_wants, get_usages, delete_usage!, delete_want!
 export is_prioritised, usage_prioritised, wants_prioritised
 
 include("actor.jl")
