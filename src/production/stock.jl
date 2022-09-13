@@ -1,12 +1,17 @@
-struct Stock
+abstract type Stock end
+
+"""
+    PhysicalStock
+"""
+struct PhysicalStock <: Stock
     stock::Entities
     stock_limits::Dict{Blueprint, Tuple{Int64, Int64}}
-    Stock() = new(Entities(), Dict{Blueprint, Tuple{Int64, Int64}}())
+    PhysicalStock() = new(Entities(), Dict{Blueprint, Tuple{Int64, Int64}}())
 end
 
-current_stock(stock::Stock, bp::Blueprint) = num_entities(stock.stock, bp)
+current_stock(stock::PhysicalStock, bp::Blueprint) = num_entities(stock.stock, bp)
 
-function stock_limits(stock::Stock, bp::Blueprint)
+function stock_limits(stock::PhysicalStock, bp::Blueprint)
     stock_limits = stock.stock_limits
 
     if bp in keys(stock_limits)
@@ -16,15 +21,15 @@ function stock_limits(stock::Stock, bp::Blueprint)
     end
 end
 
-stock_limits!(stock::Stock, bp::Blueprint, min_units::Integer, max_units::Integer) = stock.stock_limits[bp] = (min_units, max_units)
+stock_limits!(stock::PhysicalStock, bp::Blueprint, min_units::Integer, max_units::Integer) = (stock.stock_limits[bp] = (min_units, max_units))
 
-min_stock(stock::Stock, bp::Blueprint) = stock_limits(stock, bp)[1]
-min_stock!(stock::Stock, bp::Blueprint, units::Integer) = stock_limits!(stock, bp, units, max(units, max_stock(stock, bp)))
+min_stock(stock::PhysicalStock, bp::Blueprint) = stock_limits(stock, bp)[1]
+min_stock!(stock::PhysicalStock, bp::Blueprint, units::Integer) = stock_limits!(stock, bp, units, max(units, max_stock(stock, bp)))
 
-max_stock(stock::Stock, bp::Blueprint) = stock_limits(stock, bp)[2]
-max_stock!(stock::Stock, bp::Blueprint, units::Integer) = stock_limits!(stock, bp, min(min_stock(stock, bp), units), units)
+max_stock(stock::PhysicalStock, bp::Blueprint) = stock_limits(stock, bp)[2]
+max_stock!(stock::PhysicalStock, bp::Blueprint, units::Integer) = stock_limits!(stock, bp, min(min_stock(stock, bp), units), units)
 
-function add_stock!(stock::Stock,
+function add_stock!(stock::PhysicalStock,
                 products::Entities;
                 force::Bool = false) where E <: Entity
     for bp in keys(products)
@@ -40,7 +45,7 @@ function add_stock!(stock::Stock,
     return stock
 end
 
-function add_stock!(stock::Stock,
+function add_stock!(stock::PhysicalStock,
                     products::Union{<:AbstractSet{E}, <:AbstractVector{E}};
                     force::Bool = false) where E <: Entity
 
@@ -51,9 +56,9 @@ function add_stock!(stock::Stock,
     end
 end
 
-add_stock!(stock::Stock, product::Entity; force::Bool = false) = add_product(stock, product, force)
+add_stock!(stock::PhysicalStock, product::Entity; force::Bool = false) = add_product(stock, product, force)
 
-function add_product(stock::Stock, product::Entity, force::Bool)
+function add_product(stock::PhysicalStock, product::Entity, force::Bool)
     bp = get_blueprint(product)
 
     if force || current_stock(stock, bp) < max_stock(stock, bp)
@@ -64,7 +69,7 @@ function add_product(stock::Stock, product::Entity, force::Bool)
     end
 end
 
-function retrieve_stock!(stock::Stock, bp::Blueprint, units::Integer)
+function retrieve_stock!(stock::PhysicalStock, bp::Blueprint, units::Integer)
     products = Set{Entity}()
 
     if bp in keys(stock.stock)
@@ -84,15 +89,15 @@ function retrieve_stock!(stock::Stock, bp::Blueprint, units::Integer)
     return products
 end
 
-has_stock(stock::Stock, bp::Blueprint) = current_stock(stock, bp) > 0
-stocked(stock::Stock, bp::Blueprint) = current_stock(stock, bp) >= min_stock(stock, bp)
-overstocked(stock::Stock, bp::Blueprint) = current_stock(stock, bp) > max_stock(stock, bp)
+has_stock(stock::PhysicalStock, bp::Blueprint) = current_stock(stock, bp) > 0
+stocked(stock::PhysicalStock, bp::Blueprint) = current_stock(stock, bp) >= min_stock(stock, bp)
+overstocked(stock::PhysicalStock, bp::Blueprint) = current_stock(stock, bp) > max_stock(stock, bp)
 
-Base.isempty(stock::Stock) = isempty(stock.stock)
-Base.empty(stock::Stock) = empty(stock.stock)
-Base.empty!(stock::Stock) = empty!(stock.stock)
+Base.isempty(stock::PhysicalStock) = isempty(stock.stock)
+Base.empty(stock::PhysicalStock) = empty(stock.stock)
+Base.empty!(stock::PhysicalStock) = empty!(stock.stock)
 
-function purge!(stock::Stock, clear_limits::Bool = false)
+function purge!(stock::PhysicalStock, clear_limits::Bool = false)
     empty!(stock)
 
     if clear_limits
@@ -101,3 +106,48 @@ function purge!(stock::Stock, clear_limits::Bool = false)
 
     return stock
 end
+
+"""
+    InfiniteStock
+"""
+struct InfiniteStock <: Stock
+    PhysicalStock() = new()
+end
+
+current_stock(stock::InfiniteStock, bp::Blueprint) = INF
+stock_limits(stock::InfiniteStock, bp::Blueprint) = INF
+
+stock_limits!(stock::InfiniteStock, bp::Blueprint, min_units::Integer, max_units::Integer) = begin end
+
+min_stock(stock::InfiniteStock, bp::Blueprint) = INF
+min_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer) = begin end
+
+max_stock(stock::InfiniteStock, bp::Blueprint) = INF
+max_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer) = begin end
+
+add_stock!(stock::InfiniteStock, products::Entities; force::Bool = false) where E <: Entity = stock
+add_stock!(stock::InfiniteStock, products::Union{<:AbstractSet{E}, <:AbstractVector{E}}; force::Bool = false) where E <: Entity = stock
+add_stock!(stock::InfiniteStock, product::Entity; force::Bool = false) = stock
+
+add_product(stock::InfiniteStock, product::Entity, force::Bool) = true
+
+function retrieve_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer)
+    products = Set{Entity}()
+
+    for counter in 1:units
+        push!(products, ENTITY_CONSTRUCTORS[bp](bp))
+    end
+
+    return products
+end
+
+has_stock(stock::PhysiInfiniteStockcalStock, bp::Blueprint) = true
+stocked(stock::InfiniteStock, bp::Blueprint) = true
+overstocked(stock::InfiniteStock, bp::Blueprint) = false
+
+Base.isempty(stock::InfiniteStock) = false
+Base.empty(stock::InfiniteStock) = begin end
+Base.empty!(stock::InfiniteStock) = begin end
+
+purge!(stock::InfiniteStock, clear_limits::Bool = false) = stock
+
