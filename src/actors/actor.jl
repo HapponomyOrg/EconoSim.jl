@@ -49,7 +49,7 @@ function Actor(;id::Integer = ID_COUNTER,
         behavior::Union{Function, Nothing} = nothing,
         balance::Balance = Balance(),
         posessions::Entities = Entities(),
-        stock::Stock = Stock(),
+        stock::Stock = PhysicalStock(),
         producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
         prices::D = Dict{Blueprint, Price}()) where {D <: Prices}
     if isnothing(types)
