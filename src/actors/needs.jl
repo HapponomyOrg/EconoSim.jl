@@ -94,7 +94,7 @@ function get_wants(needs::Needs)
     return get_needs(needs.wants)
 end
 
-function get_usage(needs::Needs)
+function get_usages(needs::Needs)
     return get_needs(needs.usage)
 end
 
