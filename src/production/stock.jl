@@ -141,7 +141,7 @@ function retrieve_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer)
     return products
 end
 
-has_stock(stock::PhysiInfiniteStockcalStock, bp::Blueprint) = true
+has_stock(stock::InfiniteStock, bp::Blueprint) = true
 stocked(stock::InfiniteStock, bp::Blueprint) = true
 overstocked(stock::InfiniteStock, bp::Blueprint) = false
 
