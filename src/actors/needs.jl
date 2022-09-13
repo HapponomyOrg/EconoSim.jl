@@ -20,6 +20,8 @@ end
 
 @enum NeedType usage want
 
+Need = @NamedTuple{blueprint::B, units::Integer} where {B <: Blueprint}
+
 function needs_data(needs::Needs, type::NeedType)
     if type == usage
         priorities = needs.usage_priorities
@@ -32,7 +34,6 @@ function needs_data(needs::Needs, type::NeedType)
     return (target = target, priorities = priorities)
 end
 
-Need = @NamedTuple{blueprint::B, units::Integer} where {B <: Blueprint}
 
 """
     push!(needs::Needs,
@@ -78,6 +79,24 @@ function push_want!(needs::Needs,
 end
 
 push_want!(needs::Needs, bp::Blueprint, marginality::Vector{<:Tuple{Integer, Real}}; priority::Integer = 0) = push_want!(needs, bp, Marginality(marginality), priority = priority)
+
+function get_needs(needs_dict::SortedDict{Tuple{Int64, Blueprint}, Marginality})
+    blueprints = Vector{Blueprint}()
+
+    for key in keys(needs_dict)
+        append!(blueprints, key[2])
+    end
+
+    return blueprints
+end
+
+function get_wants(needs::Needs)
+    return get_needs(needs.wants)
+end
+
+function get_usage(needs::Needs)
+    return get_needs(needs.usage)
+end
 
 function Base.delete!(needs::Needs,
                     type::NeedType,
@@ -133,7 +152,7 @@ Get a vector of all the needs of the actor of the specified need type. The vecto
 function process_needs(needs::Needs,
                     type::NeedType,
                     posessions::Entities = Entities())
-    result = Vector{@NamedTuple{blueprint::Blueprint, units::Int64}}()
+    result = Vector{Need}()
     data = needs_data(needs, type)
 
     for key in keys(data.target)
