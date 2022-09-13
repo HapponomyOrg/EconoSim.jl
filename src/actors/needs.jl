@@ -84,7 +84,7 @@ function get_needs(needs_dict::SortedDict{Tuple{Int64, Blueprint}, Marginality})
     blueprints = Vector{Blueprint}()
 
     for key in keys(needs_dict)
-        append!(blueprints, key[2])
+        push!(blueprints, key[2])
     end
 
     return blueprints
