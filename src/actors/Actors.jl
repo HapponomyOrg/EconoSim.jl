@@ -14,6 +14,7 @@ export has_type, add_type!, delete_type!
 export has_behavior, add_behavior!, delete_bahavior!, clear_behaviors
 export has_model_behavior, add_model_behavior!, delete_model_bahavior!, clear_model_behaviors
 export push_producer!, delete_producer!, produce_stock!, purchase!
+export select_random_supplier
 export get_price, set_price!
 export get_posessions, get_stock, get_production_output
 export actor_step!
