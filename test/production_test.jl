@@ -403,7 +403,7 @@ end
 
 @testset "Stock" begin
     bp = ConsumableBlueprint("C")
-    stock = Stock()
+    stock = PhysicalStock()
 
     @test isempty(stock)
     @test min_stock(stock, bp) == 0

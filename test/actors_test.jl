@@ -104,7 +104,7 @@ end
     push!(posessions, Consumable(cb))
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
-    person = make_marginal(Actor(producers = [p1, p2], posessions = posessions, balance = balance), needs)
+    person = make_marginal(Actor(producers = [p1, p2], posessions = posessions, balance = balance), needs = needs)
 
     @test length(person.producers) == 2
     @test p1 in person.producers
@@ -129,7 +129,7 @@ end
     needs = Needs()
     push_want!(needs, cbp2, [(2, 1)])
     push_usage!(needs, cbp2, [(1, 1)])
-    make_marginal(actor1, needs)
+    make_marginal(actor1, needs = needs)
     min_stock!(actor1.stock, cbp1, 10)
 
     actor2 = Actor(producers = [p2])
@@ -137,7 +137,7 @@ end
     needs = Needs()
     push_want!(needs, cbp1, [(2, 1)])
     push_usage!(needs, cbp1, [(1, 1)])
-    make_marginal(actor2, needs)
+    make_marginal(actor2, needs = needs)
     min_stock!(actor2.stock, cbp2, 10)
 
     model = create_econo_model(update_stock!)
