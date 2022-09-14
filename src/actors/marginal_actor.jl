@@ -8,9 +8,12 @@ MARGINAL = :marginal
 * actor::Actor
 * needs::Needs
 """
-function make_marginal(actor::Actor, needs::Needs = Needs())
+function make_marginal(actor::Actor;
+                        needs::Needs = Needs(),
+                        select_supplier::Function = select_random_supplier)
     add_type!(actor, MARGINAL)
     actor.needs = needs
+    actor.select_supplier = select_supplier
     add_behavior!(actor, marginal_behavior)
 
     return actor
@@ -58,11 +61,15 @@ function delete_want!(actor::Actor,
     return actor
 end
 
-function purchase!(model, buyer::Actor, bp::Blueprint, units::Integer)
+function select_random_supplier(model, buyer::Actor, bp::Blueprint)
     condition(blueprint) = agent -> has_stock(agent.stock, blueprint)
-    seller = random_agent(model, condition(bp))
 
-    return isnothing(seller) ? 0 : purchase!(model, buyer, seller, bp, units)
+    return random_agent(model, condition(bp))
+end
+
+function purchase!(model, buyer::Actor, bp::Blueprint, units::Integer)
+    supplier = buyer.select_supplier(model, buyer, bp)
+    return isnothing(supplier) ? 0 : purchase!(model, buyer, supplier, bp, units)
 end
 
 # Behavior functions
