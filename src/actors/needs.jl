@@ -20,7 +20,7 @@ end
 
 @enum NeedType usage want
 
-Need = @NamedTuple{blueprint::B, units::Integer} where {B <: Blueprint}
+Need = @NamedTuple{blueprint::Blueprint, units::Integer}
 
 function needs_data(needs::Needs, type::NeedType)
     if type == usage
