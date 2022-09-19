@@ -113,21 +113,24 @@ end
     InfiniteStock
 """
 struct InfiniteStock <: Stock
-    blueprints::Set{<:Blueprint}
-    InfiniteStock(blueprints::AbstractSet{<:Blueprint}) = new(Set(blueprints))
+    blueprints::Union{Set{<:Blueprint}, Nothing}
+end
+
+function InfiniteStock(blueprints::Union{AbstractSet{<:Blueprint}, Nothing})
+    return isnothing(blueprints) ? InfiniteStock(blueprints) : InfiniteStock(Set{Blueprint}(blueprints))
 end
 
 get_entities(stock::InfiniteStock) = Entities()
 
-current_stock(stock::InfiniteStock, bp::Blueprint) = (isempty(stock.blueprints) || bp in stock.blueprints) ? INF : 0
-stock_limits(stock::InfiniteStock, bp::Blueprint) = (isempty(stock.blueprints) || bp in stock.blueprints) ? INF : 0
+current_stock(stock::InfiniteStock, bp::Blueprint) = (isnothing(stock.blueprints) || bp in stock.blueprints) ? INF : 0
+stock_limits(stock::InfiniteStock, bp::Blueprint) = (isnothing(stock.blueprints) || bp in stock.blueprints) ? INF : 0
 
 stock_limits!(stock::InfiniteStock, bp::Blueprint, min_units::Integer, max_units::Integer) = begin end
 
-min_stock(stock::InfiniteStock, bp::Blueprint) = (isempty(stock.blueprints) || bp in stock.blueprints) ? INF : 0
+min_stock(stock::InfiniteStock, bp::Blueprint) = (isnothing(stock.blueprints) || bp in stock.blueprints) ? INF : 0
 min_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer) = begin end
 
-max_stock(stock::InfiniteStock, bp::Blueprint) = (isempty(stock.blueprints) || bp in stock.blueprints) ? INF : 0
+max_stock(stock::InfiniteStock, bp::Blueprint) = (isnothing(stock.blueprints) || bp in stock.blueprints) ? INF : 0
 max_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer) = begin end
 
 add_stock!(stock::InfiniteStock, products::Entities; force::Bool = false) where E <: Entity = stock
@@ -139,7 +142,7 @@ add_product(stock::InfiniteStock, product::Entity, force::Bool) = true
 function retrieve_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer)
     products = Set{Entity}()
 
-    if isempty(stock.blueprints) || bp in stock.blueprints
+    if isnothing(stock.blueprints) || bp in stock.blueprints
         for counter in 1:units
             push!(products, ENTITY_CONSTRUCTORS[typeof(bp)](bp))
         end
@@ -148,11 +151,11 @@ function retrieve_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer)
     return products
 end
 
-has_stock(stock::InfiniteStock, bp::Blueprint) = isempty(stock.blueprints) || bp in stock.blueprints
-stocked(stock::InfiniteStock, bp::Blueprint) = isempty(stock.blueprints) || bp in stock.blueprints
+has_stock(stock::InfiniteStock, bp::Blueprint) = isnothing(stock.blueprints) || bp in stock.blueprints
+stocked(stock::InfiniteStock, bp::Blueprint) = isnothing(stock.blueprints) || bp in stock.blueprints
 overstocked(stock::InfiniteStock, bp::Blueprint) = false
 
-Base.isempty(stock::InfiniteStock) = !(isempty(stock.blueprints) || bp in stock.blueprints)
+Base.isempty(stock::InfiniteStock) = !(isnothing(stock.blueprints) || bp in stock.blueprints)
 Base.empty(stock::InfiniteStock) = begin end
 Base.empty!(stock::InfiniteStock) = begin end
 
