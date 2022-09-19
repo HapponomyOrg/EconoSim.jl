@@ -139,7 +139,7 @@ function retrieve_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer)
     products = Set{Entity}()
 
     for counter in 1:units
-        push!(products, ENTITY_CONSTRUCTORS[bp](bp))
+        push!(products, ENTITY_CONSTRUCTORS[typeof(bp)](bp))
     end
 
     return products
