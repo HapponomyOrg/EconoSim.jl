@@ -114,7 +114,7 @@ end
 """
 struct InfiniteStock <: Stock
     blueprints::Set{<:Blueprint}
-    InfiniteStock(blueprints::AbstractSet{<:Blueprint}) = new(Set(blueprint))
+    InfiniteStock(blueprints::AbstractSet{<:Blueprint}) = new(Set(blueprints))
 end
 
 get_entities(stock::InfiniteStock) = Entities()
