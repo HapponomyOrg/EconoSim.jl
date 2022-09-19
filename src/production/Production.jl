@@ -19,7 +19,7 @@ export health, damaged, usable, restorable, use!, restore!, maintenance_due, mai
 
 include("stock.jl")
 export Stock, PhysicalStock, InfiniteStock
-export current_stock, has_stock, stocked, overstocked, add_stock!, retrieve_stock!, min_stock, min_stock!, max_stock, max_stock!, stock_limits, stock_limits!, purge!
+export get_entities, current_stock, has_stock, stocked, overstocked, add_stock!, retrieve_stock!, min_stock, min_stock!, max_stock, max_stock!, stock_limits, stock_limits!, purge!
 
 include("products.jl")
 export Consumable, Decayable, Product, Producer
