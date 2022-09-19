@@ -75,7 +75,7 @@ end
 # Behavior functions
 
 function marginal_behavior(model, actor::Actor)
-    for dict in (actor.posessions, actor.stock.stock)
+    for dict in (actor.posessions, get_entities(actor.stock))
         for bp in collect(keys(dict))
             for entity in dict[bp]
                 if maintenance_due(entity)
