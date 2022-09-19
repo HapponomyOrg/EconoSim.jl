@@ -111,7 +111,7 @@ end
     InfiniteStock
 """
 struct InfiniteStock <: Stock
-    PhysicalStock() = new()
+    InfiniteStock() = new()
 end
 
 current_stock(stock::InfiniteStock, bp::Blueprint) = INF
