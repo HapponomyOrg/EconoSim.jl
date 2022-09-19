@@ -9,6 +9,8 @@ struct PhysicalStock <: Stock
     PhysicalStock() = new(Entities(), Dict{Blueprint, Tuple{Int64, Int64}}())
 end
 
+get_entities(stock::PhysicalStock) = stock.stock
+
 current_stock(stock::PhysicalStock, bp::Blueprint) = num_entities(stock.stock, bp)
 
 function stock_limits(stock::PhysicalStock, bp::Blueprint)
@@ -113,6 +115,8 @@ end
 struct InfiniteStock <: Stock
     InfiniteStock() = new()
 end
+
+get_entities(stock::InfiniteStock) = Entities()
 
 current_stock(stock::InfiniteStock, bp::Blueprint) = INF
 stock_limits(stock::InfiniteStock, bp::Blueprint) = INF
