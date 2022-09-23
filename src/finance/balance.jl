@@ -60,7 +60,7 @@ struct AtomicTransaction
     type::EntryType
     entry::BalanceEntry
     amount::Currency
-    result::Currency
+    result::Currency; todo"Change name to new_balance"
     comment::String
 end
 
@@ -129,21 +129,24 @@ function Balance(;def_min_asset = 0,
                         nothing,
                         properties)
     
-    if isnothing(trigger_initializers)
-        balance.trigger_actions = Vector{Function}()
-    elseif trigger_initializers isa Function
-        balance.trigger_actions = Vector{Function}([trigger_initializers(balance)])
-    else
-        triggers = Vector{Function}()
+    balance.trigger_actions = Vector{Function}()
     
-        for initializer in trigger_initializers
-            push!(triggers, initializer(balance))
-        end
-
-        balance.trigger_actions = triggers
+    if !isnothing(trigger_initializers)
+        add_triggers!(balance, trigger_initializers)
     end
 
     return balance
+end
+
+function add_triggers!(balance::Balance, trigger_initializer::Function)
+    push!(balance.trigger_actions(trigger_initializer(balance)))
+end
+
+function add_triggers!(balance::Balance,
+                        trigger_initializers::Vector{Function})
+    for initializer in trigger_initializers
+        push!(balance.trigger_actions, initializer(balance))
+    end
 end
 
 Base.show(io::IO, balance::Balance) = print(io, "Balance(\nAssets:\n$(balance.assets) \nLiabilities:\n$(balance.liabilities) \nTransactions:\n$(balance.transactions))")
@@ -593,6 +596,7 @@ function initialize_transaction_logging(b::Balance)
     return log_transaction
 end
 
+todo"Rewrite without transaction parameter"
 function log_transaction(balance::Balance,
                         entry::BalanceEntry,
                         type::EntryType,
