@@ -130,7 +130,7 @@ function Balance(;def_min_asset = 0,
                         properties)
     
     balance.trigger_actions = Vector{Function}()
-    
+
     if !isnothing(trigger_initializers)
         add_triggers!(balance, trigger_initializers)
     end
@@ -139,7 +139,7 @@ function Balance(;def_min_asset = 0,
 end
 
 function add_triggers!(balance::Balance, trigger_initializer::Function)
-    push!(balance.trigger_actions(trigger_initializer(balance)))
+    push!(balance.trigger_actions, trigger_initializer(balance))
 end
 
 function add_triggers!(balance::Balance,
