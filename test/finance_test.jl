@@ -246,6 +246,23 @@ end
     @test sumsy_balance(balance, sumsy) == 257000
 end
 
+@testset "SuMSy demurrage - overrides" begin
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10)
+    balance = Balance()
+    
+    set_sumsy_overrides!(balance, sumsy_overrides(sumsy,
+                                                    seed = 10000,
+                                                    guaranteed_income = 1000,
+                                                    dem_free = 0,
+                                                    dem_tiers = 0))
+    
+    process_sumsy!(balance, sumsy, 0)
+    @test sumsy_balance(balance, sumsy) == 11000
+
+    process_sumsy!(balance, sumsy, 10)
+    @test sumsy_balance(balance, sumsy) == 12000
+end
+
 @testset "SuMSy telo" begin
     sumsy = SuMSy(4000, 50000, [(0, 0.01), (50000, 0.02), (150000, 0.05)], 10)
 
