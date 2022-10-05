@@ -10,6 +10,8 @@ SUMSY_DEM_FREE(id) = BalanceEntry(string(id, " demurrage free buffer"))
 DemTiers = Vector{Tuple{Interval, Percentage}}
 DemSettings = Union{DemTiers, Vector{<: Tuple{Real, Real}}, Real}
 
+abstract type SuMSyParams end
+
 """
     struct SuMSy
 
@@ -28,7 +30,7 @@ The lower bound of the first tuple is always set to 0.
 * dep_entry: The balance entry used for depositing GI.
 * dem_free_entry: The balance entry for the demurrage free buffer. Needs to change.
 """
-mutable struct SuMSy
+mutable struct SuMSy <: SuMSyParams
     id::Symbol
     guaranteed_income::Currency
     dem_free::Currency
@@ -133,7 +135,7 @@ end
 
 SuMSy overrides to be used for individual balances.
 """
-mutable struct SuMSyOverrides
+mutable struct SuMSyOverrides <: SuMSyParams
     sumsy_id::Symbol
     seed::Currency
     guaranteed_income::Currency
@@ -221,8 +223,6 @@ function is_sumsy_active(balance::Balance, sumsy::SuMSy)
     end
 end
 
-has_overrides(balance::Balance, sumsy::SuMSy) = haskey(balance.properties, sumsy.id) && !isnothing(balance.properties[sumsy.id][2])
-
 function set_sumsy_overrides!(balance::Balance, overrides::SuMSyOverrides)
     if haskey(balance.properties, overrides.sumsy_id)
         balance.properties[overrides.sumsy_id][2] = overrides
@@ -233,8 +233,35 @@ function set_sumsy_overrides!(balance::Balance, overrides::SuMSyOverrides)
     return balance
 end
 
+function get_sumsy_overrides(balance::Balance, sumsy::SuMSy)
+    if haskey(balance.properties, sumsy.id)
+        return balance.properties[sumsy.id][2]
+    else
+        return nothing
+    end
+end
+
+has_sumsy_overrides(balance::Balance, sumsy::SuMSy) = !isnothing(get_sumsy_overrides(balance, sumsy))
+
+"""
+    get_sumsy_params(balance::Balance, sumsy::SuMSy)
+
+Returns sumsy if there are no overrides. Otherwise returns the overrides.
+"""
+function get_sumsy_params(balance::Balance, sumsy::SuMSy)
+    overrides = get_sumsy_overrides(balance, sumsy)
+
+    if isnothing(overrides)
+        return sumsy
+    else
+        return overrides
+    end
+end
+
+get_sumsy_params(balance::Balance, sumsy_overrides::SuMSyOverrides) = sumsy_overrides
+
 function set_seed!(balance::Balance, sumsy::SuMSy, seed::Real)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
             balance.properties[sumsy.id][2].seed = seed
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
@@ -245,7 +272,7 @@ function set_seed!(balance::Balance, sumsy::SuMSy, seed::Real)
 end
 
 function get_seed(balance::Balance, sumsy::SuMSy)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
         return balance.properties[sumsy.id][2].seed
     else
         return sumsy.seed
@@ -253,7 +280,7 @@ function get_seed(balance::Balance, sumsy::SuMSy)
 end
 
 function set_guaranteed_income!(balance, sumsy::SuMSy, guaranteed_income::Real)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
             balance.properties[sumsy.id][2].guaranteed_income = guaranteed_income
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
@@ -264,7 +291,7 @@ function set_guaranteed_income!(balance, sumsy::SuMSy, guaranteed_income::Real)
 end
 
 function get_guaranteed_income(balance::Balance, sumsy::SuMSy)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
         return balance.properties[sumsy.id][2].guaranteed_income
     else
         return sumsy.guaranteed_income
@@ -273,7 +300,7 @@ end
 
 todo"Move demurrage free buffer off balance sheet."
 function set_initial_dem_free!(balance::Balance, sumsy::SuMSy, dem_free::Real)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
         balance.properties[sumsy.id][2].dem_free = dem_free
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
@@ -291,7 +318,7 @@ end
 Returns the initial size of the demurrage free buffer.
 """
 function get_initial_dem_free(balance::Balance, sumsy::SuMSy)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
         return balance.properties[sumsy.id][2].dem_free
     else
         return sumsy.dem_free
@@ -337,7 +364,7 @@ end
 function set_dem_tiers!(balance::Balance, sumsy::SuMSy, dem_settings::DemSettings)
     dem_tiers = make_tiers(dem_settings)
 
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
             balance.properties[sumsy.id][2].dem_tiers = dem_tiers
     else
         balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
@@ -348,7 +375,7 @@ function set_dem_tiers!(balance::Balance, sumsy::SuMSy, dem_settings::DemSetting
 end
 
 function get_dem_tiers(balance::Balance, sumsy::SuMSy)
-    if has_overrides(balance, sumsy)
+    if has_sumsy_overrides(balance, sumsy)
         return balance.properties[sumsy.id][2].dem_tiers
     else
         return sumsy.dem_tiers
@@ -390,10 +417,10 @@ end
 
 Calculates the demurrage due at the current timestamp. This is not restricted to timestamps which correspond to multiples of the interval.
 """
-function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
+function calculate_demurrage(balance::Balance, sumsy_params::SuMSyParams, step::Int)
     transactions = balance.transaction_log
-    cur_balance = asset_value(balance, sumsy.dep_entry)
-    period = mod(step, sumsy.interval) == 0 ? sumsy.interval : mod(step, sumsy.interval)
+    cur_balance = asset_value(balance, sumsy_params.dep_entry)
+    period = mod(step, sumsy_params.interval) == 0 ? sumsy_params.interval : mod(step, sumsy_params.interval)
     period_start = step - period
     weighted_balance = 0
     i = length(transactions)
@@ -407,7 +434,7 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
             t = transactions[i]
 
             for transaction in t.transactions
-                if transaction.type == asset && transaction.entry == sumsy.dep_entry
+                if transaction.type == asset && transaction.entry == sumsy_params.dep_entry
                     amount += transaction.amount
                 end
             end
@@ -424,17 +451,17 @@ function calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
         weighted_balance += (t_step - period_start) * cur_balance
     end
 
-    return calculate_demurrage(max(0, weighted_balance / period - get_dem_free(balance, sumsy)), sumsy, false)
+    return calculate_demurrage(weighted_balance / period, get_sumsy_params(balance, sumsy_params))
 end
 
-function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_free = true)
+function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, subtract_dem_free = true)
     if subtract_dem_free
-        avg_balance = max(0, avg_balance - sumsy.dem_free)
+        avg_balance = max(0, avg_balance - sumsy_params.dem_free)
     end
 
     demurrage = 0
 
-    for tier in sumsy.dem_tiers
+    for tier in sumsy_params.dem_tiers
         if avg_balance <= 0
             break
         else
@@ -453,8 +480,8 @@ function calculate_demurrage(avg_balance::Currency, sumsy::SuMSy, subtract_dem_f
     return Currency(demurrage)
 end
 
-function telo(sumsy::SuMSy)
-    return telo(sumsy.guaranteed_income, sumsy.dem_free, sumsy.dem_tiers)
+function telo(sumsy_params::SuMSyParams)
+    return telo(sumsy_params.guaranteed_income, sumsy_params.dem_free, sumsy_params.dem_tiers)
 end
 
 function telo(income::Real, dem_free::Real, dem_settings::DemSettings)
@@ -484,12 +511,13 @@ function telo(income::Currency, dem_free::Currency, dem_tiers::DemTiers)
 end
 
 function time_telo(sumsy::SuMSy, balance::Balance = Balance())
+    sumsy_params = get_sumsy_params(balance, sumsy)
     t = 0
-    eq = telo(sumsy)
+    eq = telo(sumsy_params)
 
     while asset_value(balance, SUMSY_DEP) < eq - 1
-        dem = calculate_demurrage(balance, sumsy, 0)
-        book_asset!(balance, SUMSY_DEP, sumsy.guaranteed_income - dem)
+        dem = calculate_demurrage(balance, sumsy_params, 0)
+        book_asset!(balance, SUMSY_DEP, sumsy_params.guaranteed_income - dem)
         t += 1
     end
 
