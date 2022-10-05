@@ -12,11 +12,13 @@ export initialize_transaction_logging, log_transaction
 
 include("sumsy.jl")
 export SUMSY_DEP, SUMSY_DEBT
-export SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
+export SuMSyParams, SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export SuMSyOverrides
 export calculate_demurrage, process_sumsy!, sumsy_balance, sumsy_transfer!
 export telo, time_telo
-export set_sumsy_active!, is_sumsy_active, sumsy_overrides, set_sumsy_overrides!, set_seed!, get_seed, set_guaranteed_income!, get_guaranteed_income, set_initial_dem_free!, get_initial_dem_free, get_dem_free, transfer_dem_free!, set_dem_tiers, get_dem_tiers
+export set_sumsy_active!, is_sumsy_active
+export sumsy_overrides, set_sumsy_overrides!, get_sumsy_overrides, has_sumsy_overrides, get_sumsy_params
+export set_seed!, get_seed, set_guaranteed_income!, get_guaranteed_income, set_initial_dem_free!, get_initial_dem_free, get_dem_free, transfer_dem_free!, set_dem_tiers, get_dem_tiers
 export process_ready
 export book_net_result!, book_atomic_results!, book_nothing
 
