@@ -33,7 +33,7 @@ max_stock!(stock::PhysicalStock, bp::Blueprint, units::Integer) = stock_limits!(
 
 function add_stock!(stock::PhysicalStock,
                 products::Entities;
-                force::Bool = false) where E <: Entity
+                force::Bool = false)
     for bp in keys(products)
         for product in products[bp]
             if add_product(stock, product, force)
@@ -133,7 +133,7 @@ min_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer) = begin end
 max_stock(stock::InfiniteStock, bp::Blueprint) = (isnothing(stock.blueprints) || bp in stock.blueprints) ? INF : 0
 max_stock!(stock::InfiniteStock, bp::Blueprint, units::Integer) = begin end
 
-add_stock!(stock::InfiniteStock, products::Entities; force::Bool = false) where E <: Entity = stock
+add_stock!(stock::InfiniteStock, products::Entities; force::Bool = false) = stock
 add_stock!(stock::InfiniteStock, products::Union{<:AbstractSet{E}, <:AbstractVector{E}}; force::Bool = false) where E <: Entity = stock
 add_stock!(stock::InfiniteStock, product::Entity; force::Bool = false) = stock
 
