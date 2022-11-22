@@ -114,10 +114,11 @@ end
 """
 struct InfiniteStock <: Stock
     blueprints::Union{Set{<:Blueprint}, Nothing}
+    InfiniteStock(blueprints::Union{AbstractSet{<:Blueprint}, Nothing}) = new(isnothing(blueprints) ? blueprints : Set{Blueprint}(blueprints))
 end
 
-function InfiniteStock(blueprints::Union{AbstractSet{<:Blueprint}, Nothing})
-    return isnothing(blueprints) ? InfiniteStock(blueprints) : InfiniteStock(Set{Blueprint}(blueprints))
+function InfiniteStock()
+    return InfiniteStock(nothing)
 end
 
 get_entities(stock::InfiniteStock) = Entities()
