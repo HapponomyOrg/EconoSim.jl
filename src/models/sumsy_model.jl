@@ -7,7 +7,7 @@ function sumsy_actor(;id::Integer = ID_COUNTER,
                         behavior::Union{Function, Nothing} = nothing,
                         balance::Balance = Balance(trigger_initializers = initialize_transaction_logging),
                         posessions::Entities = Entities(),
-                        stock::Stock = Stock(),
+                        stock::Stock = PhysicalStock(),
                         producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
                         prices::D = Dict{Blueprint, Price}()) where {D <: Dict{<: Blueprint, Price}}
     return Actor(id = id,
