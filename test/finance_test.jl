@@ -263,6 +263,14 @@ end
     @test sumsy_balance(balance, sumsy) == 12000
 end
 
+@testset "SuMSy real time balance" begin
+    sumsy = SuMSy(1000, 0, 0.1, 10)
+    balance = Balance()
+
+    book_asset!(balance, SUMSY_DEP, 1000, 0)
+    @test sumsy_balance(balance, sumsy, 5) == 1450
+end
+
 @testset "SuMSy telo" begin
     sumsy = SuMSy(4000, 50000, [(0, 0.01), (50000, 0.02), (150000, 0.05)], 10)
 
