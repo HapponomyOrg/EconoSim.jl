@@ -429,7 +429,7 @@ Calculates the demurrage due at the current timestamp. This is not restricted to
 """
 function calculate_demurrage(balance::Balance, sumsy_params::SuMSyParams, step::Int)
     transactions = balance.transaction_log
-    cur_balance = asset_value(balance, sumsy_params.dep_entry)
+    cur_balance = sumsy_balance(balance, sumsy_params)
     period = mod(step, sumsy_params.interval) == 0 ? sumsy_params.interval : mod(step, sumsy_params.interval)
     period_start = step - period
     weighted_balance = 0
@@ -461,10 +461,10 @@ function calculate_demurrage(balance::Balance, sumsy_params::SuMSyParams, step::
         weighted_balance += (t_step - period_start) * cur_balance
     end
 
-    return calculate_demurrage(weighted_balance / period, get_sumsy_params(balance, sumsy_params))
+    return calculate_demurrage(weighted_balance / period, get_sumsy_params(balance, sumsy_params), fraction = period / sumsy_params.interval)
 end
 
-function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, subtract_dem_free = true)
+function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, subtract_dem_free = true; fraction::Float = 1.0)
     if subtract_dem_free
         avg_balance = max(0, avg_balance - sumsy_params.dem_free)
     end
@@ -487,7 +487,7 @@ function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, s
         end
     end
 
-    return Currency(demurrage)
+    return Currency(demurrage * fraction)
 end
 
 function telo(sumsy_params::SuMSyParams)
