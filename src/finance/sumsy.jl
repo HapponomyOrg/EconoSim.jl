@@ -464,7 +464,7 @@ function calculate_demurrage(balance::Balance, sumsy_params::SuMSyParams, step::
     return calculate_demurrage(weighted_balance / period, get_sumsy_params(balance, sumsy_params), fraction = period / sumsy_params.interval)
 end
 
-function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, subtract_dem_free = true; fraction::Float = 1.0)
+function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, subtract_dem_free = true; fraction::Real = 1.0)
     if subtract_dem_free
         avg_balance = max(0, avg_balance - sumsy_params.dem_free)
     end
