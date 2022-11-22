@@ -386,6 +386,16 @@ function sumsy_balance(balance::Balance, sumsy::SuMSy)
     return asset_value(balance, sumsy.dep_entry)
 end
 
+function sumsy_balance(balance::Balance, sumsy::SuMSy, step::Int)
+    return sumsy_balance(balance, sumsy) + calculate_partial_guaranteed_income(sumsy, step) - calculate_demurrage(balance, sumsy, step)
+end
+
+function calculate_partial_guaranteed_income(sumsy_params::SuMSyParams, step::Int)
+    period = mod(step, sumsy_params.interval) == 0 ? sumsy_params.interval : mod(step, sumsy_params.interval)
+
+    return Currency(sumsy_params.guaranteed_income * period / sumsy_params.interval)
+end
+
 """
     sumsy_transfer(source::Balance,
                     destination::Balance,
