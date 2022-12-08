@@ -96,7 +96,7 @@ function purchases_available(balance::Balance, price::Price, units::Integer; exc
         end
     end
 
-    return min(units, Integer(round(Float64(max_available), RoundDown)))
+    return Integer(round(Float64(min(units, max_available), RoundDown)))
 end
 
 """
