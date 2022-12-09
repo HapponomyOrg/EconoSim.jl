@@ -3,7 +3,7 @@ export EntryType, BalanceEntry, Balance, AtomicTransaction, Transaction
 export EQUITY, asset, liability
 export add_triggers!
 export has_asset, has_liability
-export clear!, min_balance!, min_asset!, min_liability!, min_balance, min_asset, min_liability
+export clear!, typemin_asset!, typemin_liability!, typemin_balance!, min_balance!, min_asset!, min_liability!, min_balance, min_asset, min_liability
 export validate, assets, liabilities, asset_value, assets_value, liability_value, liabilities_value, liabilities_net_value, equity
 export book_asset!, book_liability!
 export transfer!, transfer_asset!, transfer_liability!
