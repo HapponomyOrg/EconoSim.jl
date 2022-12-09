@@ -217,8 +217,16 @@ function min_balance!(balance::Balance,
     end
 end
 
+function typemin_balance!(balance::Balance,
+                        entry::BalanceEntry,
+                        type::EntryType)
+    return min_balance!(balance, entry, type, typemin(Currency) + 1)
+end
+
 min_asset!(balance::Balance, entry::BalanceEntry, amount::Real = 0) = min_balance!(balance, entry, asset, amount)
+typemin_asset!(balance::Balance, entry::BalanceEntry) = typemin_balance!(balance, entry, asset)
 min_liability!(balance::Balance, entry::BalanceEntry, amount::Real = 0) = min_balance!(balance, entry, liability, amount)
+typemin_liability!(balance::Balance, entry::BalanceEntry) = typemin_balance!(balance, entry, liability)
 
 function min_balance(balance::Balance,
                     entry::BalanceEntry,
