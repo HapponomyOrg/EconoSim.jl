@@ -92,22 +92,11 @@ function purchases_available(balance::Balance, price::Price, units::Integer; exc
 
     for entry in keys(price)
         if price[entry] != 0
-            max_available = min(max_available, asset_value(balance, entry) / price[entry])
+            max_available = min(max_available, (asset_value(balance, entry) - min_asset(balance, entry)) / price[entry])
         end
     end
 
-    available_units = 0
-
-    try
-        available_units = min(units, max_available)
-        available_units = Float64(available_units)
-        available_units = round(available_units, RoundDown)
-        available_units = Integer(available_units)
-    catch e
-        available_units = 0
-    end
-
-    return Integer(round(Float64(min(units, max_available)), RoundDown))
+    return Integer(trunc(min(units, max_available)))
 end
 
 """
