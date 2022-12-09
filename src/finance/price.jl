@@ -88,7 +88,7 @@ Base.:/(price::Price, x::Real) = apply_op(price, x, :/)
 
 todo"Implement with taking possible exchanges between currencies into account"
 function purchases_available(balance::Balance, price::Price, units::Integer; exchange_rates = ExchangeRates())
-    max_available = asset_value(balance, price.main_currency) / price[price.main_currency]
+    max_available = (asset_value(balance, price.main_currency) - min_asset(balance, price.main_currency)) / price[price.main_currency]
 
     for entry in keys(price)
         if price[entry] != 0
