@@ -96,6 +96,17 @@ function purchases_available(balance::Balance, price::Price, units::Integer; exc
         end
     end
 
+    available_units = 0
+
+    try
+        available_units = min(units, max_available)
+        available_units = Float64(available_units)
+        available_units = round(available_units, RoundDown)
+        available_units = Integer(available_units)
+    catch e
+        available_units = 0
+    end
+
     return Integer(round(Float64(min(units, max_available)), RoundDown))
 end
 
