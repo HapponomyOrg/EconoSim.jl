@@ -48,6 +48,6 @@ function process(marginality::Marginality, units::Int64 = 0)
     return total_units - units
 end
 
-function process(marginality::Vector{Tuple{Int64, Percentage}}, units::Int64 = 0)
+function process(marginality::Vector{Tuple{Int64, Number}}, units::Int64 = 0)
     return process(Marginality(marginality), units)
 end
