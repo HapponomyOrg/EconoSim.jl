@@ -14,7 +14,7 @@ include("sumsy.jl")
 export SUMSY_DEP, SUMSY_DEBT
 export SuMSyParams, SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export SuMSyOverrides
-export calculate_demurrage, calculate_partial_guaranteed_income, process_sumsy!, sumsy_balance, sumsy_transfer!
+export calculate_demurrage, calculate_partial_guaranteed_income, process_sumsy!, sumsy_balance, transfer_sumsy!
 export telo, time_telo
 export set_sumsy_active!, is_sumsy_active
 export sumsy_overrides, set_sumsy_overrides!, get_sumsy_overrides, has_sumsy_overrides, get_sumsy_params

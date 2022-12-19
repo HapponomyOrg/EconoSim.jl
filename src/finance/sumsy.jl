@@ -397,7 +397,7 @@ function calculate_partial_guaranteed_income(sumsy_params::SuMSyParams, step::In
 end
 
 """
-    sumsy_transfer(source::Balance,
+    transfer_sumsy!(source::Balance,
                     destination::Balance,
                     sumsy::SuMSy,
                     amount::Real,
@@ -407,7 +407,7 @@ end
 Transfer an amount of SuMSy money from one balance sheet to another. No more than the available amount of money can be transferred.
 Negative amounts result in a transfer from destination to source.
 """
-function sumsy_transfer!(source::Balance,
+function transfer_sumsy!(source::Balance,
                             destination::Balance,
                             sumsy::SuMSy,
                             amount::Real,
