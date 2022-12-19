@@ -146,7 +146,7 @@ function book_sumsy!(model, actor::Actor, seed::Currency, income::Currency, demu
     model.book_sumsy(actor.balance, model.sumsy, seed, income, demurrage, model.step)
 
     if model.contribution_mode != no_contribution
-        sumsy_transfer!(actor.balance,
+        transfer_sumsy!(actor.balance,
                         model.contribution_balance,
                         model.sumsy, contribution,
                         model.step,
