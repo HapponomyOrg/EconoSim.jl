@@ -5,12 +5,202 @@ using Todo
 
 SUMSY_DEP = BalanceEntry("SuMSy deposit")
 SUMSY_DEBT = BalanceEntry("SuMSy debt")
-SUMSY_DEM_FREE(id) = BalanceEntry(string(id, " demurrage free buffer"))
 
 DemTiers = Vector{Tuple{Interval, Percentage}}
 DemSettings = Union{DemTiers, Vector{<: Tuple{Real, Real}}, Real}
 
-abstract type SuMSyParams end
+abstract type SuMSyBalance <: AbstractBalance end
+
+set_last_transaction!(sumsy_balance::SuMSyBalance, timestamp::Int) = set_last_transaction!(sumsy_balance.balance, timestamp)
+get_last_transaction(sumsy_balance::SuMSyBalance) = get_last_transaction(sumsy_balance.balance)
+
+has_asset(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = has_asset(get_balance(sumsy_balance), entry)
+has_liability(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = has_liability(get_balance(sumsy_balance), entry)
+
+clear!(sumsy_balance::SuMSyBalance) = clear!(get_balance(sumsy_balance))
+
+min_balance!(sumsy_balance::SuMSyBalance,
+                entry::BalanceEntry,
+                type::EntryType,
+                amount::Real = 0) = min_balance!(get_balance(sumsy_balance), entry, type, amount)
+typemin_balance!(sumsy_balance::SuMSyBalance,
+                    entry::BalanceEntry,
+                    type::EntryType) = typemin_balance!(get_balance(sumsy_balance), entry, type)
+
+min_asset!(sumsy_balance::SuMSyBalance, entry::BalanceEntry, amount::Real = 0) = min_asset!(get_balance(sumsy_balance), entry, amount)
+typemin_asset!(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = typemin_asset!(get_balance(sumsy_balance), entry)
+
+min_liability!(sumsy_balance::SuMSyBalance, entry::BalanceEntry, amount::Real = 0) = min_liability!(get_balance(sumsy_balance), entry, amount)
+typemin_liability!(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = typemin_liability!(get_balance(sumsy_balance), entry)
+
+min_balance(sumsy_balance::SuMSyBalance, entry::BalanceEntry, type::EntryType) = min_balance(get_balance(sumsy_balance), entry, type)
+min_asset(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = min_asset(get_balance(sumsy_balance), entry)
+min_liability(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = min_liability(get_balance(sumsy_balance), entry)
+
+
+validate(sumsy_balance::SuMSyBalance) = validate(get_balance(sumsy_balance))
+asset_value(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = asset_value(get_balance(sumsy_balance), entry)
+liability_value(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = liability_value(get_balance(sumsy_balance), entry)
+assets(sumsy_balance::SuMSyBalance) = assets(get_balance(sumsy_balance))
+liabilities(sumsy_balance::SuMSyBalance) = liabilities(get_balance(sumsy_balance))
+assets_value(sumsy_balance::SuMSyBalance) = assets_value(get_balance(sumsy_balance))
+liabilities_value(sumsy_balance::SuMSyBalance) = liabilities_value(get_balance(sumsy_balance))
+liabilities_net_value(sumsy_balance::SuMSyBalance) = liabilities_net_value(get_balance(sumsy_balance))
+equity(sumsy_balance::SuMSyBalance) = equity(get_balance(sumsy_balance))
+
+book_asset!(sumsy_balance::SuMSyBalance,
+            entry::BalanceEntry,
+            amount::Real;
+            timestamp::Int = get_last_adjustment(sumsy_balance),
+            set_to_value = false) = book_asset!(get_balance(sumsy_balance),
+                                                entry,
+                                                amount,
+                                                timestamp = timestamp,
+                                                set_to_value = set_to_value)
+book_liability!(sumsy_balance::SuMSyBalance,
+                entry::BalanceEntry,
+                amount::Real;
+                timestamp::Int = get_last_adjustment(sumsy_balance),
+                set_to_value = false) = book_liability!(get_balance(sumsy_balance),
+                                                            entry,
+                                                            amount,
+                                                            set_to_value = set_to_value,
+                                                            timestamp = timestamp)
+transfer!(sumsy_balance1::SuMSyBalance,
+            type1::EntryType,
+            entry1::BalanceEntry,
+            sumsy_balance2::SuMSyBalance,
+            type2::EntryType,
+            entry2::BalanceEntry,
+            amount::Real;
+            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                transfer!(get_balance(sumsy_balance1),
+                            type1,
+                            entry1,
+                            get_balance(sumsy_balance2),
+                            type2,
+                            entry2,
+                            amount,
+                            timestamp = timestamp)
+transfer!(sumsy_balance1::SuMSyBalance,
+                type1::EntryType,
+                sumsy_balance2::SuMSyBalance,
+                type2::EntryType,
+                entry::BalanceEntry,
+                amount::Real;
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                    transfer!(get_balance(sumsy_balance1),
+                                type1,
+                                get_balance(sumsy_balance2),
+                                type2,
+                                entry,
+                                amount,
+                                timestamp = timestamp)
+transfer_asset!(sumsy_balance1::SuMSyBalance,
+                sumsy_balance2::SuMSyBalance,
+                entry::BalanceEntry,
+                amount::Real;
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                    transfer_asset!(get_balance(sumsy_balance1),
+                                    get_balance(sumsy_balance2),
+                                    entry,
+                                    amount,
+                                    timestamp = timestamp)
+transfer_asset!(sumsy_balance1::SuMSyBalance,
+                entry1::BalanceEntry,
+                sumsy_balance2::SuMSyBalance,
+                entry2::BalanceEntry,
+                amount::Real;
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                    transfer_asset!(get_balance(sumsy_balance1),
+                                    entry1,
+                                    get_balance(sumsy_balance2),
+                                    entry2,
+                                    amount,
+                                    timestamp = timestamp)
+transfer_liability!(sumsy_balance1::SuMSyBalance,
+                    sumsy_balance2::SuMSyBalance,
+                    entry::BalanceEntry,
+                    amount::Real;
+                    timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                        transfer_liability!(get_balance(sumsy_balance1),
+                                            get_balance(sumsy_balance2),
+                                            entry,
+                                            amount,
+                                            timestamp = timestamp)
+transfer_liability!(sumsy_balance1::SuMSyBalance,
+                    entry1::BalanceEntry,
+                    sumsy_balance2::SuMSyBalance,
+                    entry2::BalanceEntry,
+                    amount::Real;
+                    timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                        transfer_liability!(get_balance(sumsy_balance1),
+                                            entry1,
+                                            get_balance(sumsy_balance2),
+                                            entry2,
+                                            amount,
+                                            timestamp = timestamp)
+queue_transfer!(sumsy_balance1::SuMSyBalance,
+                type1::EntryType,
+                entry1::BalanceEntry,
+                sumsy_balance2::SuMSyBalance,
+                type2::EntryType,
+                entry2::BalanceEntry,
+                amount::Real;
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                    queue_transfer!(get_balance(sumsy_balance1),
+                                    type1,
+                                    entry1,
+                                    get_balance(sumsy_balance2),
+                                    type2,
+                                    entry2,
+                                    amount,
+                                    timestamp = timestamp)
+queue_asset_transfer!(sumsy_balance1::SuMSyBalance,
+                        entry1::BalanceEntry,
+                        sumsy_balance2::SuMSyBalance,
+                        entry2::BalanceEntry,
+                        amount::Real;
+                        timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                            queue_asset_transfer!(get_balance(sumsy_balance1),
+                                                    entry1,
+                                                    get_balance(sumsy_balance2),
+                                                    entry2,
+                                                    amount)
+queue_asset_transfer!(sumsy_balance1::SuMSyBalance,
+                        sumsy_balance2::SuMSyBalance,
+                        entry::BalanceEntry,
+                        amount::Real;
+                        timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                            queue_asset_transfer!(get_balance(sumsy_balance1),
+                                                    get_balance(sumsy_balance2),
+                                                    entry,
+                                                    amount,
+                                                    timestamp = timestamp)
+queue_liability_transfer!(sumsy_balance1::SuMSyBalance,
+                            entry1::BalanceEntry,
+                            sumsy_balance2::SuMSyBalance,
+                            entry2::BalanceEntry,
+                            amount::Real;
+                            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                                queue_liability_transfer!(get_balance(sumsy_balance1),
+                                                            entry1,
+                                                            get_balance(sumsy_balance2),
+                                                            entry2,
+                                                            amount,
+                                                            timestamp = timestamp)
+queue_liability_transfer!(sumsy_balance1::SuMSyBalance,
+                            sumsy_balance2::SuMSyBalance,
+                            entry::BalanceEntry,
+                            amount::Real;
+                            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                                queue_liability_transfer!(get_balance(sumsy_balance1),
+                                                            get_balance(sumsy_balance2),
+                                                            entry,
+                                                            amount,
+                                                            timestamp = timestamp)
+
+execute_transfers!(sumsy_balance::SuMSyBalance) = execute_transfers!(get_balance(sumsy_balance))
 
 """
     struct SuMSy
@@ -28,138 +218,49 @@ The lower bound of the first tuple is always set to 0.
 * demurrage_comment: The transaction comment for demurrage bookings.
 * net_income_comment: The transaction comment for net income bookings. These transactions combine demurrage and guaranteed income in one transaction.
 * dep_entry: The balance entry used for depositing GI.
-* dem_free_entry: The balance entry for the demurrage free buffer. Needs to change.
+* transactional: Whether or not the SuMSy implementation is transaction based. Transaction based SuMSy implementations apply partial guaranteed income and demurrage before each transaction.
 """
-mutable struct SuMSy <: SuMSyParams
-    id::Symbol
+struct SuMSyIncome
+    seed::Currency
     guaranteed_income::Currency
+end
+
+struct SuMSyDemurrage
     dem_free::Currency
     dem_tiers::DemTiers
+end
+
+struct SuMSy
     interval::Int64
-    seed::Currency
-    seed_comment::String
-    guaranteed_income_comment::String
-    demurrage_comment::String
-    net_income_comment::String
-    dep_entry::BalanceEntry
-    dem_free_entry::BalanceEntry
+    transactional::Bool
+    income::SuMSyIncome
+    demurrage::SuMSyDemurrage
 end
 
-function SuMSy(id,
-                guaranteed_income::Real,
-                dem_free::Real,
-                dem_settings::DemSettings,
-                period::Integer;
-                interval = period,
-                seed::Real = 0,
-                seed_comment = "Seed",
-                guaranteed_income_comment = "Guaranteed income",
-                demurrage_comment = "Demurrage",
-                net_income_comment = "Net income",
-                dep_entry = SUMSY_DEP,
-                dem_free_entry = SUMSY_DEM_FREE(id))
-    dem_tiers = make_tiers(dem_settings)
-
-    if interval / period != 1
-        guaranteed_income *= interval/period
-        new_tiers = DemTiers()
-                
-        for tier in dem_tiers
-            push!(new_tiers, (tier[1], tier[2] * interval / period))
-        end
-
-        dem_tiers = new_tiers
-    end
-
-    return SuMSy(Symbol(id),
-                guaranteed_income,
-                dem_free,
-                dem_tiers,
-                interval,
-                seed,
-                seed_comment,
-                guaranteed_income_comment,
-                demurrage_comment,
-                net_income_comment,
-                dep_entry,
-                dem_free_entry)
-end
-
-"""
-    SuMSy(guaranteed_income::Real,
-            dem_free::Real,
-            dem_settings::DemSettings,
-            interval::Integer;
-            seed::Real = 0,
-            seed_comment = "Seed",
-            guaranteed_income_comment = "Guaranteed income",
-            demurrage_comment = "Demurrage",
-            net_income_comment = "Net income",
-            dep_entry = SUMSY_DEP,
-            dem_free_entry = nothing)
-
-Create a SuMSy struct with a default id. The id is set to :sumsy-uuid where uuid is generated by uuid4().
-"""
 function SuMSy(guaranteed_income::Real,
                 dem_free::Real,
-                dem_settings::DemSettings,
-                period::Integer;
-                interval::Integer = period,
+                dem_settings::Union{DemSettings, DemTiers},
+                interval::Integer;
                 seed::Real = 0,
-                seed_comment = "Seed",
-                guaranteed_income_comment = "Guaranteed income",
-                demurrage_comment = "Demurrage",
-                net_income_comment = "Net income",
-                dep_entry = SUMSY_DEP,
-                dem_free_entry = nothing)
-    id = string(:sumsy, "-", uuid4())
+                transactional = false)
+    dem_tiers = make_tiers(dem_settings)
+    income = SuMSyIncome(seed, guaranteed_income)
+    demurrage = SuMSyDemurrage(dem_free, dem_tiers)
 
-    if isnothing(dem_free_entry)
-        dem_free_entry = SUMSY_DEM_FREE(id)
-    end
-
-    return SuMSy(id,
-                guaranteed_income, dem_free, dem_settings, period,
-                interval = interval,
-                seed = seed,
-                seed_comment = seed_comment,
-                guaranteed_income_comment = guaranteed_income_comment,
-                demurrage_comment = demurrage_comment,
-                net_income_comment = net_income_comment,
-                dep_entry = dep_entry,
-                dem_free_entry = dem_free_entry)
+    return SuMSy(interval,
+                transactional,
+                income,
+                demurrage)
 end
 
-"""
-    SuMSyOverrides
-
-SuMSy overrides to be used for individual balances.
-"""
-mutable struct SuMSyOverrides <: SuMSyParams
-    sumsy_id::Symbol
-    seed::Currency
-    guaranteed_income::Currency
-    dem_free::Currency
-    dem_tiers::DemTiers
-    SuMSyOverrides(sumsy_id::Symbol,
-                    seed::Real,
-                    guaranteed_income::Real,
-                    dem_free::Real,
-                    dem_settings::DemSettings) = new(
-                        sumsy_id,
-                        seed,
-                        guaranteed_income,
-                        dem_free,
-                        make_tiers(dem_settings)
-                        )
-end
-
-function sumsy_overrides(sumsy::SuMSy;
-                        seed = sumsy.seed,
-                        guaranteed_income = sumsy.guaranteed_income,
-                        dem_free = sumsy.dem_free,
-                        dem_tiers = sumsy.dem_tiers)
-    return SuMSyOverrides(sumsy.id, seed, guaranteed_income, dem_free, dem_tiers)
+function SuMSy(sumsy::SuMSy;
+                interval::Int = sumsy.interval,
+                transactional::Bool = sumsy.transactional,
+                seed::Real = sumsy.income.seed,
+                guaranteed_income::Real = sumsy.income.guaranteed_income,
+                dem_free::Real = sumsy.demurrage.dem_free,
+                dem_settings::Union{DemSettings, DemTiers} = sumsy.demurrage.dem_tiers)
+    return SuMSy(guaranteed_income, dem_free, dem_settings, interval, seed = seed, transactional = transactional)
 end
 
 """
@@ -202,296 +303,57 @@ make_tiers(demurrage_percentage::Real) = make_tiers([(0, demurrage_percentage)])
 NO_DEM_TIERS = make_tiers([(0, 0)])
 make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 
-"""
-    set_sumsy_active!(balance::Balance, sumsy::SuMSy, flag::Bool)
-
-Indicate whether the balance participates in the specified SuMSy or not.
-"""
-function set_sumsy_active!(balance::Balance, sumsy::SuMSy, flag::Bool)
-    if haskey(balance.properties, sumsy.id)
-        balance.properties[sumsy.id][1] = flag
-    else
-        balance.properties[sumsy.id] = [flag, nothing]
-    end
-end
-
-function is_sumsy_active(balance::Balance, sumsy::SuMSy)
-    if haskey(balance.properties, sumsy.id)
-        return balance.properties[sumsy.id][1]
-    else
-        return true
-    end
-end
-
-function set_sumsy_overrides!(balance::Balance, overrides::SuMSyOverrides)
-    if haskey(balance.properties, overrides.sumsy_id)
-        balance.properties[overrides.sumsy_id][2] = overrides
-    else
-        balance.properties[overrides.sumsy_id] = [true, overrides]
-    end
-
-    return balance
-end
-
-function get_sumsy_overrides(balance::Balance, sumsy::SuMSy)
-    if haskey(balance.properties, sumsy.id)
-        return balance.properties[sumsy.id][2]
-    else
-        return nothing
-    end
-end
-
-has_sumsy_overrides(balance::Balance, sumsy::SuMSy) = !isnothing(get_sumsy_overrides(balance, sumsy))
-
-"""
-    get_sumsy_params(balance::Balance, sumsy::SuMSy)
-
-Returns sumsy if there are no overrides. Otherwise returns the overrides.
-"""
-function get_sumsy_params(balance::Balance, sumsy::SuMSy)
-    overrides = get_sumsy_overrides(balance, sumsy)
-
-    if isnothing(overrides)
-        return sumsy
-    else
-        return overrides
-    end
-end
-
-get_sumsy_params(balance::Balance, sumsy_overrides::SuMSyOverrides) = sumsy_overrides
-
-function set_seed!(balance::Balance, sumsy::SuMSy, seed::Real)
-    if has_sumsy_overrides(balance, sumsy)
-            balance.properties[sumsy.id][2].seed = seed
-    else
-        balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        sumsy_overrides(sumsy, seed = seed)]
-    end
-
-    return balance
-end
-
-function get_seed(balance::Balance, sumsy::SuMSy)
-    if has_sumsy_overrides(balance, sumsy)
-        return balance.properties[sumsy.id][2].seed
-    else
-        return sumsy.seed
-    end
-end
-
-function set_guaranteed_income!(balance, sumsy::SuMSy, guaranteed_income::Real)
-    if has_sumsy_overrides(balance, sumsy)
-            balance.properties[sumsy.id][2].guaranteed_income = guaranteed_income
-    else
-        balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        sumsy_overrides(sumsy, guaranteed_income = guaranteed_income)]
-    end
-
-    return balance
-end
-
-function get_guaranteed_income(balance::Balance, sumsy::SuMSy)
-    if has_sumsy_overrides(balance, sumsy)
-        return balance.properties[sumsy.id][2].guaranteed_income
-    else
-        return sumsy.guaranteed_income
-    end
-end
-
-todo"Move demurrage free buffer off balance sheet."
-function set_initial_dem_free!(balance::Balance, sumsy::SuMSy, dem_free::Real)
-    if has_sumsy_overrides(balance, sumsy)
-        balance.properties[sumsy.id][2].dem_free = dem_free
-    else
-        balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        sumsy_overrides(sumsy, dem_free = dem_free)]
-    end
-
-    book_asset!(balance, sumsy.dem_free_entry, dem_free, set_to_value = true)
-
-    return balance
-end
-
-"""
-    get_initial_dem_free(balance::Balance, sumsy::SuMSy)
-
-Returns the initial size of the demurrage free buffer.
-"""
-function get_initial_dem_free(balance::Balance, sumsy::SuMSy)
-    if has_sumsy_overrides(balance, sumsy)
-        return balance.properties[sumsy.id][2].dem_free
-    else
-        return sumsy.dem_free
-    end
-end
-
-function book_dem_free!(balance::Balance, sumsy::SuMSy)
-    if !has_asset(balance, sumsy.dem_free_entry)
-        book_asset!(balance, sumsy.dem_free_entry, get_initial_dem_free(balance, sumsy))
-    end
-end
-
-function get_dem_free(balance::Balance, sumsy::SuMSy)
-    # Make sure the balanceentry exists
-    book_dem_free!(balance, sumsy)
-
-    return asset_value(balance, sumsy.dem_free_entry)
-end
-
-"""
-    transfer_dem_free!(source::Balance, destination::Balance, amount::Real)
-
-Transfer a part or all of the demurrage free buffer from one balance to another. No more than the available demurrage free buffer can be transferred.
-* source::Balance - the balance from which the demurrage free amount is taken.
-* destination::Balance - the balance to which the demurrage free buffer is transferred.
-* amount::Real - the amount to be transferred.
-* return - whether or not the transaction was succesful.
-"""
-function transfer_dem_free!(source::Balance,
-                            destination::Balance,
-                            sumsy::SuMSy,
-                            amount::Real,
-                            timestamp::Int = 0;
-                            comment = "Demurrage free buffer transfer")
-    # Make sure the balance entries exist
-    book_dem_free!(source, sumsy)
-    book_dem_free!(destination, sumsy)
-
-    return transfer_asset!(source, destination, sumsy.dem_free_entry, amount,
-                            timestamp, comment = comment)
-end
-
-function set_dem_tiers!(balance::Balance, sumsy::SuMSy, dem_settings::DemSettings)
-    dem_tiers = make_tiers(dem_settings)
-
-    if has_sumsy_overrides(balance, sumsy)
-            balance.properties[sumsy.id][2].dem_tiers = dem_tiers
-    else
-        balance.properties[sumsy.id] = [is_sumsy_active(balance, sumsy),
-        sumsy_overrides(sumsy, dem_tiers = dem_tiers)]
-    end
-
-    return balance
-end
-
-function get_dem_tiers(balance::Balance, sumsy::SuMSy)
-    if has_sumsy_overrides(balance, sumsy)
-        return balance.properties[sumsy.id][2].dem_tiers
-    else
-        return sumsy.dem_tiers
-    end
-end
-
-function sumsy_balance(balance::Balance, sumsy::SuMSy)
-    return asset_value(balance, sumsy.dep_entry)
-end
-
-function sumsy_balance(balance::Balance, sumsy::SuMSy, step::Int)
-    return sumsy_balance(balance, sumsy) + calculate_partial_guaranteed_income(sumsy, step) - calculate_demurrage(balance, sumsy, step)
-end
-
-function calculate_partial_guaranteed_income(sumsy_params::SuMSyParams, step::Int)
-    period = mod(step, sumsy_params.interval) == 0 ? sumsy_params.interval : mod(step, sumsy_params.interval)
-
-    return Currency(sumsy_params.guaranteed_income * period / sumsy_params.interval)
-end
-
-"""
-    transfer_sumsy!(source::Balance,
-                    destination::Balance,
-                    sumsy::SuMSy,
-                    amount::Real,
-                    timestamp::Int = 0;
-                    comment = "")
-
-Transfer an amount of SuMSy money from one balance sheet to another. No more than the available amount of money can be transferred.
-Negative amounts result in a transfer from destination to source.
-"""
-function transfer_sumsy!(source::Balance,
-                            destination::Balance,
-                            sumsy::SuMSy,
-                            amount::Real,
-                            timestamp::Int = 0;
-                            comment = "")
-    if amount > 0
-        amount = min(amount, sumsy_balance(source, sumsy))
-    else
-        amount = min(-amount, sumsy_balance(destination, sumsy))
-    end
-
-    transfer_asset!(source, destination, sumsy.dep_entry, amount, timestamp, comment = comment)
-end
-
-"""
-    calculate_demurrage(balance::Balance, sumsy::SuMSy, step::Int)
-
-Calculates the demurrage due at the current timestamp. This is not restricted to timestamps which correspond to multiples of the interval.
-"""
-function calculate_demurrage(balance::Balance, sumsy_params::SuMSyParams, step::Int)
-    transactions = balance.transaction_log
-    cur_balance = sumsy_balance(balance, sumsy_params)
-    period = mod(step, sumsy_params.interval) == 0 ? sumsy_params.interval : mod(step, sumsy_params.interval)
-    period_start = step - period
-    weighted_balance = 0
-    i = length(transactions)
-    t_step = step
-
-    while i > 0 && transactions[i].timestamp >= period_start
-        t_step = transactions[i].timestamp
-        amount = 0
-
-        while i > 0 && transactions[i].timestamp == t_step
-            t = transactions[i]
-
-            for transaction in t.transactions
-                if transaction.type == asset && transaction.entry == sumsy_params.dep_entry
-                    amount += transaction.amount
-                end
-            end
-
-            i -= 1
-        end
-
-        weighted_balance += (step - t_step) * cur_balance
-        step = t_step
-        cur_balance -= amount
-    end
-
-    if t_step > period_start
-        weighted_balance += (t_step - period_start) * cur_balance
-    end
-
-    return calculate_demurrage(weighted_balance / period, get_sumsy_params(balance, sumsy_params), fraction = period / sumsy_params.interval)
-end
-
-function calculate_demurrage(avg_balance::Currency, sumsy_params::SuMSyParams, subtract_dem_free = true; fraction::Real = 1.0)
-    if subtract_dem_free
-        avg_balance = max(0, avg_balance - sumsy_params.dem_free)
-    end
-
+function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligible::Bool, timerange::Int)
+    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0
     demurrage = 0
 
-    for tier in sumsy_params.dem_tiers
-        if avg_balance <= 0
+    for tier in sumsy.demurrage.dem_tiers
+        if balance <= 0
             break
         else
             if is_right_unbounded(tier[1])
-                amount = avg_balance
-                avg_balance = 0
+                amount = balance
+                balance = 0
             else
-                amount = min(span(tier[1]), avg_balance)
-                avg_balance -= amount
+                amount = min(span(tier[1]), balance)
+                balance -= amount
             end
 
             demurrage += amount * tier[2]
         end
     end
 
-    return Currency(demurrage * fraction)
+    demurrage *= timerange / sumsy.interval
+
+    return Currency(guaranteed_income), Currency(demurrage)
 end
 
-function telo(sumsy_params::SuMSyParams)
-    return telo(sumsy_params.guaranteed_income, sumsy_params.dem_free, sumsy_params.dem_tiers)
+function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance, sumsy::SuMSy, dep_entry::BalanceEntry, gi_eligible::Bool, dem_free::Real, timerange::Int)
+    interval = sumsy.interval
+    guaranteed_income = CUR_0
+    demurrage = CUR_0
+    cur_balance = asset_value(sumsy_balance, dep_entry) - dem_free
+
+    if timerange >= sumsy.interval
+        for i in 1:trunc(timerange/interval)
+            g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, interval)
+            cur_balance += g - d
+            guaranteed_income += g
+            demurrage += d
+        end
+
+        timerange = mod(timerange, interval)
+    end
+
+    g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, timerange)
+    guaranteed_income += g
+    demurrage += d
+
+    return Currency(guaranteed_income), Currency(demurrage)
+end
+
+function telo(sumsy::SuMSy)
+    return telo(sumsy.income.guaranteed_income, sumsy.demurrage.dem_free, sumsy.demurrage.dem_tiers)
 end
 
 function telo(income::Real, dem_free::Real, dem_settings::DemSettings)
@@ -520,14 +382,14 @@ function telo(income::Currency, dem_free::Currency, dem_tiers::DemTiers)
     return Currency(telo + dem_free)
 end
 
-function time_telo(sumsy::SuMSy, balance::Balance = Balance())
-    sumsy_params = get_sumsy_params(balance, sumsy)
+function time_telo(sumsy::SuMSy)
     t = 0
-    eq = telo(sumsy_params)
+    eq = telo(sumsy) - sumsy.demurrage.dem_free
+    balance = 0
 
-    while asset_value(balance, SUMSY_DEP) < eq - 1
-        dem = calculate_demurrage(balance, sumsy_params, 0)
-        book_asset!(balance, SUMSY_DEP, sumsy_params.guaranteed_income - dem)
+    while balance < eq - 1
+        guaranteed_income, demurrage = calculate_timerange_adjustments(balance, sumsy, true, sumsy.interval)
+        balance += guaranteed_income - demurrage
         t += 1
     end
 
@@ -535,58 +397,12 @@ function time_telo(sumsy::SuMSy, balance::Balance = Balance())
 end
 
 """
-    process_ready(sumsy::SuMSy, step::Int)
+    process_ready(sumsy::SuMSy, timestamp::Int)
 
-Check whether processing needs to be done.
+Check whether processing of guaranteed income and demurrage needs to be done.
+
+Returns true when SuMSy is not transactional and timestamp is a multiple if the SuMSy interval.
 """
-process_ready(sumsy::SuMSy, step::Int) = mod(step, sumsy.interval) == 0
-
-function book_net_result!(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)    
-    book_asset!(balance, sumsy.dep_entry, seed + guaranteed_income - demurrage, step, comment = sumsy.net_income_comment)
-end
-
-function book_atomic_results!(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)
-    if step == 0
-        book_asset!(balance, sumsy.dep_entry, seed, step, comment = sumsy.seed_comment)
-    end
-
-    book_asset!(balance, sumsy.dep_entry, guaranteed_income, step, comment = sumsy.guaranteed_income_comment)
-    book_asset!(balance, sumsy.dep_entry, -demurrage, step, comment = sumsy.demurrage_comment)
-end
-
-function book_nothing(balance::Balance, sumsy::SuMSy, seed::Currency, guaranteed_income::Currency, demurrage::Currency, step::Integer)
-end
-
-"""
-    process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int)
-
-Processes demurrage and guaranteed income if the timestamp is a multiple of the SuMSy interval. Otherwise this function does nothing. Returns the deposited guaranteed income amount and the subtracted demurrage. When this function is called with timestamp == 0, the balance will be 'seeded'. The seed amount is added to the returned income.
-
-* sumsy: the SuMSy implementation to use for calculations.
-* balance: the balance on which to apply SuMSy.
-* timestamp: the current timestamp. Used to determine whether action needs to be taken.
-"""
-function process_sumsy!(balance::Balance, sumsy::SuMSy, step::Int; booking_function = book_net_result!)
-   if is_sumsy_active(balance, sumsy) && process_ready(sumsy, step)
-        seed = step == 0 ? get_seed(balance, sumsy) : CUR_0
-        income = get_guaranteed_income(balance, sumsy)
-        demurrage = calculate_demurrage(balance, sumsy, step)
-        booking_function(balance, sumsy, seed, income, demurrage, step)
-
-        return seed, income, demurrage
-   else
-        return CUR_0, CUR_0, CUR_0
-   end
-end
-
-function sumsy_loan(creditor::Balance,
-            debtor::Balance,
-            amount::Real,
-            installments::Integer,
-            interval = 1,
-            timestamp::Int64 = 0;
-            interest_rate::Real = 0,
-            money_entry::BalanceEntry = SUMSY_DEP,
-            debt_entry::BalanceEntry = SUMSY_DEBT)
-    return borrow(creditor, debtor, amount, interest_rate, installments, interval, timestamp, bank_loan = false, negative_allowed = false, money_entry = money_entry, debt_entry = debt_entry)
+function process_ready(sumsy::SuMSy, timestamp::Int)
+    return !sumsy.transactional && mod(timestamp, sumsy.interval) == 0
 end

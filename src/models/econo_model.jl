@@ -18,19 +18,50 @@ function behavior_vector(behaviors::Union{Nothing, Function, Vector{Function}})
     end
 end
 
+function create_properties(model_behaviors::Union{Nothing, Function, Vector{Function}})
+    properties = Dict{Symbol, Any}()
+    properties[:id_counter] = 0
+    properties[:step] = -1
+    properties[:model_behaviors] = behavior_vector(model_behaviors)
+
+    return properties
+end
+
 """
     create_econo_model(model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
 
 Create a default model with 0 or more model behavior functions.
 Each cycle the model runs, all model behavior functions are called in order.
 """
-function create_econo_model(model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
-    properties = Dict{Symbol, Any}()
-    properties[:step] = -1
-    properties[:prices] = Dict{Blueprint, Price}()
-    properties[:model_behaviors] = behavior_vector(model_behaviors)
+function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+    return ABM(actor_type, properties = create_properties(model_behaviors))
+end
 
-    return ABM(Actor, properties = properties)
+function create_unkillable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+    return UnkillableABM(actor_type, properties = create_properties(model_behaviors))
+end
+
+function create_fixed_mass_econo_model(actors::Vector{<: AbstractActor}, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+    for i = 1:length(actors)
+        actors[1].id = i
+    end
+
+    properties = create_properties(model_behaviors)
+    properties.ide_counter = length(actors) + 1
+
+    return FixedMassABM(actors, properties)
+end
+
+function next_id(model::ABM)
+    model.id_counter += 1
+
+    return model.id_counter
+end
+
+function add_actor(model::ABM, actor::AbstractActor)
+    actor.id = model.id_counter
+    model.id_counter += 1
+    add_agent!(actor, model)
 end
 
 has_model_behavior(model, behavior::Function) = behavior in model.model_behaviors
@@ -40,10 +71,7 @@ clear_model_behaviors(model) = (empty!(model.model_behaviors); model)
 
 get_step(model) = model.step
 
-get_price(model, bp::Blueprint) = haskey(model.prices, bp) ? model.prices[bp] : nothing
-set_price!(model, bp::Blueprint, price::Price) = (model.prices[bp] = price; model)
-
-function econo_model_step!(model)
+function econo_model_step!(model::ABM)
     model.step += 1
 
     for behavior in model.model_behaviors
@@ -51,10 +79,10 @@ function econo_model_step!(model)
     end
 end
 
-function econo_step!(model, steps::Integer = 1, actors_first::Bool = false)
+function econo_step!(model::ABM, steps::Integer = 1, actors_first::Bool = false)
     step!(model, actor_step!, econo_model_step!, steps, actors_first)
 end
 
-function run_econo_model!(model, steps::Integer, actors_first = false; kwargs...)
+function run_econo_model!(model::ABM, steps::Integer, actors_first = false; kwargs...)
     run!(model, actor_step!, econo_model_step!, steps, agents_first = actors_first; kwargs...)
 end

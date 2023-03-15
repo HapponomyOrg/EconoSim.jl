@@ -102,21 +102,17 @@ end
 """
     pay!(buyer::Balance,
         seller::Balance,
-        price::Price,
-        timestamp::Integer;
-        comment::String = "")
+        price::Price)
 
 # Returns
 A boolean indicating whether the price was paid in full.
 """
 function pay!(buyer::Balance,
             seller::Balance,
-            price::Price,
-            timestamp::Integer = 0;
-            comment::String = "")
+            price::Price)
     for entry in keys(price)
-        queue_asset_transfer!(buyer, seller, entry, price[entry], comment = comment)
+        queue_asset_transfer!(buyer, seller, entry, price[entry])
     end
 
-    return execute_transfers!(buyer, timestamp)
+    return execute_transfers!(buyer)
 end

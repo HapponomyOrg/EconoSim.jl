@@ -1,7 +1,6 @@
 include("balance.jl")
 export EntryType, BalanceEntry, Balance, AtomicTransaction, Transaction
 export EQUITY, asset, liability
-export add_triggers!
 export has_asset, has_liability
 export clear!, typemin_asset!, typemin_liability!, typemin_balance!, min_balance!, min_asset!, min_liability!, min_balance, min_asset, min_liability
 export validate, assets, liabilities, asset_value, assets_value, liability_value, liabilities_value, liabilities_net_value, equity
@@ -11,16 +10,23 @@ export queue_transfer!, queue_asset_transfer!, queue_liability_transfer!, execut
 export initialize_transaction_logging, log_transaction
 
 include("sumsy.jl")
+include("single_sumsy_balance.jl")
+include("multi_sumsy_balance.jl")
 export SUMSY_DEP, SUMSY_DEBT
-export SuMSyParams, SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
-export SuMSyOverrides
-export calculate_demurrage, calculate_partial_guaranteed_income, process_sumsy!, sumsy_balance, transfer_sumsy!
+export SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export telo, time_telo
-export set_sumsy_active!, is_sumsy_active
-export sumsy_overrides, set_sumsy_overrides!, get_sumsy_overrides, has_sumsy_overrides, get_sumsy_params
-export set_seed!, get_seed, set_guaranteed_income!, get_guaranteed_income, set_initial_dem_free!, get_initial_dem_free, get_dem_free, transfer_dem_free!, set_dem_tiers, get_dem_tiers
 export process_ready
-export book_net_result!, book_atomic_results!, book_nothing
+export SuMSyBalance, SingleSuMSyBalance, MultiSuMSyBalance
+export get_balance, get_sumsy_dep_entry, sumsy_assets
+export adjust_sumsy_balance!, reset_sumsy_balance!
+export set_sumsy!, get_sumsy
+export set_sumsy_active!, is_sumsy_active, is_transactional, set_gi_eligible!, is_gi_eligible
+export get_seed, get_guaranteed_income, get_dem_tiers, get_initial_dem_free
+export set_dem_free!, get_dem_free, transfer_dem_free!
+export set_last_adjustment!, get_last_adjustment
+export book_sumsy!, transfer_sumsy!
+export calculate_adjustments
+export sumsy_loan!
 
 include("debt.jl")
 export DEPOSIT, DEBT

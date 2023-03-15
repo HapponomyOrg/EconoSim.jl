@@ -1,11 +1,9 @@
 using Agents
 
-global ID_COUNTER = 0
-
 Prices = Dict{<:Blueprint, Price}
 
 """
-    Actor - agent representing an economic actor.
+    EconomicActor - agent representing a full economic actor.
 
 # Fields
 * id::Int - the id of the actor.
@@ -20,11 +18,11 @@ Prices = Dict{<:Blueprint, Price}
 
 After creation, any field can be set on the actor, even those which are not part of the structure. This can come in handy when when specific state needs to be stored with the actor.
 """
-mutable struct Actor <: AbstractAgent
+mutable struct EconomicActor <: AbstractActor
     id::Int64
     types::Set{Symbol}
     behaviors::Vector{Function}
-    balance::Balance
+    balance::AbstractBalance
     posessions::Entities
     stock::Stock
     producers::Set{Producer}
@@ -33,7 +31,7 @@ mutable struct Actor <: AbstractAgent
 end
 
 """
-    Actor - creation function for a generic actor.
+EconomicActor - creation function for a generic actor.
 
 # Parameters
 * id::Int = ID_COUNTER - the id of the actor. When no id is given, the standard sequence of id's is used. Mixing the standard sequence and user defined id's is not advised.
@@ -44,10 +42,10 @@ end
 * stock::Stock = Stock() - the stock held by the actor. The stock is considered to be used for business purposes.
 * producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}() - the production facilities of the actor.
 """
-function Actor(;id::Integer = ID_COUNTER,
+function EconomicActor(id::Int64;
         types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
-        behavior::Union{Function, Nothing} = nothing,
-        balance::Balance = Balance(),
+        behaviors::Union{Vector{Function}, Function, Nothing} = nothing,
+        balance::AbstractBalance = Balance(),
         posessions::Entities = Entities(),
         stock::Stock = PhysicalStock(),
         producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
@@ -60,61 +58,39 @@ function Actor(;id::Integer = ID_COUNTER,
         typeset = types
     end
 
-    behaviors = isnothing(behavior) ? Vector{Function}() : Vector([behavior])
-    global ID_COUNTER += 1
+    if isnothing(behaviors)
+        actor_behaviors = Vector{Function}()
+    elseif behaviors isa Function
+        actor_behaviors = Vector([behavior])
+    else
+        actor_behaviors = behaviors
+    end
 
-    actor = Actor(id, typeset, behaviors, balance, posessions, stock, Set(producers), prices, Dict{Symbol, Any}())
+    actor = EconomicActor(id,
+                            typeset,
+                            actor_behaviors,
+                            balance,
+                            posessions,
+                            stock,
+                            Set(producers),
+                            prices,
+                            Dict{Symbol, Any}())
 
     return actor
 end
 
-function Base.getproperty(actor::Actor, s::Symbol)
-    properties = getfield(actor, :properties)
+push_producer!(actor::EconomicActor, producer::Producer) = (push!(actor.producers, producer); actor)
+delete_producer!(actor::EconomicActor, producer::Producer) = (delete!(actor.producers, producer); actor)
 
-    if s in keys(properties)
-        return properties[s]
-    elseif s in fieldnames(Actor)
-        return getfield(actor, s)
-    else
-        return nothing
-    end
-end
-
-function Base.setproperty!(actor::Actor, s::Symbol, value)
-    if s in fieldnames(Actor)
-        setfield!(actor, s, value)
-    else
-        actor.properties[s] = value
-    end
-
-    return value
-end
-
-function Base.hasproperty(actor::Actor, s::Symbol)
-    return s in fieldnames(Actor) || s in keys(actor.properties)
-end
-
-add_type!(actor::Actor, type::Symbol) = (push!(actor.types, type); actor)
-delete_type!(actor::Actor, type::Symbol) = (delete!(actor.types, type); actor)
-has_type(actor::Actor, type::Symbol) = type in actor.types
-
-has_behavior(actor::Actor, behavior::Function) = behavior in actor.behaviors
-add_behavior!(actor::Actor, behavior::Function) = (push!(actor.behaviors, behavior); actor)
-delete_behavior!(actor::Actor, behavior::Function) = (delete_element!(actor.behaviors, behavior); actor)
-clear_behaviors(actor::Actor) = (empty!(actor.behaviors); actor)
-
-push_producer!(actor::Actor, producer::Producer) = (push!(actor.producers, producer); actor)
-delete_producer!(actor::Actor, producer::Producer) = (delete!(actor.producers, producer); actor)
-
-get_posessions(actor::Actor, bp::Blueprint) = bp in keys(actor.posessions) ? length(actor.posessions[bp]) : 0
-get_stock(actor::Actor, bp::Blueprint) = current_stock(actor.stock, bp)
+get_posessions(actor::EconomicActor, bp::Blueprint) = bp in keys(actor.posessions) ? length(actor.posessions[bp]) : 0
+get_stock(actor::EconomicActor, bp::Blueprint) = current_stock(actor.stock, bp)
 
 """
     get_production_output(actor::Actor)
 
 Get the set of all blueprints produced by the actor.
 """
-function get_production_output(actor::Actor)
+function get_production_output(actor::EconomicActor)
     production = Set{Blueprint}()
 
     for producer in keys(actor.producers)
@@ -124,31 +100,41 @@ function get_production_output(actor::Actor)
     return production
 end
 
-set_price!(actor::Actor, bp::Blueprint, price::Price) = (actor.prices[bp] = price; actor)
-get_price(actor::Actor, bp::Blueprint) = haskey(actor.prices, bp) ? actor.prices[bp] : nothing
-get_price(model, actor::Actor, bp::Blueprint) = isnothing(get_price(actor, bp)) ? get_price(model, bp) : get_price(actor, bp)
+set_price!(actor::EconomicActor, bp::Blueprint, price::Price) = (actor.prices[bp] = price; actor)
+get_price(actor::EconomicActor, bp::Blueprint) = haskey(actor.prices, bp) ? actor.prices[bp] : nothing
+get_price(model, actor::EconomicActor, bp::Blueprint) = isnothing(get_price(actor, bp)) ? get_price(model, bp) : get_price(actor, bp)
 
-function purchase!(model, buyer::Actor, seller::Actor, bp::Blueprint, units::Integer)
+"""
+    purchase!(model::ABM, buyer::EconomicActor, seller::EconomicActor, bp::Blueprint, units::Integer, pre_sales::Function...)
+
+Atempt to purchase a number of units from the seller.
+
+* model::ABM
+* buyer::EconomicActor
+* seller::EconomicActor
+* bp::Blueprint
+* units::Integer
+* pre_sales::Function : functions which need to be executed before a sale takes place. These functions need to have the following signature:
+    pre_sale(model::ABM, buyer::EconomicActor, seller::EconomicActor)
+"""
+function purchase!(model::ABM, buyer::EconomicActor, seller::EconomicActor, bp::Blueprint, units::Integer, pre_sales::Function...)
+    available_units = 0
     price = get_price(model, seller, bp)
 
-    if isnothing(price)
-        units = 0
-    else
-        units = min(current_stock(seller.stock, bp), purchases_available(buyer.balance, price, units))
+    if !isnothing(price)
+        available_units = min(current_stock(seller.stock, bp), purchases_available(buyer.balance, price, units))
 
-        if units > 0
-            buyer.posessions[bp] = union!(buyer.posessions[bp], retrieve_stock!(seller.stock, bp, units))
-            pay!(buyer.balance, seller.balance, price * units, model.step, comment = bp.name)
+        if available_units > 0
+            for pre_sale in pre_sales
+                pre_sale(model, buyer, seller)
+            end
+
+            buyer.posessions[bp] = union!(buyer.posessions[bp], retrieve_stock!(seller.stock, bp, available_units))
+            pay!(buyer.balance, seller.balance, price * available_units)
         end
     end
 
-    return units
-end
-
-function actor_step!(actor, model)
-    for behavior in actor.behaviors
-        behavior(model, actor)
-    end
+    return available_units
 end
 
 # Behavior functions
@@ -158,7 +144,7 @@ end
 
 Resupply stocks as needed.
 """
-function produce_stock!(model, actor::Actor)
+function produce_stock!(model::ABM, actor::EconomicActor)
     stock = actor.stock
 
     for producer in actor.producers

@@ -3,12 +3,12 @@ using Agents
 MARGINAL = :marginal
 
 """
-    make_marginal(actor::Actor, needs::Needs)
+    make_marginal(actor::AbstractActor, needs::Needs)
 # Fields
-* actor::Actor
+* actor::AbstractActor
 * needs::Needs
 """
-function make_marginal(actor::Actor;
+function make_marginal!(actor::AbstractActor;
                         needs::Needs = Needs(),
                         select_supplier::Function = select_random_supplier)
     add_type!(actor, MARGINAL)
@@ -19,7 +19,7 @@ function make_marginal(actor::Actor;
     return actor
 end
 
-function push_usage!(actor::Actor,
+function push_usage!(actor::AbstractActor,
                     bp::Blueprint,
                     marginality::Marginality;
                     priority::Integer = 0)
@@ -30,7 +30,7 @@ function push_usage!(actor::Actor,
     return actor
 end
 
-function push_want!(actor::Actor,
+function push_want!(actor::AbstractActor,
                     bp::Blueprint,
                     marginality::Marginality;
                     priority::Integer = 0)
@@ -41,7 +41,7 @@ function push_want!(actor::Actor,
     return actor
 end
 
-function delete_usage!(actor::Actor,
+function delete_usage!(actor::AbstractActor,
                     bp::Blueprint;
                     priority::Integer = nothing)
     if hasproperty(actor, :needs)
@@ -51,7 +51,7 @@ function delete_usage!(actor::Actor,
     return actor
 end
 
-function delete_want!(actor::Actor,
+function delete_want!(actor::AbstractActor,
                     bp::Blueprint;
                     priority::Integer = nothing)
     if hasproperty(actor, :needs)
@@ -61,20 +61,20 @@ function delete_want!(actor::Actor,
     return actor
 end
 
-function select_random_supplier(model, buyer::Actor, bp::Blueprint)
+function select_random_supplier(model, buyer::AbstractActor, bp::Blueprint)
     condition(blueprint) = agent -> has_stock(agent.stock, blueprint)
 
     return random_agent(model, condition(bp))
 end
 
-function purchase!(model, buyer::Actor, bp::Blueprint, units::Integer)
+function purchase!(model, buyer::AbstractActor, bp::Blueprint, units::Integer)
     supplier = buyer.select_supplier(model, buyer, bp)
     return isnothing(supplier) ? 0 : purchase!(model, buyer, supplier, bp, units)
 end
 
 # Behavior functions
 
-function marginal_behavior(model, actor::Actor)
+function marginal_behavior(model, actor::AbstractActor)
     for dict in (actor.posessions, get_entities(actor.stock))
         for bp in collect(keys(dict))
             for entity in dict[bp]
