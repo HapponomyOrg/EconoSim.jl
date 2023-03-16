@@ -42,7 +42,7 @@ EconomicActor - creation function for a generic actor.
 * stock::Stock = Stock() - the stock held by the actor. The stock is considered to be used for business purposes.
 * producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}() - the production facilities of the actor.
 """
-function EconomicActor(id::Int64;
+function EconomicActor(id::Int64 = 0;
         types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
         behaviors::Union{Vector{Function}, Function, Nothing} = nothing,
         balance::AbstractBalance = Balance(),

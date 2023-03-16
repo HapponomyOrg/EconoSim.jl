@@ -29,7 +29,7 @@ MonetaryActor - creation function for a generic actor.
 * behavior::Union{Function, Nothing} = nothing - the default behavior function which is called when the actor is activated.
 * balance::Balance = Balance() - the balance sheet of the actor.
 """
-function MonetaryActor(id::Integer;
+function MonetaryActor(id::Integer = 0;
                         types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
                         behaviors::Union{Vector{Function}, Function, Nothing} = nothing,
                         balance::AbstractBalance = Balance())
