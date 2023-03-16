@@ -38,7 +38,7 @@ function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::U
 end
 
 function create_unremovable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
-    return UnkillableABM(actor_type, properties = create_properties(model_behaviors))
+    return UnremovableABM(actor_type, properties = create_properties(model_behaviors))
 end
 
 function next_id(model::ABM)
