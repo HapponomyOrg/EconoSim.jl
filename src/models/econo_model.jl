@@ -37,19 +37,8 @@ function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::U
     return ABM(actor_type, properties = create_properties(model_behaviors))
 end
 
-function create_unkillable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+function create_unremovable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
     return UnkillableABM(actor_type, properties = create_properties(model_behaviors))
-end
-
-function create_fixed_mass_econo_model(actors::Vector{<: AbstractActor}, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
-    for i = 1:length(actors)
-        actors[1].id = i
-    end
-
-    properties = create_properties(model_behaviors)
-    properties.ide_counter = length(actors) + 1
-
-    return FixedMassABM(actors, properties)
 end
 
 function next_id(model::ABM)
@@ -62,6 +51,8 @@ function add_actor(model::ABM, actor::AbstractActor)
     actor.id = model.id_counter
     model.id_counter += 1
     add_agent!(actor, model)
+
+    return actor
 end
 
 has_model_behavior(model, behavior::Function) = behavior in model.model_behaviors
