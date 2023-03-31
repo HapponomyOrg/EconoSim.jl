@@ -21,7 +21,7 @@ end
 function create_properties(model_behaviors::Union{Nothing, Function, Vector{Function}})
     properties = Dict{Symbol, Any}()
     properties[:id_counter] = 0
-    properties[:step] = 1
+    properties[:step] = 0
     properties[:model_behaviors] = behavior_vector(model_behaviors)
 
     return properties
@@ -67,6 +67,11 @@ function econo_model_step!(model::ABM)
     end
 end
 
+"""
+    function stepper!(model::ABM, step::Integer)
+
+    This function makes sure the econo_model_step! and actor_step! functions have access to the current step of the model.
+"""
 function stepper!(model::ABM, step::Integer)
     model.step += 1
 
