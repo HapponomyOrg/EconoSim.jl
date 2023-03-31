@@ -67,11 +67,20 @@ function econo_model_step!(model::ABM)
     end
 end
 
+function stepper!(model::ABM, step::Integer)
+    model.step += 1
+
+    return step >= model.run_steps
+end
+
 function econo_step!(model::ABM, steps::Integer = 1, actors_first::Bool = false)
-    step!(model, actor_step!, econo_model_step!, steps, actors_first)
-    model.step += steps
+    model.properties[:run_steps] = steps
+
+    step!(model, actor_step!, econo_model_step!, stepper!, actors_first)
 end
 
 function run_econo_model!(model::ABM, steps::Integer, actors_first = false; kwargs...)
-    run!(model, actor_step!, econo_model_step!, steps, agents_first = actors_first; kwargs...)
+    model.properties[:run_steps] = steps
+
+    run!(model, actor_step!, econo_model_step!, stepper!, agents_first = actors_first; kwargs...)
 end
