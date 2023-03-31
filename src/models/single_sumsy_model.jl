@@ -32,14 +32,6 @@ end
 
 is_contribution_active(model::ABM) = !isnothing(model.contribution_settings)
 
-function is_contribution_active(actor::AbstractActor)
-    try
-        !isnothing(actor.contribution_settings)
-    catch
-        return false
-    end
-end
-
 function set_contribution_settings!(model::ABM,
                                     contribution_settings::Union{SuMSy, Nothing})
     try
