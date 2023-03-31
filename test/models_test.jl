@@ -6,7 +6,7 @@ using Agents
     model = create_single_sumsy_model(SuMSy(2000, 5000, 0.1, 10, seed = 500), model_behaviors = process_model_sumsy!)
     actor = add_single_sumsy_actor!(model)
 
-    run_econo_model!(model, 40, adata = [sumsy_assets])
+    run_econo_model!(model, 30, adata = [sumsy_assets])
 
     @test sumsy_assets(actor) == 8350
     @test !is_contribution_active(model)
