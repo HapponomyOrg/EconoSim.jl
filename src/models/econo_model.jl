@@ -47,7 +47,7 @@ function next_id(model::ABM)
     return model.id_counter
 end
 
-function add_actor(model::ABM, actor::AbstractActor)
+function add_actor!(model::ABM, actor::AbstractActor)
     actor.id = next_id(model)
     add_agent!(actor, model)
 
