@@ -122,7 +122,7 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                     amount::Real;
                     timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
     if entry1 === get_sumsy_dep_entry(sumsy_balance1) && entry2 === get_sumsy_dep_entry(sumsy_balance2) && type1 === type2 === asset
-        transfer_sumsy!(source, destination, amount, timestamp)
+        transfer_sumsy!(sumsy_balance1, sumsy_balance2, amount, timestamp)
     else
         transfer!(get_balance(sumsy_balance1),
                     type1,
