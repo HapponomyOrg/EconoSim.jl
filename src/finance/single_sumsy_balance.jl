@@ -164,7 +164,7 @@ end
 
 function asset_value(sumsy_balance::SingleSuMSyBalance, entry::BalanceEntry)
     if entry === get_sumsy_dep_entry(sumsy_balance)
-        return sumsy_assets(balance)
+        return sumsy_assets(sumsy_balance)
     else
         return asset_value(get_balance(sumsy_balance), entry)
     end
