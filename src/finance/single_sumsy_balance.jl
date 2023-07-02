@@ -347,7 +347,7 @@ function transfer_sumsy!(source::SingleSuMSyBalance,
         adjust_sumsy_balance!(destination, timestamp)
     end
 
-    transfer_asset!(get_balance(source), get_balance(destination), get_sumsy_dep_entry(sumsy_balance), amount, timestamp = timestamp)
+    transfer_asset!(get_balance(source), get_sumsy_dep_entry(source), get_balance(destination), get_sumsy_dep_entry(destination), amount, timestamp = timestamp)
 end
 
 """
