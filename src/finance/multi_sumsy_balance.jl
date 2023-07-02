@@ -102,6 +102,28 @@ function book_asset!(sumsy_balance::MultiSuMSyBalance,
     end
 end
 
+function transfer!(sumsy_balance1::AbstractBalance,
+                    type1::EntryType,
+                    entry1::BalanceEntry,
+                    sumsy_balance2::MultiSuMSyBalance,
+                    type2::EntryType,
+                    entry2::BalanceEntry,
+                    amount::Real;
+                    timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
+    if type1 === type2 === asset && entry1 === entry2 && is_sumsy(sumsy_balance1, entry1) && is_sumsy(sumsy_balance2, entry2)
+        return false # SuMSy money can not be transferred to a non SuMSy balance
+    else
+        transfer!(get_balance(sumsy_balance1),
+                    type1,
+                    entry1,
+                    get_balance(sumsy_balance2),
+                    type2,
+                    entry2,
+                    amount,
+                    timestamp = timestamp)
+    end
+end
+
 function transfer!(sumsy_balance1::MultiSuMSyBalance,
                     type1::EntryType,
                     entry1::BalanceEntry,
@@ -151,8 +173,16 @@ function transfer_asset!(sumsy_balance1::MultiSuMSyBalance,
     transfer!(sumsy_balance1, asset, entry1, sumsy_balance2, asset, entry2, amount, timestamp = timestamp)
 end
 
+function asset_value(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry)
+    if is_sumsy(sumsy_balance, entry)
+        return sumsy_assets(sumsy_balance, entry)
+    else
+        return asset_value(get_balance(sumsy_balance), entry)
+    end
+end
+
 function sumsy_assets(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry, timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry))
-    value = asset_value(sumsy_balance, dep_entry)
+    value = asset_value(get_balance(sumsy_balance), dep_entry)
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, dep_entry, timestamp)
 
     return value + guaranteed_income - demurrage
