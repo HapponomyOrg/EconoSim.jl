@@ -6,6 +6,7 @@
 mutable struct SingleSuMSyBalance <: SuMSyBalance
     balance::Balance
     sumsy::SuMSy
+    sumsy_entry::BalanceEntry
     sumsy_active::Bool
     gi_eligible::Bool
     dem_free::Currency
@@ -14,11 +15,12 @@ end
 
 function SingleSuMSyBalance(sumsy::SuMSy,
                             balance::Balance = Balance();
+                            sumsy_entry::BalanceEntry = SUMSY_DEP,
                             activate::Bool = true,
                             gi_eligible::Bool = true,
                             initialize::Bool = true,
                             last_adjustment::Int = 0)
-    sumsy_balance = SingleSuMSyBalance(balance, sumsy, activate, gi_eligible, sumsy.demurrage.dem_free, last_adjustment)
+    sumsy_balance = SingleSuMSyBalance(balance, sumsy, sumsy_entry, activate, gi_eligible, sumsy.demurrage.dem_free, last_adjustment)
     
     if initialize
         reset_sumsy_balance!(sumsy_balance, reset_balance = initialize)
@@ -50,7 +52,7 @@ function Base.hasproperty(sumsy_balance::SingleSuMSyBalance, s::Symbol)
 end
 
 get_balance(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.balance
-get_sumsy_dep_entry(sumsy_balance::SingleSuMSyBalance) = SUMSY_DEP
+get_sumsy_dep_entry(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.sumsy_entry
 
 set_last_adjustment!(sumsy_balance::SingleSuMSyBalance, timestamp::Int) = (sumsy_balance.last_adjustment = timestamp)
 get_last_adjustment(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.last_adjustment
@@ -60,7 +62,7 @@ function book_asset!(sumsy_balance::SingleSuMSyBalance,
                         amount::Real;
                         set_to_value::Bool = false,
                         timestamp::Int = get_last_transaction(sumsy_balance))
-    if entry === SUMSY_DEP
+    if entry === get_sumsy_dep_entry(sumsy_balance)
         book_sumsy!(sumsy_balance, amount, timestamp, set_to_value = set_to_value)
     else
         book_asset!(get_balance(sumsy_balance), entry, amount, set_to_value = set_to_value, timestamp = timestamp)
@@ -75,8 +77,8 @@ function transfer!(sumsy_balance1::AbstractBalance,
                     entry2::BalanceEntry,
                     amount::Real;
                     timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
-    if entry1 === entry2 === SUMSY_DEP && type1 === type2 === asset
-        return # SuMSy money can not be transferred to a non SuMSy balance
+    if entry2 === get_sumsy_dep_entry(sumsy_balance2) && type2 === asset
+        return # non SuMSy money can not be transferred into a SuMSy balance
     else
         transfer!(get_balance(sumsy_balance1),
                     type1,
@@ -97,7 +99,7 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                     entry2::BalanceEntry,
                     amount::Real;
                     timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
-    if entry1 === entry2 === SUMSY_DEP && type1 === type2 === asset
+    if entry1 === get_sumsy_dep_entry(sumsy_balance1) && type1 === asset
         return false # SuMSy money can not be transferred to a non SuMSy balance
     else
         transfer!(get_balance(sumsy_balance1),
@@ -119,7 +121,7 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                     entry2::BalanceEntry,
                     amount::Real;
                     timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
-    if entry1 === entry2 === SUMSY_DEP && type1 === type2 === asset
+    if entry1 === get_sumsy_dep_entry(sumsy_balance1) && entry2 === get_sumsy_dep_entry(sumsy_balance2) && type1 === type2 === asset
         transfer_sumsy!(source, destination, amount, timestamp)
     else
         transfer!(get_balance(sumsy_balance1),
@@ -160,16 +162,16 @@ function transfer_asset!(sumsy_balance1::SingleSuMSyBalance,
     transfer!(sumsy_balance1, asset, entry1, sumsy_balance2, asset, entry2, amount, timestamp = timestamp)
 end
 
-function asset_value(balance::SingleSuMSyBalance, entry::BalanceEntry)
-    if entry === SUMSY_DEP
+function asset_value(sumsy_balance::SingleSuMSyBalance, entry::BalanceEntry)
+    if entry === get_sumsy_dep_entry(sumsy_balance)
         return sumsy_assets(balance)
     else
-        return asset_value(get_balance(balance), entry)
+        return asset_value(get_balance(sumsy_balance), entry)
     end
 end
 
 function sumsy_assets(sumsy_balance::SingleSuMSyBalance, timestamp::Int = get_last_adjustment(sumsy_balance))
-    value = asset_value(get_balance(sumsy_balance), SUMSY_DEP)
+    value = asset_value(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance))
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, timestamp)
 
     return value + guaranteed_income - demurrage
@@ -184,7 +186,7 @@ function adjust_sumsy_balance!(sumsy_balance::SingleSuMSyBalance, timestamp::Int
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, timestamp)
     set_last_adjustment!(sumsy_balance, timestamp)
 
-    book_asset!(get_balance(sumsy_balance), SUMSY_DEP, guaranteed_income - demurrage, timestamp = timestamp)
+    book_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance), guaranteed_income - demurrage, timestamp = timestamp)
 
     return guaranteed_income, demurrage
 end
@@ -202,7 +204,7 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance, timestamp::Int
 
     return timerange > 0 ? calculate_timerange_adjustments(sumsy_balance,
                                                             sumsy,
-                                                            SUMSY_DEP,
+                                                            get_sumsy_dep_entry(sumsy_balance),
                                                             sumsy_balance.gi_eligible,
                                                             sumsy_balance.dem_free,
                                                             Int(timerange)) : (CUR_0, CUR_0)
@@ -216,10 +218,10 @@ function reset_sumsy_balance!(sumsy_balance::SingleSuMSyBalance;
 
     if reset_balance
         if is_gi_eligible(sumsy_balance)
-            book_asset!(balance, SUMSY_DEP, get_seed(sumsy_balance), set_to_value = true, timestamp = timestamp)
-            book_asset!(balance, SUMSY_DEP, get_guaranteed_income(sumsy_balance), timestamp = timestamp)
+            book_asset!(balance, get_sumsy_dep_entry(sumsy_balance), get_seed(sumsy_balance), set_to_value = true, timestamp = timestamp)
+            book_asset!(balance, get_sumsy_dep_entry(sumsy_balance), get_guaranteed_income(sumsy_balance), timestamp = timestamp)
         else
-            book_asset!(balance, SUMSY_DEP, 0, set_to_value = true, timestamp = timestamp)
+            book_asset!(balance, get_sumsy_dep_entry(sumsy_balance), 0, set_to_value = true, timestamp = timestamp)
         end
     end
 
@@ -324,7 +326,7 @@ function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
         adjust_sumsy_balance!(sumsy_balance, timestamp)
     end
 
-    book_asset!(get_balance(sumsy_balance), SUMSY_DEP, amount, timestamp = timestamp, set_to_value = set_to_value)
+    book_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance), amount, timestamp = timestamp, set_to_value = set_to_value)
 end
 
 """
@@ -345,7 +347,7 @@ function transfer_sumsy!(source::SingleSuMSyBalance,
         adjust_sumsy_balance!(destination, timestamp)
     end
 
-    transfer_asset!(get_balance(source), get_balance(destination), SUMSY_DEP, amount, timestamp = timestamp)
+    transfer_asset!(get_balance(source), get_balance(destination), get_sumsy_dep_entry(sumsy_balance), amount, timestamp = timestamp)
 end
 
 """
@@ -394,6 +396,6 @@ function sumsy_loan!(creditor::SingleSuMSyBalance,
                     timestamp,
                     bank_loan = false,
                     negative_allowed = false,
-                    money_entry = SUMSY_DEP,
+                    money_entry = get_sumsy_dep_entry(creditor),
                     debt_entry = SUMSY_DEBT)
 end
