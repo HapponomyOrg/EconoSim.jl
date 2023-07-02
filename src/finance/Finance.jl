@@ -25,7 +25,7 @@ export get_seed, get_guaranteed_income, get_dem_tiers, get_initial_dem_free
 export set_dem_free!, get_dem_free, transfer_dem_free!
 export set_last_adjustment!, get_last_adjustment
 export book_sumsy!, transfer_sumsy!
-export calculate_adjustments
+export calculate_adjustments, calculate_timerange_adjustments
 export sumsy_loan!
 
 include("debt.jl")
