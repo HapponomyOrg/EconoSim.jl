@@ -15,7 +15,7 @@ Base.show(io::IO, x::Percentage) = print(io, "Percentage($(round(x.value, digits
 
 Base.convert(::Type{Percentage}, x::Real) = Percentage(x)
 Base.convert(::Type{Percentage}, x::Percentage) = x
-Base.convert(::Type{Real}, x::Percentage) = x.value
+Base.convert(::Type{Float64}, x::Percentage) = x.value
 
 Base.promote_rule(::Type{T}, ::Type{Percentage}) where T <: Real = Percentage
 Base.round(x::Percentage; digits::Integer = 6, base = 10) = Percentage(round(value(x), digits = digits, base = base))
