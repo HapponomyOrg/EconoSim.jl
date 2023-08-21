@@ -263,7 +263,7 @@ function SuMSy(sumsy::SuMSy;
     return SuMSy(guaranteed_income, dem_free, dem_settings, interval, seed = seed, transactional = transactional)
 end
 
-function make_tiers(dem_array::Vector{Vector{Real}})
+function make_tiers(dem_array::Vector{Vector{<: Real}})
     dem_settings = Vector{<: Tuple{Real, Real}}()
 
     for tier in dem_array
