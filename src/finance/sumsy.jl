@@ -264,7 +264,7 @@ function SuMSy(sumsy::SuMSy;
 end
 
 function make_tiers(dem_array::T) where T <: Vector{<: Vector{<: Real}}
-    dem_settings = Vector{<: Tuple{Real, Real}}()
+    dem_settings = Vector{Tuple{Real, Real}}()
 
     for tier in dem_array
         push!(dem_settings, (tier[1], tier[2]))
