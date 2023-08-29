@@ -1,6 +1,6 @@
 
 include("types.jl")
-export Percentage, Health, value, num_entities
+export Percentage, Health, value, num_entities, rem
 export Fixed, Currency
 export LeftInterval, RightInterval, ClosedInterval
 
