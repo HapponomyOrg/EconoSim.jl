@@ -70,6 +70,7 @@ function collected_contributions(model)
 end
 
 function reimburse_contribution!(model::ABM, amount::Real)
+    step = get_step(model)
     total_contribution = CUR_0
     total_reimburse = CUR_0
 
@@ -79,7 +80,7 @@ function reimburse_contribution!(model::ABM, amount::Real)
 
     for actor in allagents(model)
         reimburse_amount = amount * paid_contribution(actor) / total_contribution
-        book_sumsy!(get_balance(actor), reimburse_amount)
+        book_sumsy!(get_balance(actor), reimburse_amount, timestamp = step)
         book_contribution!(actor, -amount)
         total_reimburse += reimburse_amount
     end
@@ -128,7 +129,7 @@ function process_model_sumsy!(model::ABM)
             balance = get_balance(actor)
             
             income, demurrage = calculate_adjustments(balance, step, sumsy)
-            book_sumsy!(balance, income - demurrage, step)
+            book_sumsy!(balance, income - demurrage, timestamp = step)
             set_last_adjustment!(balance, step)
         end
     end
@@ -144,7 +145,7 @@ function process_model_contribution!(model::ABM)
             _, contribution = calculate_adjustments(balance, step, contribution_settings)
             actor.contribution += contribution
             book_asset!(model.contribution_balance, get_sumsy_dep_entry(balance), contribution, timestamp = step)
-            book_sumsy!(balance, -contribution, step)
+            book_sumsy!(balance, -contribution, timestamp =  step)
         end
     end
 end

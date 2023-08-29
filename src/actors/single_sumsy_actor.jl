@@ -32,4 +32,4 @@ is_contribution_active(actor::AbstractActor) = !isnothing(actor.contribution_set
 book_contribution!(actor::AbstractActor, amount::Real) = (actor.contribution += amount)
 paid_contribution(actor::AbstractActor) = actor.contribution
 
-sumsy_assets(actor::AbstractActor, step::Int = get_last_adjustment(actor.balance)) = sumsy_assets(actor.balance, step)
+sumsy_assets(actor::AbstractActor, step::Int = get_last_adjustment(actor.balance)) = sumsy_assets(actor.balance, timestamp = step)

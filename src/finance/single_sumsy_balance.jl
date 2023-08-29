@@ -63,7 +63,7 @@ function book_asset!(sumsy_balance::SingleSuMSyBalance,
                         set_to_value::Bool = false,
                         timestamp::Int = get_last_transaction(sumsy_balance))
     if entry === get_sumsy_dep_entry(sumsy_balance)
-        book_sumsy!(sumsy_balance, amount, timestamp, set_to_value = set_to_value)
+        book_sumsy!(sumsy_balance, amount, timestamp = timestamp, set_to_value = set_to_value)
     else
         book_asset!(get_balance(sumsy_balance), entry, amount, set_to_value = set_to_value, timestamp = timestamp)
     end
@@ -122,7 +122,7 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                     amount::Real;
                     timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
     if entry1 === get_sumsy_dep_entry(sumsy_balance1) && entry2 === get_sumsy_dep_entry(sumsy_balance2) && type1 === type2 === asset
-        transfer_sumsy!(sumsy_balance1, sumsy_balance2, amount, timestamp)
+        transfer_sumsy!(sumsy_balance1, sumsy_balance2, amount, timestamp = timestamp)
     else
         transfer!(get_balance(sumsy_balance1),
                     type1,
@@ -170,7 +170,7 @@ function asset_value(sumsy_balance::SingleSuMSyBalance, entry::BalanceEntry)
     end
 end
 
-function sumsy_assets(sumsy_balance::SingleSuMSyBalance, timestamp::Int = get_last_adjustment(sumsy_balance))
+function sumsy_assets(sumsy_balance::SingleSuMSyBalance; timestamp::Int = get_last_adjustment(sumsy_balance))
     value = asset_value(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance))
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, timestamp)
 
@@ -319,8 +319,8 @@ If SuMSy is transactional and active for the balance, partial guaranteed income 
 and the timestamp is stored on the balance.
 """
 function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
-                        amount::Real,
-                        timestamp::Int = get_last_transaction(sumsy_balance);
+                        amount::Real;
+                        timestamp::Int = get_last_transaction(sumsy_balance),
                         set_to_value::Bool = false)
     if !set_to_value && is_transactional(sumsy_balance)
         adjust_sumsy_balance!(sumsy_balance, timestamp)
@@ -340,7 +340,7 @@ Negative amounts result in a transfer from destination to source.
 """
 function transfer_sumsy!(source::SingleSuMSyBalance,
                         destination::SingleSuMSyBalance,
-                        amount::Real,
+                        amount::Real;
                         timestamp::Int = max(get_last_transaction(source), get_last_transaction(destination)))
     if is_transactional(source)
         adjust_sumsy_balance!(source, timestamp)
@@ -362,7 +362,7 @@ If the SuMSy implementation is transaction based, partial guaranteed income and 
 """
 function transfer_dem_free!(source::SingleSuMSyBalance,
                             destination::SingleSuMSyBalance,
-                            amount::Real,
+                            amount::Real;
                             timestamp::Int = max(get_last_adjustment(source), get_last_adjustment(destination)))
     if is_transactional(source)
         adjust_sumsy_balance(source, timestamp)
