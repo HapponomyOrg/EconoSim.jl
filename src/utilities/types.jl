@@ -19,7 +19,7 @@ Base.convert(::Type{Percentage}, x::Percentage) = x
 Base.promote_rule(::Type{T}, ::Type{Percentage}) where T <: Real = Percentage
 Base.round(x::Percentage; digits::Integer = 6, base = 10) = Percentage(round(value(x), digits = digits, base = base))
 
-rem(x::Percentage, y::Percentage) = x.value % y.value
+Base.rem(x::Percentage, y::Percentage) = x.value % y.value
 
 """
     Health
