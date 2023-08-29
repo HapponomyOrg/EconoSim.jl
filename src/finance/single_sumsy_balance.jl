@@ -184,7 +184,6 @@ end
 """
 function adjust_sumsy_balance!(sumsy_balance::SingleSuMSyBalance, timestamp::Int)
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, timestamp)
-    set_last_adjustment!(sumsy_balance, timestamp)
 
     book_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance), guaranteed_income - demurrage, timestamp = timestamp)
 
