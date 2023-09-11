@@ -196,7 +196,8 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance, timestamp::Int
     if is_sumsy_active(sumsy_balance)
         if sumsy.transactional
             timerange = max(0, timestamp - get_last_adjustment(sumsy_balance))
-        else         
+        else
+            # Calculate full multiples of sumsy.interval
             timerange = max(0, trunc((timestamp - get_last_adjustment(sumsy_balance)) / sumsy.interval) * sumsy.interval)
         end
     end
