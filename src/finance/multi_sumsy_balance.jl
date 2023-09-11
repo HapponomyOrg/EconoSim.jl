@@ -442,15 +442,15 @@ function transfer_sumsy!(source::MultiSuMSyBalance,
         adjust_sumsy_balance!(source, dep_entry, timestamp)
     end
 
+    if is_transactional(destination, dep_entry)
+        adjust_sumsy_balance!(destination, dep_entry, timestamp)
+    end
+
     transfer_asset!(get_balance(source),
                     get_balance(destination),
                     dep_entry,
                     amount,
                     timestamp = max(timestamp, max(get_last_transaction(source), get_last_transaction(destination))))
-
-    if is_transactional(destination, dep_entry)
-        adjust_sumsy_balance!(destination, dep_entry, timestamp)
-    end
 end
 
 """
