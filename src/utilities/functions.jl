@@ -30,3 +30,9 @@ is_right_open(interval::AbstractInterval{T,L,R}) where {T,L,R} = R === Open
 
 is_left_unbounded(interval::AbstractInterval{T,L,R}) where {T,L,R} = L === Unbounded
 is_right_unbounded(interval::AbstractInterval{T,L,R}) where {T,L,R} = R === Unbounded
+
+function set_currency_precision!(precision::Int)
+    global Currency
+    
+    Currency = Fixed(precision)
+end
