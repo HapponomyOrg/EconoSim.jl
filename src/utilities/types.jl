@@ -89,7 +89,7 @@ Fixed(digits::Integer) = FixedDecimal{Int128, digits}
     Currency
 Convenience type for working with currencies.
 """
-Currency = Fixed(4)
+Currency = Fixed(6)
 
 todo"Fix operations type casting"
 
@@ -101,12 +101,6 @@ todo"Fix operations type casting"
 #        Base.$op(x::Percentage, y::Currency) = Currency(Base.$op(x, Float64(y)))
 #    end)
 #end
-
-function set_currency_precision(precision::Int)
-    global Currency
-    
-    Currency = Fixed(precision)
-end
 
 LeftInterval{T} = Interval{T, Closed, Open}
 RightInterval{T} = Interval{T, Open, Closed}
