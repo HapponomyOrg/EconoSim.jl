@@ -102,6 +102,12 @@ todo"Fix operations type casting"
 #    end)
 #end
 
+function set_currency_precision(precision::Int)
+    global Currency
+    
+    Currency = Fixed(precision)
+end
+
 LeftInterval{T} = Interval{T, Closed, Open}
 RightInterval{T} = Interval{T, Open, Closed}
 ClosedInterval{T} = Interval{T, Closed, Closed}
