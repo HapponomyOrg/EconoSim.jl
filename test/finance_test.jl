@@ -1,6 +1,7 @@
 using Test
 using Intervals
 using EconoSim
+using FixedPointDecimals
 
 @testset "Balance" begin
     b = Balance()
@@ -740,4 +741,18 @@ end
 
     @test asset_value(b2, c1) == 150
     @test asset_value(b2, c2) == 50
+end
+
+@testset "Change Currency Precision" begin
+    set_currency_precision!(4)
+
+    b = Balance()
+    book_asset!(b, BalanceEntry("DEP"), 10)
+    @test typeof(asset_value(b, BalanceEntry("DEP"))) == FixedDecimal{Int128, 4}
+
+    set_currency_precision!(6)
+
+    b = Balance()
+    book_asset!(b, BalanceEntry("DEP"), 10)
+    @test typeof(asset_value(b, BalanceEntry("DEP"))) == FixedDecimal{Int128, 6}
 end
