@@ -19,7 +19,7 @@ EQUITY = BalanceEntry("Equity")
 
 Base.show(io::IO, entry::BalanceEntry) = print(io, "BalanceEntry($(entry.name))")
 
-abstract type AbstractBalance end
+abstract type AbstractBalance{C <: FixedDecimal} end
 
 """
     Transfer
@@ -32,14 +32,14 @@ Used when working with transactions. All transfers in a transaction must succeed
 * amount: the amount that was transferred.
 * entry: the BalanceEntry used in the transfer.
 """
-struct Transfer{T <: AbstractBalance}
+struct Transfer{C <: FixedDecimal, T <: AbstractBalance{C}}
     source::T
     source_type::EntryType
     source_entry::BalanceEntry
     destination::T
     destination_type::EntryType
     destination_entry::BalanceEntry
-    amount::Currency
+    amount::C
     timestamp::Int64
 end
 
@@ -58,28 +58,28 @@ A balance sheet, including an optional history of transactions which led to the 
 * transfer_queue: transfers to other balances whcih are queued. When the queue is executed, all transfers are executed in the same transaction.
 * properties: a dict with user defined properties. If the key of the dict is a Symbol, the value can be retrieved/set by balance.symbol.
 """
-mutable struct Balance <: AbstractBalance
-    assets::Dict{BalanceEntry, Currency}
-    def_min_asset::Currency
-    min_assets::Dict{BalanceEntry, Currency}
-    liabilities::Dict{BalanceEntry, Currency}
-    def_min_liability::Currency
-    min_liabilities::Dict{BalanceEntry, Currency}
-    transfer_queue::Vector{Transfer}
+mutable struct Balance{C <: FixedDecimal} <: AbstractBalance{C}
+    assets::Dict{BalanceEntry, C}
+    def_min_asset::C
+    min_assets::Dict{BalanceEntry, C}
+    liabilities::Dict{BalanceEntry, C}
+    def_min_liability::C
+    min_liabilities::Dict{BalanceEntry, C}
+    transfer_queue::Vector{Transfer{C, Balance{C}}}
     last_transaction::Int64
     properties::Dict
 end
 
-function Balance(;def_min_asset = 0,
-                def_min_liability = 0,
+function Balance(;def_min_asset::Real = 0,
+                def_min_liability::Real = 0,
                 properties = Dict())
-    balance = Balance(Dict{BalanceEntry, Currency}(),
+    balance = Balance{Currency}(Dict{BalanceEntry, Currency}(),
                         def_min_asset,
                         Dict{BalanceEntry, Currency}(),
                         Dict{BalanceEntry, Currency}(EQUITY => 0),
                         def_min_liability,
                         Dict{BalanceEntry, Currency}(EQUITY => typemin(Currency)),
-                        Vector{Transfer{Balance}}(),
+                        Vector{Transfer{Currency, Balance{Currency}}}(),
                         0,
                         properties)
 
@@ -195,10 +195,10 @@ set_last_transaction!(balance::Balance, timestamp::Int) = (balance.last_transact
 get_last_transaction(balance::Balance) = balance.last_transaction
 
 """
-    entry_value(dict::Dict{BalanceEntry, Currency},
+    entry_value(dict::Dict{BalanceEntry, <: Real},
                 entry::BalanceEntry)
 """
-function entry_value(dict::Dict{BalanceEntry, Currency},
+function entry_value(dict::Dict{BalanceEntry, <: Real},
                     entry::BalanceEntry)
     if entry in keys(dict)
         return dict[entry]
@@ -245,7 +245,7 @@ function book_amount!(balance::Balance,
                     skip_check::Bool = false)
     if skip_check || check_booking(balance, entry, type, set_to_value, amount)
         dict = entry_dict(balance, type)
-        prev_amount = get!(dict, entry, CUR_0)
+        prev_amount = get!(dict, entry, CUR_0())
 
         if set_to_value
             dict[entry] = amount

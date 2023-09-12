@@ -5,10 +5,10 @@ import Base: +, -, *, /, <, >, <=, >=, ==, max, min
 """
     Price - a composite price consisting of one or more price components, each associated with a specific balance entry.
 """
-struct Price
-    components::Dict{BalanceEntry, Currency}
+struct Price{C <: FixedDecimal}
+    components::Dict{BalanceEntry, C}
     main_currency::BalanceEntry
-    Price(components::Dict{BalanceEntry, <:Real}, main_currency::BalanceEntry) = new(Dict{BalanceEntry, Currency}(components), main_currency)
+    Price(components::Dict{BalanceEntry, <:Real}, main_currency::BalanceEntry) = new{Currency}(Dict{BalanceEntry, Currency}(components), main_currency)
 end
 
 function Price(main_currency::BalanceEntry, amount::Union{Real, Nothing} = nothing)

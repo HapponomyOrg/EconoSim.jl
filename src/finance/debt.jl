@@ -19,11 +19,11 @@ A transferable debt contract between two balance sheets.
 * creation: the timestamp of the creation of the debt.
 * interval: the interval between installments. This can be 0.
 """
-mutable struct Debt
+mutable struct Debt{C <: FixedDecimal}
     id::UUID
     creditor::Balance
     debtor::Balance
-    installments::Vector{Currency}
+    installments::Vector{C}
     interest_rate::Float64
     bank_debt::Bool
     money_entry::BalanceEntry
@@ -38,7 +38,7 @@ mutable struct Debt
         money_entry::BalanceEntry = DEPOSIT,
         debt_entry::BalanceEntry = DEBT,
         creation::Int64 = 0,
-        interval = 0) = new(uuid4(),
+        interval = 0) = new{Currency}(uuid4(),
             creditor,
             debtor,
             installments,

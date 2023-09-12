@@ -3,13 +3,13 @@
     A SuMSy balance which only has one SuMSy balance sheet entry.
     Once initialized, all future SuMSy operations on the balance are assumed to refer to the initial balance sheet entry.
 """
-mutable struct SingleSuMSyBalance <: SuMSyBalance
+mutable struct SingleSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     balance::Balance
     sumsy::SuMSy
     sumsy_entry::BalanceEntry
     sumsy_active::Bool
     gi_eligible::Bool
-    dem_free::Currency
+    dem_free::C
     last_adjustment::Int64
 end
 
@@ -208,7 +208,7 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance, timestamp::Int
                                                             get_sumsy_dep_entry(sumsy_balance),
                                                             sumsy_balance.gi_eligible,
                                                             sumsy_balance.dem_free,
-                                                            Int(timerange)) : (CUR_0, CUR_0)
+                                                            Int(timerange)) : (CUR_0(), CUR_0())
 end
 
 function reset_sumsy_balance!(sumsy_balance::SingleSuMSyBalance;
@@ -308,7 +308,7 @@ function get_dem_free(sumsy_balance::SingleSuMSyBalance)
     if is_gi_eligible(sumsy_balance)
         return sumsy_balance.dem_free
     else
-        return CUR_0
+        return CUR_0()
     end
 end
 

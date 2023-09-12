@@ -9,7 +9,7 @@ SUMSY_DEBT = BalanceEntry("SuMSy debt")
 DemTiers = Vector{Tuple{Interval, Percentage}}
 DemSettings = Union{DemTiers, Vector{<: Tuple{Real, Real}}, Real}
 
-abstract type SuMSyBalance <: AbstractBalance end
+abstract type SuMSyBalance{C <: FixedDecimal} <: AbstractBalance{C} end
 
 set_last_transaction!(sumsy_balance::SuMSyBalance, timestamp::Int) = set_last_transaction!(sumsy_balance.balance, timestamp)
 get_last_transaction(sumsy_balance::SuMSyBalance) = get_last_transaction(sumsy_balance.balance)
@@ -220,21 +220,23 @@ The lower bound of the first tuple is always set to 0.
 * dep_entry: The balance entry used for depositing GI.
 * transactional: Whether or not the SuMSy implementation is transaction based. Transaction based SuMSy implementations apply partial guaranteed income and demurrage before each transaction.
 """
-struct SuMSyIncome
-    seed::Currency
-    guaranteed_income::Currency
+struct SuMSyIncome{C <: FixedDecimal}
+    seed::C
+    guaranteed_income::C
+    SuMSyIncome(seed::Real, guaranteed_income::Real) = new{Currency}(seed, guaranteed_income)
 end
 
-struct SuMSyDemurrage
-    dem_free::Currency
+struct SuMSyDemurrage{C <: FixedDecimal}
+    dem_free::C
     dem_tiers::DemTiers
+    SuMSyDemurrage(dem_free::Real, dem_tiers::DemTiers) = new{Currency}(dem_free, dem_tiers)
 end
 
-struct SuMSy
+struct SuMSy{C <: FixedDecimal}
     interval::Int64
     transactional::Bool
-    income::SuMSyIncome
-    demurrage::SuMSyDemurrage
+    income::SuMSyIncome{C}
+    demurrage::SuMSyDemurrage{C}
 end
 
 function SuMSy(guaranteed_income::Real,
@@ -314,7 +316,7 @@ NO_DEM_TIERS = make_tiers([(0, 0)])
 make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 
 function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligible::Bool, timerange::Int)
-    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0
+    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0()
     demurrage = 0
 
     for tier in sumsy.demurrage.dem_tiers
@@ -340,8 +342,8 @@ end
 
 function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance, sumsy::SuMSy, dep_entry::BalanceEntry, gi_eligible::Bool, dem_free::Real, timerange::Int)
     interval = sumsy.interval
-    guaranteed_income = CUR_0
-    demurrage = CUR_0
+    guaranteed_income = CUR_0()
+    demurrage = CUR_0()
     cur_balance = asset_value(sumsy_balance, dep_entry) - dem_free
 
     if timerange >= sumsy.interval
@@ -370,26 +372,26 @@ function telo(income::Real, dem_free::Real, dem_settings::DemSettings)
     return telo(Currency(income), Currency(dem_free), make_tiers(dem_settings))
 end
 
-function telo(income::Currency, dem_free::Currency, dem_tiers::DemTiers)
+function telo(income::Real, dem_free::Real, dem_tiers::DemTiers)
     total_dem = 0
-    telo = 0
+    telo_val = 0
 
     for tier in dem_tiers
         if is_right_unbounded(tier[1]) || total_dem + span(tier[1]) * tier[2] > income
             if tier[2] != 0
-                telo += (income - total_dem) / tier[2]
+                telo_val += (income - total_dem) / tier[2]
             else
-                telo = CUR_MAX
+                telo_val = CUR_MAX()
             end
             
             break
         else
-            telo += span(tier[1])
+            telo_val += span(tier[1])
             total_dem += span(tier[1]) * tier[2]
         end
     end
 
-    return Currency(telo + dem_free)
+    return Currency(telo_val + dem_free)
 end
 
 function time_telo(sumsy::SuMSy)

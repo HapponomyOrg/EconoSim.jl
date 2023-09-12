@@ -1,13 +1,13 @@
 import Base: ==
 
-mutable struct MultiSuMSyBalance <: SuMSyBalance
+mutable struct MultiSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     balance::Balance
     sumsy::Dict{BalanceEntry, SuMSy}
     sumsy_active::Dict{BalanceEntry, Bool}
     gi_eligible::Dict{BalanceEntry, Bool}
     last_adjustment::Dict{BalanceEntry, Integer}
-    dem_free::Dict{BalanceEntry, Currency}
-    MultiSuMSyBalance(balance::Balance = Balance()) = new(balance,
+    dem_free::Dict{BalanceEntry, C}
+    MultiSuMSyBalance(balance::Balance = Balance()) = new{Currency}(balance,
                                                             Dict{BalanceEntry, SuMSy}(),
                                                             Dict{BalanceEntry, Bool}(),
                                                             Dict{BalanceEntry, Bool}(),
@@ -197,7 +197,7 @@ function adjust_sumsy_balance!(sumsy_balance::MultiSuMSyBalance, dep_entry::Bala
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, dep_entry, timestamp)
 
     book_asset!(get_balance(sumsy_balance), dep_entry, guaranteed_income - demurrage, timestamp = timestamp)
-    set_last_adjustment!(sumsy_balance, timestamp)
+    set_last_adjustment!(sumsy_balance, dep_entry, timestamp)
 
     return guaranteed_income, demurrage
 end
@@ -221,7 +221,7 @@ function calculate_adjustments(sumsy_balance::MultiSuMSyBalance,
                                                             dep_entry,
                                                             is_gi_eligible(sumsy_balance, dep_entry),
                                                             get_dem_free(sumsy_balance, dep_entry),
-                                                            Int(timerange)) : (CUR_0, CUR_0)
+                                                            Int(timerange)) : (CUR_0(), CUR_0())
 end
 
 function reset_sumsy_balance!(sumsy_balance::MultiSuMSyBalance,
@@ -335,7 +335,7 @@ function get_seed(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
     try
         return get_sumsy(sumsy_balance, dep_entry).income.seed
     catch
-        return CUR_0
+        return CUR_0()
     end
 end
 
@@ -343,7 +343,7 @@ function get_guaranteed_income(sumsy_balance::MultiSuMSyBalance, dep_entry::Bala
     try
         return get_sumsy(sumsy_balance, dep_entry).income.guaranteed_income
     catch
-        return CUR_0
+        return CUR_0()
     end
 end
 
@@ -364,7 +364,7 @@ function get_initial_dem_free(sumsy_balance::MultiSuMSyBalance, dep_entry::Balan
     try
         return get_sumsy(sumsy_balance, dep_entry).demurrage.dem_free
     catch
-        return CUR_0
+        return CUR_0()
     end
 end
 
@@ -373,7 +373,7 @@ function set_dem_free!(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry
         sumsy_balance.dem_free[dep_entry] = amount
         return amount
     catch
-        return CUR_0
+        return CUR_0()
     end
 end
 
@@ -382,10 +382,10 @@ function get_dem_free(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
         if is_gi_eligible(sumsy_balance, dep_entry)
             return sumsy_balance.dem_free[dep_entry]
         else
-            return CUR_0
+            return CUR_0()
         end
     catch
-        return CUR_0
+        return CUR_0()
     end
 end
 
