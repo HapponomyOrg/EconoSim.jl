@@ -87,9 +87,9 @@ Fixed(digits::Integer) = FixedDecimal{Int128, digits}
 
 """
     Currency
-Convenience type for working with currencies.
+Convenience type for working with currencies. Standard precision is 4 digits.
 """
-Currency = Fixed(6)
+Currency = Fixed(4)
 
 todo"Fix operations type casting"
 
