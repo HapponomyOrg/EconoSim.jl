@@ -1,7 +1,7 @@
 
 include("types.jl")
 export Percentage, Health, value, num_entities
-export Fixed, Currency
+export Fixed, Currency, set_currency_precision
 export LeftInterval, RightInterval, ClosedInterval
 
 include("functions.jl")
