@@ -126,11 +126,7 @@ function process_model_sumsy!(model::ABM)
 
     if process_ready(sumsy, step)
         for actor in allagents(model)
-            balance = get_balance(actor)
-            
-            income, demurrage = calculate_adjustments(balance, step, sumsy)
-            book_sumsy!(balance, income - demurrage, timestamp = step)
-            set_last_adjustment!(balance, step)
+            adjust_sumsy_balance!(get_balance(actor), step)
         end
     end
 end
