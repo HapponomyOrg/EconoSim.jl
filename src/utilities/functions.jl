@@ -33,6 +33,13 @@ is_right_unbounded(interval::AbstractInterval{T,L,R}) where {T,L,R} = R === Unbo
 
 function set_currency_precision!(precision::Int)
     global Currency
+    global CUR_MAX
+    global CUR_MIN
+    global CUR_0
     
     Currency = Fixed(precision)
+
+    CUR_MAX = typemax(Currency)
+    CUR_MIN = typemin(Currency)
+    CUR_0 = Currency(0)
 end
