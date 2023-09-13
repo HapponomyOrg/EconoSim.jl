@@ -208,7 +208,7 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance, timestamp::Int
                                                             get_sumsy_dep_entry(sumsy_balance),
                                                             sumsy_balance.gi_eligible,
                                                             sumsy_balance.dem_free,
-                                                            Int(timerange)) : (CUR_0(), CUR_0())
+                                                            Int(timerange)) : (CUR_0, CUR_0)
 end
 
 function reset_sumsy_balance!(sumsy_balance::SingleSuMSyBalance;
@@ -308,7 +308,7 @@ function get_dem_free(sumsy_balance::SingleSuMSyBalance)
     if is_gi_eligible(sumsy_balance)
         return sumsy_balance.dem_free
     else
-        return CUR_0()
+        return CUR_0
     end
 end
 

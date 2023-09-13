@@ -245,7 +245,7 @@ function book_amount!(balance::Balance,
                     skip_check::Bool = false)
     if skip_check || check_booking(balance, entry, type, set_to_value, amount)
         dict = entry_dict(balance, type)
-        prev_amount = get!(dict, entry, CUR_0())
+        prev_amount = get!(dict, entry, CUR_0)
 
         if set_to_value
             dict[entry] = amount

@@ -316,7 +316,7 @@ NO_DEM_TIERS = make_tiers([(0, 0)])
 make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 
 function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligible::Bool, timerange::Int)
-    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0()
+    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0
     demurrage = 0
 
     for tier in sumsy.demurrage.dem_tiers
@@ -342,8 +342,8 @@ end
 
 function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance, sumsy::SuMSy, dep_entry::BalanceEntry, gi_eligible::Bool, dem_free::Real, timerange::Int)
     interval = sumsy.interval
-    guaranteed_income = CUR_0()
-    demurrage = CUR_0()
+    guaranteed_income = CUR_0
+    demurrage = CUR_0
     cur_balance = asset_value(sumsy_balance, dep_entry) - dem_free
 
     if timerange >= sumsy.interval
@@ -381,7 +381,7 @@ function telo(income::Real, dem_free::Real, dem_tiers::DemTiers)
             if tier[2] != 0
                 telo_val += (income - total_dem) / tier[2]
             else
-                telo_val = CUR_MAX()
+                telo_val = CUR_MAX
             end
             
             break
