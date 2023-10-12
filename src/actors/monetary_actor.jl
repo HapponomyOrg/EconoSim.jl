@@ -1,7 +1,7 @@
 using Agents
 
 """
-MonetaryActor - agent representing an monetary actor.
+MonetaryActor - agent representing a monetary actor.
 
 # Fields
 * id::Int - the id of the actor.
