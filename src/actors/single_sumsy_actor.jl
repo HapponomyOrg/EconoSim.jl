@@ -2,7 +2,8 @@ using Agents
 
 SINGLE_SUMSY = :single_sumsy
 
-function make_single_sumsy!(sumsy::SuMSy,
+function make_single_sumsy!(model::ABM,
+                            sumsy::SuMSy,
                             actor::AbstractActor = MonetaryActor();
                             activate::Bool = true,
                             gi_eligible::Bool = true,
@@ -13,6 +14,7 @@ function make_single_sumsy!(sumsy::SuMSy,
                                                                                 activate = activate,
                                                                                 gi_eligible = gi_eligible,
                                                                                 initialize = initialize))
+    actor.model = model # Needed to get the step from the model for demurrage and GI calculation
     actor.balance = balance
     add_type!(actor, SINGLE_SUMSY)
     actor.contribution_settings = contribution_settings
