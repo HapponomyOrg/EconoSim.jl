@@ -21,7 +21,7 @@ end
 function create_properties(model_behaviors::Union{Nothing, Function, Vector{Function}})
     properties = Dict{Symbol, Any}()
     properties[:id_counter] = 0
-    properties[:step] = 0
+    properties[:step] = 1
     properties[:model_behaviors] = behavior_vector(model_behaviors)
 
     return properties
