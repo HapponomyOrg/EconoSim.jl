@@ -365,14 +365,14 @@ function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance, sumsy::SuM
 end
 
 function telo(sumsy::SuMSy)
-    return telo(sumsy.income.guaranteed_income, sumsy.demurrage.dem_free, sumsy.demurrage.dem_tiers)
+    return telo(sumsy.income.guaranteed_income, sumsy.demurrage.dem_tiers, sumsy.demurrage.dem_free)
 end
 
-function telo(income::Real, dem_free::Real, dem_settings::DemSettings)
-    return telo(Currency(income), Currency(dem_free), make_tiers(dem_settings))
+function telo(income::Real, dem_settings::DemSettings, dem_free::Real = 0)
+    return telo(Currency(income), make_tiers(dem_settings), Currency(dem_free))
 end
 
-function telo(income::Real, dem_free::Real, dem_tiers::DemTiers)
+function telo(income::Real, dem_tiers::DemTiers, dem_free::Real = 0)
     total_dem = 0
     telo_val = 0
 
