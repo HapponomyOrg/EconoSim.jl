@@ -34,11 +34,17 @@ Create a default model with 0 or more model behavior functions.
 Each cycle the model runs, all model behavior functions are called in order.
 """
 function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
-    return ABM(actor_type, properties = create_properties(model_behaviors))
+    return ABM(actor_type,
+                properties = create_properties(model_behaviors),
+                agent_step! = actor_step!,
+                model_step! = econo_model_step!)
 end
 
 function create_unremovable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
-    return UnremovableABM(actor_type, properties = create_properties(model_behaviors))
+    return UnremovableABM(actor_type,
+                            properties = create_properties(model_behaviors),
+                            agent_step! = actor_step!,
+                            model_step! = econo_model_step!)
 end
 
 function next_id(model::ABM)
@@ -87,5 +93,5 @@ end
 function run_econo_model!(model::ABM, steps::Integer, actors_first = false; kwargs...)
     model.properties[:run_steps] = steps
 
-    run!(model, actor_step!, econo_model_step!, stepper!, agents_first = actors_first; kwargs...)
+    run!(model, stepper!, agents_first = actors_first; kwargs...)
 end
