@@ -164,5 +164,5 @@ function process_actor_sumsy_contribution!(model::ABM)
 end
 
 function transfer_sumsy!(model::ABM, source::AbstractActor, destination::AbstractActor, amount::Real)
-    transfer_sumsy!(get_balance(source), get_balance(destination), amount, model.step)
+    transfer_sumsy!(get_balance(source), get_balance(destination), amount, timestamp = model.step)
 end
