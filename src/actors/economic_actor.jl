@@ -6,77 +6,20 @@ Prices = Dict{<:Blueprint, Price}
     EconomicActor - agent representing a full economic actor.
 
 # Fields
-* id::Int - the id of the actor.
-* types::Set{Symbol} - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
-* behaviors::Vector{Function} - the list of behavior functions which is called when the actor is activated.
 * balance::Balance - the balance sheet of the actor.
 * posessions::Entities - the entities in personal posession of the actor.
 * stock::Stock - the stock held by the actor. The stock is considered to be used for business purposes.
 * producers::Set{Producer} - the production facilities of the actor.
 * prices::D where D <: Dict{<:Blueprint, Price} - the prices of the products sold by the actor.
-* properties::Dict{Symbol, Any} - for internal use.
 
 After creation, any field can be set on the actor, even those which are not part of the structure. This can come in handy when when specific state needs to be stored with the actor.
 """
-mutable struct EconomicActor <: AbstractActor
-    id::Int64
-    types::Set{Symbol}
-    behaviors::Vector{Function}
-    balance::AbstractBalance
-    posessions::Entities
-    stock::Stock
-    producers::Set{Producer}
-    prices::Prices
-    properties::D where {D <: Dict{Symbol, <:Any}}
-end
-
-"""
-EconomicActor - creation function for a generic actor.
-
-# Parameters
-* id::Int = ID_COUNTER - the id of the actor. When no id is given, the standard sequence of id's is used. Mixing the standard sequence and user defined id's is not advised.
-* type::Union{Symbol, Nothing} = nothing - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
-* behavior::Union{Function, Nothing} = nothing - the default behavior function which is called when the actor is activated.
-* balance::Balance = Balance() - the balance sheet of the actor.
-* posessions::Entities = Entities() - the entities in personal posession of the actor.
-* stock::Stock = Stock() - the stock held by the actor. The stock is considered to be used for business purposes.
-* producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}() - the production facilities of the actor.
-"""
-function EconomicActor(id::Int64 = 0;
-        types::Union{Set{Symbol}, Symbol, Nothing} = nothing,
-        behaviors::Union{Vector{Function}, Function, Nothing} = nothing,
-        balance::AbstractBalance = Balance(),
-        posessions::Entities = Entities(),
-        stock::Stock = PhysicalStock(),
-        producers::Union{AbstractVector{Producer}, AbstractSet{Producer}} = Set{Producer}(),
-        prices::D = Dict{Blueprint, Price}()) where {D <: Prices}
-    if isnothing(types)
-        typeset = Set{Symbol}()
-    elseif types isa Symbol
-        typeset = Set([types])
-    else
-        typeset = types
-    end
-
-    if isnothing(behaviors)
-        actor_behaviors = Vector{Function}()
-    elseif behaviors isa Function
-        actor_behaviors = Vector([behavior])
-    else
-        actor_behaviors = behaviors
-    end
-
-    actor = EconomicActor(id,
-                            typeset,
-                            actor_behaviors,
-                            balance,
-                            posessions,
-                            stock,
-                            Set(producers),
-                            prices,
-                            Dict{Symbol, Any}())
-
-    return actor
+@agent struct EconomicActor(Actor) <: AbstractActor
+    balance::AbstractBalance = Balance()
+    posessions::Entities = Entities()
+    stock::Stock = PhysicalStock()
+    producers::Set{Producer} = Set{Producer}()
+    prices::Prices = Dict{Blueprint, Price}()
 end
 
 push_producer!(actor::EconomicActor, producer::Producer) = (push!(actor.producers, producer); actor)
@@ -86,7 +29,7 @@ get_posessions(actor::EconomicActor, bp::Blueprint) = bp in keys(actor.posession
 get_stock(actor::EconomicActor, bp::Blueprint) = current_stock(actor.stock, bp)
 
 """
-    get_production_output(actor::Actor)
+    get_production_output(actor::EconomicActor)
 
 Get the set of all blueprints produced by the actor.
 """
@@ -140,7 +83,7 @@ end
 # Behavior functions
 
 """
-    produce_stock!(actor::Actor)
+    produce_stock!(actor::EconomicActor)
 
 Resupply stocks as needed.
 """

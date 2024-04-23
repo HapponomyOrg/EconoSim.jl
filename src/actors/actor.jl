@@ -2,6 +2,20 @@ using Agents
 
 abstract type AbstractActor <: AbstractAgent end
 
+"""
+Actor - generic agent representing an actor.
+
+# Fields
+* types::Set{Symbol} - the types of the actor. Types are meant to be used in data collection and/or behavior functions.
+* behaviors::Vector{Function} - the list of behavior functions which is called when the actor is activated.
+* properties::Dict{Symbol, Any} - for internal use.
+"""
+@agent struct Actor(NoSpaceAgent) <: AbstractActor
+    types::Set{Symbol} = Set{Symbol}()
+    behaviors::Vector{Function} = Vector{Function}()
+    properties::D where {D <: Dict{Symbol, <:Any}} = Dict{Symbol, Any}()
+end
+
 function Base.getproperty(actor::AbstractActor, s::Symbol)
     properties = getfield(actor, :properties)
 
@@ -46,6 +60,6 @@ end
 """
     get_balance(actor::AbstractActor)
 
-All subtypes of AbstractActor must have a balance field.
+All subtypes of Actor must have a balance field.
 """
 get_balance(actor::AbstractActor) = actor.balance

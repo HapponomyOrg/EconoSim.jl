@@ -74,7 +74,7 @@ end
     push!(posessions, Consumable(cb))
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
-    person = EconomicActor(1, types = :person, producers = [p1, p2], posessions = posessions, balance = balance)
+    person = EconomicActor(id = 1, balance = balance, posessions = posessions, types = Set([:person]), producers = Set([p1, p2]))
 
     @test length(person.producers) == 2
     @test p1 in person.producers
@@ -104,7 +104,7 @@ end
     push!(posessions, Consumable(cb))
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
-    person = make_marginal!(EconomicActor(1, producers = [p1, p2], posessions = posessions, balance = balance), needs = needs)
+    person = make_marginal!(EconomicActor(id = 1, producers = Set([p1, p2]), posessions = posessions, balance = balance), needs = needs)
 
     @test length(person.producers) == 2
     @test p1 in person.producers

@@ -4,7 +4,7 @@ SINGLE_SUMSY = :single_sumsy
 
 function make_single_sumsy!(model::ABM,
                             sumsy::SuMSy,
-                            actor::AbstractActor = MonetaryActor();
+                            actor::AbstractActor = MonetaryActor(model);
                             activate::Bool = true,
                             gi_eligible::Bool = true,
                             initialize::Bool = true,

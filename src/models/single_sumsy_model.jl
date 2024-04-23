@@ -3,16 +3,18 @@ using Agents
 function add_properties(model::ABM,
                         sumsy::SuMSy,
                         contribution_settings::Union{SuMSy, Nothing})
-    model.properties[:sumsy] = sumsy
-    model.properties[:intervals] = Set([sumsy.interval])
+    properties = abmproperties(model)
+    properties[:sumsy] = sumsy
+    properties[:intervals] = Set([sumsy.interval])
     set_contribution_settings!(model, contribution_settings)
 end
 
 function create_single_sumsy_model(sumsy::SuMSy;
                                     actor_type::Type = MonetaryActor,
                                     model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
-                                    contribution_settings::Union{SuMSy, Nothing} = nothing)
-    model = create_econo_model(actor_type, behavior_vector(model_behaviors))
+                                    contribution_settings::Union{SuMSy, Nothing} = nothing,
+                                    actors_first::Bool = false)
+    model = create_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
 
     add_properties(model, sumsy, contribution_settings)
 
@@ -22,8 +24,9 @@ end
 function create_unremovable_single_sumsy_model(sumsy::SuMSy;
                                                 actor_type::Type = MonetaryActor,
                                                 model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
-                                                contribution_settings::Union{SuMSy, Nothing} = nothing)
-    model = create_unremovable_econo_model(actor_type, behavior_vector(model_behaviors))
+                                                contribution_settings::Union{SuMSy, Nothing} = nothing,
+                                                actors_first::Bool = false)
+    model = create_unremovable_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
 
     add_properties(model, sumsy, contribution_settings)
 
@@ -41,10 +44,11 @@ function set_contribution_settings!(model::ABM,
     catch
     end
 
-    model.properties[:contribution_settings] = contribution_settings
+    properties = abmproperties(model)
+    properties[:contribution_settings] = contribution_settings
 
     if isnothing(contribution_settings)
-        model.properties[:contribution_balance] = nothing
+        properties[:contribution_balance] = nothing
     else
         push!(model.intervals, contribution_settings.interval)
 
@@ -53,7 +57,7 @@ function set_contribution_settings!(model::ABM,
                 model.contribution_balance = Balance(def_min_asset = typemin(Currency))
             end 
         catch
-            model.properties[:contribution_balance] = Balance(def_min_asset = typemin(Currency))
+            properties[:contribution_balance] = Balance(def_min_asset = typemin(Currency))
         end
     end
     
@@ -89,7 +93,7 @@ function reimburse_contribution!(model::ABM, amount::Real)
 end
 
 function add_single_sumsy_actor!(model::ABM,
-                                    actor::AbstractActor = MonetaryActor(next_id(model));
+                                    actor::AbstractActor = MonetaryActor(model);
                                     sumsy::SuMSy = model.sumsy,
                                     activate::Bool = true,
                                     gi_eligible::Bool = true,

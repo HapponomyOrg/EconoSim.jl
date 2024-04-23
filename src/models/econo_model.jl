@@ -20,7 +20,6 @@ end
 
 function create_properties(model_behaviors::Union{Nothing, Function, Vector{Function}})
     properties = Dict{Symbol, Any}()
-    properties[:id_counter] = 0
     properties[:step] = 0
     properties[:model_behaviors] = behavior_vector(model_behaviors)
 
@@ -33,28 +32,23 @@ end
 Create a default model with 0 or more model behavior functions.
 Each cycle the model runs, all model behavior functions are called in order.
 """
-function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing, actors_first::Bool = false)
     return ABM(actor_type,
                 properties = create_properties(model_behaviors),
                 agent_step! = actor_step!,
-                model_step! = econo_model_step!)
+                model_step! = econo_model_step!,
+                agents_first = actors_first)
 end
 
-function create_unremovable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+function create_unremovable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing, actors_first::Bool = false)
     return UnremovableABM(actor_type,
                             properties = create_properties(model_behaviors),
                             agent_step! = actor_step!,
-                            model_step! = econo_model_step!)
-end
-
-function next_id(model::ABM)
-    model.id_counter += 1
-
-    return model.id_counter
+                            model_step! = econo_model_step!,
+                            agents_first = actors_first)
 end
 
 function add_actor!(model::ABM, actor::AbstractActor)
-    actor.id = next_id(model)
     add_agent!(actor, model)
 
     return actor
@@ -84,14 +78,14 @@ function stepper!(model::ABM, step::Integer)
     return step >= model.run_steps
 end
 
-function econo_step!(model::ABM, steps::Integer = 1, actors_first::Bool = false)
+function econo_step!(model::ABM, steps::Integer = 1)
     model.properties[:run_steps] = steps
 
-    step!(model, actor_step!, econo_model_step!, stepper!, actors_first)
+    step!(model, actor_step!, econo_model_step!, stepper!)
 end
 
-function run_econo_model!(model::ABM, steps::Integer, actors_first = false; kwargs...)
-    model.properties[:run_steps] = steps
+function run_econo_model!(model::ABM, steps::Integer; kwargs...)
+    abmproperties(model)[:run_steps] = steps
 
-    run!(model, stepper!, agents_first = actors_first; kwargs...)
+    run!(model, stepper!; kwargs...)
 end

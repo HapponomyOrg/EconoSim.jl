@@ -80,7 +80,7 @@ function init_loreco_model(sumsy::SuMSy = SuMSy(2000, 25000, 0.1, 30, seed = 500
                         bakers::Integer = 15,
                         tv_merchants::Integer = 5)
     # Create a standard SuMSy model.
-    model = create_sumsy_model(sumsy,
+    model = create_single_sumsy_model(sumsy,
                                 fixed_contribution,
                                 contribution_tiers = 0.05)
 
