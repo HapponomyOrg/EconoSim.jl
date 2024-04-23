@@ -40,14 +40,6 @@ function create_econo_model(actor_type::Type = MonetaryActor, model_behaviors::U
                 agents_first = actors_first)
 end
 
-function create_unremovable_econo_model(actor_type::Type = MonetaryActor, model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing, actors_first::Bool = false)
-    return UnremovableABM(actor_type,
-                            properties = create_properties(model_behaviors),
-                            agent_step! = actor_step!,
-                            model_step! = econo_model_step!,
-                            agents_first = actors_first)
-end
-
 function add_actor!(model::ABM, actor::AbstractActor)
     add_agent!(actor, model)
 

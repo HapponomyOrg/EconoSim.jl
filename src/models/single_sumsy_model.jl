@@ -21,18 +21,6 @@ function create_single_sumsy_model(sumsy::SuMSy;
     return model
 end
 
-function create_unremovable_single_sumsy_model(sumsy::SuMSy;
-                                                actor_type::Type = MonetaryActor,
-                                                model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
-                                                contribution_settings::Union{SuMSy, Nothing} = nothing,
-                                                actors_first::Bool = false)
-    model = create_unremovable_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
-
-    add_properties(model, sumsy, contribution_settings)
-
-    return model
-end
-
 is_contribution_active(model::ABM) = !isnothing(model.contribution_settings)
 
 function set_contribution_settings!(model::ABM,
