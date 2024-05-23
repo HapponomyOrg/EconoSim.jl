@@ -123,7 +123,7 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                     timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
     if entry1 === get_sumsy_dep_entry(sumsy_balance1) && entry2 === get_sumsy_dep_entry(sumsy_balance2) && type1 === type2 === asset
         transfer_sumsy!(sumsy_balance1, sumsy_balance2, amount, timestamp = timestamp)
-    else # todo: check whether sumsy assets can be transferred to non sumsy assets this way.
+    elseif entry1 != get_sumsy_dep_entry(sumsy_balance1) && entry2 != get_sumsy_dep_entry(sumsy_balance2)
         transfer!(get_balance(sumsy_balance1),
                     type1,
                     entry1,
@@ -132,6 +132,8 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                     entry2,
                     amount,
                     timestamp = timestamp)
+    else
+        return false # Can not transfer between SuMSy and non-SuMSy entries
     end
 end
 
@@ -142,7 +144,13 @@ function transfer!(sumsy_balance1::SingleSuMSyBalance,
                 entry::BalanceEntry,
                 amount::Real;
                 timestamp::Int = max(get_last_transaction(sumsy_balance1), get_last_transaction(sumsy_balance2)))
-    transfer!(sumsy_balance1, type1, entry, sumsy_balance2, type2, entry, amount, timestamp = timestamp)
+    if entry === get_sumsy_dep_entry(sumsy_balance1) === get_sumsy_dep_entry(sumsy_balance2) && type1 === type2 === asset
+        transfer_sumsy!(sumsy_balance1, sumsy_balance2, amount, timestamp = timestamp)
+    elseif entry != get_sumsy_dep_entry(sumsy_balance1) && entry != get_sumsy_dep_entry(sumsy_balance2)
+        transfer!(sumsy_balance1, type1, entry, sumsy_balance2, type2, entry, amount, timestamp = timestamp)
+    else
+        return false # Can not transfer between SuMSy and non-SuMSy entries
+    end
 end
 
 function transfer_asset!(sumsy_balance1::SingleSuMSyBalance,
