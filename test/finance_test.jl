@@ -166,6 +166,28 @@ end
     @test EconoSim.calculate_adjustments(balance, 10) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
 end
 
+@testset "SingleSuMSyBalance - transfer between SuMSy and non-SuMSy" begin
+    sumsy = SuMSy(1000, 0, 0.1, 10)
+
+    b1 = SingleSuMSyBalance(sumsy)
+    b2 = SingleSuMSyBalance(sumsy)
+
+    book_asset!(b1, get_sumsy_dep_entry(b1), 100)
+    book_asset!(b1, DEPOSIT, 100)
+
+    book_asset!(b2, get_sumsy_dep_entry(b2), 100)
+    book_asset!(b2, DEPOSIT, 100)
+
+    @test transfer_asset!(b1, get_sumsy_dep_entry(b1), b2, get_sumsy_dep_entry(b2), 10)
+    @test transfer_asset!(b2, get_sumsy_dep_entry(b2), b1, get_sumsy_dep_entry(b1), 10)
+
+    @test transfer_asset!(b1, DEPOSIT, b2, get_sumsy_dep_entry(b2), 10) == false
+    @test transfer_asset!(b2, DEPOSIT, b1, get_sumsy_dep_entry(b1), 10) == false
+
+    @test transfer_asset!(b1, get_sumsy_dep_entry(b1), b2, DEPOSIT, 10) == false
+    @test transfer_asset!(b2, get_sumsy_dep_entry(b2), b1, DEPOSIT, 10) == false
+end
+
 @testset "SingleSuMSyBalance - non transactional" begin
     sumsy = SuMSy(1000, 0, 0.1, 10, seed = 500, transactional = false)
 
