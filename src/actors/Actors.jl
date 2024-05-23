@@ -13,6 +13,10 @@ export has_type, add_type!, delete_type!
 export has_behavior, add_behavior!, delete_bahavior!, clear_behaviors
 export actor_step!
 
+include("balance_actor.jl")
+export BalanceActor
+export get_balance, transfer_asset!, transfer_liability!
+
 include("monetary_actor.jl")
 export MonetaryActor
 
@@ -29,7 +33,7 @@ export process_needs, process_usage, process_wants
 
 include("single_sumsy_actor.jl")
 export SINGLE_SUMSY
-export make_single_sumsy!
+export SingleSumsyActor
 export set_sumsy_active!, is_sumsy_active, set_gi_eligible!, is_gi_eligible
 export set_contribution_settings, get_contribution_settings, is_contribution_active, paid_contribution
 export sumsy_assets

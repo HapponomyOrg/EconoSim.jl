@@ -56,10 +56,3 @@ function actor_step!(actor::AbstractActor, model::ABM)
         behavior(model, actor)
     end
 end
-
-"""
-    get_balance(actor::AbstractActor)
-
-All subtypes of Actor must have a balance field.
-"""
-get_balance(actor::AbstractActor) = actor.balance
