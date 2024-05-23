@@ -10,7 +10,7 @@ function add_properties(model::ABM,
 end
 
 function create_single_sumsy_model(sumsy::SuMSy;
-                                    actor_type::Type = MonetaryActor,
+                                    actor_type::Type = SingleSuMSyActor,
                                     model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                                     contribution_settings::Union{SuMSy, Nothing} = nothing,
                                     actors_first::Bool = false)
@@ -80,20 +80,19 @@ function reimburse_contribution!(model::ABM, amount::Real)
     book_asset!(model.contribution_balance, SUMSY_DEP, -total_reimburse)
 end
 
-function add_single_sumsy_actor!(model::ABM,
-                                    actor::AbstractActor = MonetaryActor(model);
+function add_single_sumsy_actor!(model::ABM;
                                     sumsy::SuMSy = model.sumsy,
                                     activate::Bool = true,
                                     gi_eligible::Bool = true,
                                     initialize::Bool = true,
                                     contribution_settings::Union{SuMSy, Nothing} = model.contribution_settings)
-    make_single_sumsy!(model,
-                        sumsy,
-                        actor,
-                        activate = activate,
-                        gi_eligible = gi_eligible,
-                        initialize = initialize,
-                        contribution_settings = contribution_settings)
+    balance = SingleSuMSyBalance(sumsy,                                                                                
+                                activate = activate,
+                                gi_eligible = gi_eligible,
+                                initialize = initialize)
+    
+    actor = SingleSuMSyActor(model, model = model, balance = balance, contribution_settings = contribution_settings)
+    add_type!(actor, SINGLE_SUMSY)
 
     if isnothing(contribution_settings)
         union!(model.intervals, sumsy.interval)
