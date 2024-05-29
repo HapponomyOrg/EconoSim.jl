@@ -5,11 +5,11 @@ SINGLE_SUMSY = :single_sumsy
 """
     SingleSuMSyActor - agent representing an actor with a single SuMSy balance sheet.
 """
-@agent struct SingleSuMSyActor(Actor) <: BalanceActor
+@agent struct SingleSuMSyActor{C}(Actor) <: BalanceActor{C}
     model::ABM
     balance::SingleSuMSyBalance
     contribution_settings::Union{SuMSy, Nothing}
-    contribution::Real = CUR_0
+    contribution::C = CUR_0
 end
 
 set_sumsy_active!(actor::SingleSuMSyActor, flag::Bool) = set_sumsy_active!(actor.balance, flag)
