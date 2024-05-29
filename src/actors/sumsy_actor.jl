@@ -1,0 +1,1 @@
+abstract type SuMSyActor{C <: FixedDecimal} <: BalanceActor end

@@ -17,6 +17,9 @@ include("balance_actor.jl")
 export BalanceActor
 export get_balance, transfer_asset!, transfer_liability!
 
+include("sumsy_actor.jl")
+export SuMSyActor
+
 include("monetary_actor.jl")
 export MonetaryActor
 

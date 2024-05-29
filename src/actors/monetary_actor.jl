@@ -8,7 +8,7 @@ MonetaryActor - agent representing a monetary actor.
 
 After creation, any field can be set on the actor, even those which are not part of the structure. This can come in handy when when specific state needs to be stored with the actor.
 """
-@agent struct MonetaryActor{C}(Actor) <: BalanceActor{C}
+@agent struct MonetaryActor(Actor) <: BalanceActor
     model::ABM
-    balance::AbstractBalance = Balance{C}()
+    balance::AbstractBalance = Balance()
 end

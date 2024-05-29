@@ -3,7 +3,7 @@ using Agents
 """
     BalanceActor - agent representing an actor with a balance sheet.
 """
-abstract type BalanceActor{C <: FixedDecimal} <: AbstractActor end
+abstract type BalanceActor <: AbstractActor end
 
 """
     get_balance(actor::BalanceActor)

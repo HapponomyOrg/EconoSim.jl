@@ -5,7 +5,7 @@ SINGLE_SUMSY = :single_sumsy
 """
     SingleSuMSyActor - agent representing an actor with a single SuMSy balance sheet.
 """
-@agent struct SingleSuMSyActor{C}(Actor) <: BalanceActor{C}
+@agent struct SingleSuMSyActor{C}(Actor) <: SuMSyActor{C}
     model::ABM
     balance::SingleSuMSyBalance
     contribution_settings::Union{SuMSy, Nothing}
