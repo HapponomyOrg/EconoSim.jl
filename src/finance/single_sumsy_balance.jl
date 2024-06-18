@@ -273,8 +273,18 @@ function set_sumsy_active!(sumsy_balance::SingleSuMSyBalance, flag::Bool)
     sumsy_balance.sumsy_active = flag
 end
 
+function set_sumsy_active!(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry, flag::Bool)
+    if dep_entry == sumsy_balance.sumsy_entry
+        set_sumsy_active!(sumsy_balance, flag)
+    end
+end
+
 function is_sumsy_active(sumsy_balance::SingleSuMSyBalance)
     return sumsy_balance.sumsy_active
+end
+
+function is_sumsy_active(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    return is_sumsy_active(sumsy_balance) && dep_entry == sumsy_balance.sumsy_entry
 end
 
 is_transactional(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.sumsy.transactional

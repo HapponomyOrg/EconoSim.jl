@@ -303,12 +303,38 @@ function set_sumsy_active!(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceE
     sumsy_balance.sumsy_active[dep_entry] = flag
 end
 
+"""
+    set_sumsy_active!(balance::Balance, sumsy::SuMSy, flag::Bool)
+
+Set all SuMSy entries to the specified value.
+"""
+function set_sumsy_active!(sumsy_balance::MultiSuMSyBalance, flag::Bool)
+    for dep_entry in keys(sumsy_balance.sumsy_active)
+        sumsy_balance.sumsy_active[dep_entry] = flag
+    end
+end
+
 function is_sumsy_active(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
     try
         return sumsy_balance.sumsy_active[dep_entry]
     catch
         return false
     end
+end
+
+"""
+    is_sumsy_active(balance::Balance)
+
+Check whether all SuMSy entries are active.
+"""
+function is_sumsy_active(sumsy_balance::MultiSuMSyBalance)
+    for dep_entry in keys(sumsy_balance.sumsy_active)
+        if !sumsy_balance.sumsy_active[dep_entry]
+            return false
+        end
+    end
+
+    return true
 end
 
 function is_transactional(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
