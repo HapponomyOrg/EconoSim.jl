@@ -42,6 +42,8 @@ function Base.hasproperty(actor::AbstractActor, s::Symbol)
     return s in fieldnames(Actor) || s in keys(actor.properties)
 end
 
+create_actor(model::ABM) = Actor(model)
+
 add_type!(actor::AbstractActor, type::Symbol) = (push!(actor.types, type); actor)
 delete_type!(actor::AbstractActor, type::Symbol) = (delete!(actor.types, type); actor)
 has_type(actor::AbstractActor, type::Symbol) = type in actor.types
