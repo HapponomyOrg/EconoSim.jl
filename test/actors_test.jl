@@ -56,7 +56,7 @@ end
     @test 1 <= wants[2].units <= 2
 end
 
-@testset "Actor" begin
+@testset "Economic Assets" begin
     # Blueprints
     cb = ConsumableBlueprint("Consumable")
     pb = ProductBlueprint("Product")
@@ -74,11 +74,13 @@ end
     push!(posessions, Consumable(cb))
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
-    person = EconomicActor(id = 1, balance = balance, posessions = posessions, types = Set([:person]), producers = Set([p1, p2]))
+    model = create_econo_model()
+    person = create_monetary_actor(model, types = Set([:person]))
+    make_economic_actor!(person, posessions = posessions, producers = Set([p1, p2]))
 
-    @test length(person.producers) == 2
-    @test p1 in person.producers
-    @test p2 in person.producers
+    @test length(producers(person)) == 2
+    @test p1 in producers(person)
+    @test p2 in producers(person)
 end
 
 @testset "Marginal actor" begin
@@ -104,11 +106,14 @@ end
     push!(posessions, Consumable(cb))
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
-    person = make_marginal!(EconomicActor(id = 1, producers = Set([p1, p2]), posessions = posessions, balance = balance), needs = needs)
+    model = create_econo_model()
+    person = create_monetary_actor(model, balance = balance, types = Set([:person]))
+    make_economic_actor!(person, posessions = posessions, producers = Set([p1, p2]))
+    make_marginal!(person, needs = needs)
 
-    @test length(person.producers) == 2
-    @test p1 in person.producers
-    @test p2 in person.producers
+    @test length(producers(person)) == 2
+    @test p1 in producers(person)
+    @test p2 in producers(person)
 
     @test person.needs == needs
 end

@@ -18,13 +18,19 @@ export BalanceActor
 export get_balance, transfer_asset!, transfer_liability!
 
 include("sumsy_actor.jl")
-export SuMSyActor
+export SuMSyActor, create_sumsy_actor
+export set_sumsy_active!, is_sumsy_active, set_gi_eligible!, is_gi_eligible
+export set_contribution_settings, get_contribution_settings, is_contribution_active, paid_contribution
+export sumsy_assets
+
 
 include("monetary_actor.jl")
-export MonetaryActor
+export MonetaryActor, create_monetary_actor
 
 include("economic_actor.jl")
-export EconomicActor, Prices
+export EconomicAssets, Prices
+export make_economic_actor!
+export get_economic_assets, posessions, stock, producers, prices
 export push_producer!, delete_producer!, produce_stock!, purchase!
 export select_random_supplier
 export get_price, set_price!
@@ -33,10 +39,3 @@ export get_posessions, get_stock, get_production_output
 include("marginal_actor.jl")
 export make_marginal!
 export process_needs, process_usage, process_wants
-
-include("single_sumsy_actor.jl")
-export SINGLE_SUMSY
-export SingleSumsyActor
-export set_sumsy_active!, is_sumsy_active, set_gi_eligible!, is_gi_eligible
-export set_contribution_settings, get_contribution_settings, is_contribution_active, paid_contribution
-export sumsy_assets

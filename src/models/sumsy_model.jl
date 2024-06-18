@@ -1,6 +1,9 @@
 using Agents
 
-function add_properties(model::ABM,
+SINGLE_SUMSY = :SINGLE_SUMSY
+MULTI_SUMSY = :MULTI_SUMSY
+
+function add_properties!(model::ABM,
                         sumsy::SuMSy,
                         contribution_settings::Union{SuMSy, Nothing})
     properties = abmproperties(model)
@@ -9,14 +12,14 @@ function add_properties(model::ABM,
     set_contribution_settings!(model, contribution_settings)
 end
 
-function create_single_sumsy_model(sumsy::SuMSy;
-                                    actor_type::Type = SingleSuMSyActor,
-                                    model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
-                                    contribution_settings::Union{SuMSy, Nothing} = nothing,
-                                    actors_first::Bool = false)
+function create_sumsy_model(sumsy::SuMSy;
+                            actor_type::Type = SuMSyActor,
+                            model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
+                            contribution_settings::Union{SuMSy, Nothing} = nothing,
+                            actors_first::Bool = false)
     model = create_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
 
-    add_properties(model, sumsy, contribution_settings)
+    add_properties!(model, sumsy, contribution_settings)
 
     return model
 end
@@ -80,19 +83,29 @@ function reimburse_contribution!(model::ABM, amount::Real)
     book_asset!(model.contribution_balance, SUMSY_DEP, -total_reimburse)
 end
 
-function add_single_sumsy_actor!(model::ABM;
-                                    sumsy::SuMSy = model.sumsy,
-                                    activate::Bool = true,
-                                    gi_eligible::Bool = true,
-                                    initialize::Bool = true,
-                                    contribution_settings::Union{SuMSy, Nothing} = model.contribution_settings)
-    balance = SingleSuMSyBalance(sumsy,                                                                                
-                                activate = activate,
-                                gi_eligible = gi_eligible,
-                                initialize = initialize)
+function add_sumsy_actor!(model::ABM;
+                            sumsy_type::Symbol = SINGLE_SUMSY,
+                            sumsy::SuMSy = model.sumsy,
+                            activate::Bool = true,
+                            gi_eligible::Bool = true,
+                            initialize::Bool = true,
+                            contribution_settings::Union{SuMSy, Nothing} = model.contribution_settings)
+
+    if sumsy_type == SINGLE_SUMSY
+        balance = SingleSuMSyBalance(sumsy,                                                                                
+                                    activate = activate,
+                                    gi_eligible = gi_eligible,
+                                    initialize = initialize)
+    else
+        balance = MultiSuMSyBalance(sumsy,
+                                    SUMSY_DEP,                                                                             
+                                    activate = activate,
+                                    gi_eligible = gi_eligible,
+                                    initialize = initialize)
+    end
     
-    actor = SingleSuMSyActor(model, model = model, balance = balance, contribution_settings = contribution_settings)
-    add_type!(actor, SINGLE_SUMSY)
+    actor = SuMSyActor(model, model = model, balance = balance, contribution_settings = contribution_settings)
+    add_type!(actor, sumsy_type)
 
     if isnothing(contribution_settings)
         union!(model.intervals, sumsy.interval)
