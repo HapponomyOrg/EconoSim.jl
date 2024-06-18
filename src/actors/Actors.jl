@@ -8,7 +8,7 @@ export push_usage!, push_want!, get_wants, get_usages, delete_usage!, delete_wan
 export is_prioritised, usage_prioritised, wants_prioritised
 
 include("actor.jl")
-export AbstractActor, Actor
+export AbstractActor, Actor, create_actor
 export has_type, add_type!, delete_type!
 export has_behavior, add_behavior!, delete_bahavior!, clear_behaviors
 export actor_step!
