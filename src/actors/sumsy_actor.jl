@@ -24,7 +24,7 @@ set_sumsy_active!(actor::SuMSyActor, flag::Bool) = set_sumsy_active!(actor.balan
 set_sumsy_active!(actor::SuMSyActor, dep_entry::BalanceEntry, flag::Bool) = set_sumsy_active!(actor.balance, dep_entry, flag)
 is_sumsy_active(actor::SuMSyActor) = is_sumsy_active(actor.balance)
 is_sumsy_active(actor::SuMSyActor, dep_entry::BalanceEntry) = is_sumsy_active(actor.balance, dep_entry)
-set_gi_eligible!(actor::SuMSyActor, flag::Bool) = set_gi_eligible(actor.balance, flag)
+set_gi_eligible!(actor::SuMSyActor, flag::Bool) = set_gi_eligible!(actor.balance, flag)
 is_gi_eligible(actor::SuMSyActor) = is_gi_eligible(actor.balance)
 
 set_contribution_settings(actor::SuMSyActor, contribution_settings::Union{SuMSy, Nothing}) = (actor.contribution_settings = contribution_settings)
