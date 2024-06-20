@@ -18,7 +18,7 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             sumsy_entry::BalanceEntry = SUMSY_DEP,
                             activate::Bool = true,
                             gi_eligible::Bool = true,
-                            initialize::Bool = true,
+                            initialize::Bool = false,
                             last_adjustment::Int = 0)
     sumsy_balance = SingleSuMSyBalance(balance, sumsy, sumsy_entry, activate, gi_eligible, sumsy.demurrage.dem_free, last_adjustment)
     
