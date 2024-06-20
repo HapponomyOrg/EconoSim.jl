@@ -13,7 +13,7 @@ function add_properties!(model::ABM,
 end
 
 function create_sumsy_model(sumsy::SuMSy;
-                            actor_type::Type = SuMSyActor,
+                            actor_type::Type = SuMSyActor{Currency},
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                             contribution_settings::Union{SuMSy, Nothing} = nothing,
                             actors_first::Bool = false)
