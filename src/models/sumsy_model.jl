@@ -9,6 +9,8 @@ function add_properties!(model::ABM,
     properties = abmproperties(model)
     properties[:sumsy] = sumsy
     properties[:intervals] = Set([sumsy.interval])
+    properties[:total_gi] = CUR_0
+    properties[:total_demurrage] = CUR_0
     set_contribution_settings!(model, contribution_settings)
 end
 
@@ -130,9 +132,17 @@ function process_model_sumsy!(model::ABM)
     sumsy = model.sumsy
 
     if process_ready(sumsy, step)
+        sum_gi = CUR_0
+        sum_dem = CUR_0
+
         for actor in allagents(model)
-            adjust_sumsy_balance!(get_balance(actor), step)
+            gi, dem = adjust_sumsy_balance!(get_balance(actor), step)
+            sum_gi += gi
+            sum_dem += dem
         end
+
+        model.total_gi += sum_gi
+        model.total_demurrage += sum_dem
     end
 end
 
