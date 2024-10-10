@@ -43,3 +43,5 @@ function set_currency_precision!(precision::Int)
     CUR_MIN = typemin(Currency)
     CUR_0 = Currency(0)
 end
+
+get_currency_precision(::FixedDecimal{Int128, N}) where N = N
