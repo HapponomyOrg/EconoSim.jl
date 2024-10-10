@@ -48,8 +48,26 @@ function add_actor!(model::ABM, actor::AbstractActor)
     return actor
 end
 
+"""
+    function add_model_behavior!(model, behavior::Function; position::Integer = length(model.model_behaviors) + 1)
+
+Attempts to insert a new model behaviour at the specified position.
+If the position is greater than the length of the model.behaviors vector, it is appended.
+If the position is less than 1, it is prepended.
+"""
+function add_model_behavior!(model, behavior::Function; position::Integer = length(model.model_behaviors) + 1)
+    if position < 1
+        position = 1
+    elseif position > length(model.model_behaviors) + 1
+        position = length(model.model_behaviors) + 1
+    end
+
+    insert!(model.model_behaviors, position, behavior)
+    
+    return model
+end
+
 has_model_behavior(model, behavior::Function) = behavior in model.model_behaviors
-add_model_behavior!(model, behavior::Function) = (push!(model.model_behaviors, behavior); model)
 delete_model_behavior!(model, behavior::Function) = (delete_element!(model.model_behaviors, behavior); model)
 clear_model_behaviors(model) = (empty!(model.model_behaviors); model)
 
