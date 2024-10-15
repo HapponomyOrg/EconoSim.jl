@@ -221,9 +221,9 @@ end
 end
 
 @testset "SingleSuMSyBalance - transfer - non transactional" begin
-    sumsy = SuMSy(2000, 25000, 0.1, 30)
-    balance1 = SingleSuMSyBalance(sumsy)
-    balance2 = SingleSuMSyBalance(sumsy)
+    sumsy = SuMSy(2000, 25000, 0.1, 30, transactional = false)
+    balance1 = SingleSuMSyBalance(sumsy, initialize = true)
+    balance2 = SingleSuMSyBalance(sumsy, initialize = true)
 
     @test transfer_sumsy!(balance1, balance2, 1500)
     @test sumsy_assets(balance1, timestamp = 0) == 500
@@ -244,7 +244,7 @@ end
 
 @testset "SingleSuMSyBalance demurrage - single - non transactional" begin
     sumsy = SuMSy(2000, 25000, 0.1, 30, seed = 5000)
-    balance = SingleSuMSyBalance(sumsy)
+    balance = SingleSuMSyBalance(sumsy, initialize = true)
 
     @test sumsy_assets(balance) == 7000
     book_asset!(balance, get_sumsy_dep_entry(balance), telo(sumsy), set_to_value = true)
@@ -274,7 +274,7 @@ end
 
 @testset "SingleSuMSyBalance - demurage - single - transactional" begin
     sumsy = SuMSy(2000, 25000, 0.1, 30, seed = 5000, transactional = true)
-    balance = SingleSuMSyBalance(sumsy)
+    balance = SingleSuMSyBalance(sumsy, initialize = true)
 
     @test sumsy_assets(balance) == 7000
     book_sumsy!(balance, 23000)
@@ -314,7 +314,7 @@ end
 
 @testset "SingleSuMSyBalance - demurrage - tiers - transactional" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10, transactional = true)
-    balance = SingleSuMSyBalance(sumsy)
+    balance = SingleSuMSyBalance(sumsy, initialize = true)
     @test sumsy_assets(balance) == 2000
 
     book_sumsy!(balance, 208000, timestamp = 0)
@@ -329,7 +329,7 @@ end
 
 @testset "SingleSuMSyBalance - demurrage - override SuMSy - non transactional" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10, transactional = false)
-    balance = SingleSuMSyBalance(sumsy)
+    balance = SingleSuMSyBalance(sumsy, initialize = true)
 
     @test get_dem_free(balance) == 50000
     @test asset_value(balance, get_sumsy_dep_entry(balance)) == 2000
@@ -368,7 +368,7 @@ end
 
 @testset "SingleSuMSyBalance - demurrage - overrides - transactional" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], 10, transactional = true)
-    balance = SingleSuMSyBalance(sumsy)
+    balance = SingleSuMSyBalance(sumsy, initialize = true)
     @test sumsy_assets(balance, timestamp = 0) == 2000
     
     set_sumsy!(balance,
