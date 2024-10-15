@@ -13,6 +13,24 @@ mutable struct SingleSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     last_adjustment::Int64
 end
 
+"""
+    SingleSuMSyBalance(balance::Balance = Balance(),
+                        sumsy::SuMSy,
+                        sumsy_entry::BalanceEntry = SUMSY_DEP,
+                        activate::Bool = true,
+                        gi_eligible::Bool = true,
+                        dem_free::C = 0,
+                        last_adjustment::Int = 0)
+
+Initialize a single SuMSy balance with the given parameters.
+* sumsy::SuMSy - The SuMSy to use for the balance.
+* balance::Balance - The underlying balance to use.
+* sumsy_entry::BalanceEntry - The balance entry to use for the SuMSy deposits.
+* activate::Bool - Whether to activate the balance. Activated balances receive guaranteed income, if eligible, and pay demurage.
+* gi_eligible::Bool - Whether the balance is eligible for guaranteed income.
+* initialize::Bool - Whether to initialize the balance with the default seed and one installment of guaranteed income. If false, the balance will be set to zero.
+* last_adjustment::Int - The last adjustment timestamp. Used for future guaranteed income and demurrage calculations.
+"""
 function SingleSuMSyBalance(sumsy::SuMSy,
                             balance::Balance = Balance();
                             sumsy_entry::BalanceEntry = SUMSY_DEP,
@@ -219,6 +237,21 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance, timestamp::Int
                                                             Int(timerange)) : (CUR_0, CUR_0)
 end
 
+"""
+    reset_sumsy_balance!(sumsy_balance::SuMSyBalance;
+                            reset_balance::Bool = true,
+                            reset_dem_free::Bool = true,
+                            timestamp::Int = get_last_adjustment(sumsy_balance))
+Reset the SuMSy balance as if it was just created at the given timestamp.
+    * sumsy_balance::SuMSyBalance - The SuMSy balance to reset.
+    * reset_balance::Bool - Whether to reset the balance to the initial SuMSy value of an active balance.
+                            If reset, the seed amount and one installment of guaranteed income will be added to the balance.
+                            If not, the balance will be set to zero.
+    * reset_dem_free::Bool - Whether to reset the demurrage free buffer to the initial value of an active balance.
+                            If reset, the demurrage free buffer will be set to the initial value.
+                            If not, the demurrage free buffer will be set to zero.
+    * timestamp::Int - The timestamp of the reset.
+"""
 function reset_sumsy_balance!(sumsy_balance::SingleSuMSyBalance;
                                 reset_balance::Bool = true,
                                 reset_dem_free::Bool = true,
