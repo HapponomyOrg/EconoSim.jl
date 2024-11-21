@@ -93,7 +93,7 @@ end
 function econo_step!(model::ABM, steps::Integer = 1; actors_first::Bool = false)
     abmproperties(model)[:run_steps] = steps
 
-    step!(model, actor_step!, steps, actors_first)
+    step!(model, actor_step!, econo_model_step!, steps, actors_first)
 end
 
 function run_econo_model!(model::ABM, steps::Integer; kwargs...)
