@@ -91,7 +91,7 @@ function stepper!(model::ABM, step::Integer)
 end
 
 function econo_step!(model::ABM, steps::Integer = 1)
-    model.properties[:run_steps] = steps
+    abmproperties(model)[:run_steps] = steps
 
     step!(model, actor_step!, econo_model_step!, stepper!)
 end
