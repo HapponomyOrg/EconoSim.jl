@@ -90,10 +90,10 @@ function stepper!(model::ABM, step::Integer)
     return step >= model.run_steps
 end
 
-function econo_step!(model::ABM, steps::Integer = 1)
+function econo_step!(model::ABM, steps::Integer = 1; actors_first::Bool = false)
     abmproperties(model)[:run_steps] = steps
 
-    step!(model, actor_step!, econo_model_step!, stepper!)
+    step!(model, n = steps, agents_first = actors_first)
 end
 
 function run_econo_model!(model::ABM, steps::Integer; kwargs...)
