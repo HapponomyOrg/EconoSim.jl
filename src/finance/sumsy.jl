@@ -346,7 +346,7 @@ function calculate_time_range_demurrage(balance::Real, sumsy_dem::SuMSyDemurrage
 
     demurrage *= timerange / interval
 
-    return demurrage
+    return Currency(demurrage)
 end
 
 function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligible::Bool, dem_free::Real, timerange::Int)
