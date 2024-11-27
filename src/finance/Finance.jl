@@ -13,7 +13,7 @@ include("sumsy.jl")
 include("single_sumsy_balance.jl")
 include("multi_sumsy_balance.jl")
 export SUMSY_DEP, SUMSY_DEBT
-export SuMSy, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
+export SuMSy, SuMSyDemurrage, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export telo, time_telo
 export process_ready
 export SuMSyBalance, SingleSuMSyBalance, MultiSuMSyBalance
@@ -25,7 +25,7 @@ export get_seed, get_guaranteed_income, get_dem_tiers, get_initial_dem_free
 export set_dem_free!, get_dem_free, transfer_dem_free!
 export set_last_adjustment!, get_last_adjustment
 export book_sumsy!, transfer_sumsy!
-export calculate_adjustments, calculate_timerange_adjustments
+export calculate_adjustments, calculate_timerange_adjustments, calculate_time_range_demurrage
 export sumsy_loan!
 
 include("debt.jl")

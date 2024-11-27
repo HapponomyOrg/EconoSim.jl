@@ -315,11 +315,20 @@ make_tiers(demurrage_percentage::Real) = make_tiers([(0, demurrage_percentage)])
 NO_DEM_TIERS = make_tiers([(0, 0)])
 make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 
-function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligible::Bool, timerange::Int)
-    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0
+"""
+    calculate_time_range_demurrage(balance::Real, sumsy_dem::SuMSyDemurrage, interval::Int, timerange::Int)
+    * balance: The current balance.
+    * sumsy_dem: The demurrage settings.
+    * interval: The demurrage interval.
+    * timerange: The time range over which the demurrage is calculated.
+
+Calculate the demurrage over a time range.
+"""
+function calculate_time_range_demurrage(balance::Real, sumsy_dem::SuMSyDemurrage, dem_free::Real, interval::Int, timerange::Int)
+    balance -= dem_free
     demurrage = 0
 
-    for tier in sumsy.demurrage.dem_tiers
+    for tier in sumsy_dem.dem_tiers
         if balance <= 0
             break
         else
@@ -335,7 +344,14 @@ function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligibl
         end
     end
 
-    demurrage *= timerange / sumsy.interval
+    demurrage *= timerange / interval
+
+    return demurrage
+end
+
+function calculate_timerange_adjustments(balance::Real, sumsy::SuMSy, gi_eligible::Bool, dem_free::Real, timerange::Int)
+    guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / sumsy.interval : CUR_0
+    demurrage = calculate_time_range_demurrage(balance, sumsy.demurrage, dem_free, sumsy.interval, timerange)
 
     return Currency(guaranteed_income), Currency(demurrage)
 end
@@ -344,11 +360,11 @@ function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance, sumsy::SuM
     interval = sumsy.interval
     guaranteed_income = CUR_0
     demurrage = CUR_0
-    cur_balance = asset_value(sumsy_balance, dep_entry) - dem_free
+    cur_balance = asset_value(sumsy_balance, dep_entry)
 
     if timerange >= sumsy.interval
         for i in 1:trunc(timerange/interval)
-            g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, interval)
+            g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, dem_free, interval)
             cur_balance += g - d
             guaranteed_income += g
             demurrage += d
@@ -357,7 +373,7 @@ function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance, sumsy::SuM
         timerange = mod(timerange, interval)
     end
 
-    g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, timerange)
+    g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, dem_free, timerange)
     guaranteed_income += g
     demurrage += d
 

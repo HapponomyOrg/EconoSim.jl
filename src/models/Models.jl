@@ -8,9 +8,7 @@ export get_step
 include("sumsy_model.jl")
 export add_sumsy_actor!
 export create_sumsy_model
-export set_contribution_settings!, get_contribution_settings, is_contribution_active, collected_contributions, reimburse_contribution
-export add_single_sumsy_actor!
-export process_model_sumsy!, process_model_contribution!, process_actor_sumsy!, process_actor_contribution!
+export process_model_sumsy!, process_actor_sumsy!
 
 include("behaviors.jl")
 export update_stock!
