@@ -241,7 +241,7 @@ end
 
 function SuMSy(guaranteed_income::Real,
                 dem_free::Real,
-                dem_settings::Union{DemSettings, DemTiers},
+                dem_settings::DemSettings,
                 interval::Integer;
                 seed::Real = 0,
                 transactional = false)
@@ -261,7 +261,7 @@ function SuMSy(sumsy::SuMSy;
                 seed::Real = sumsy.income.seed,
                 guaranteed_income::Real = sumsy.income.guaranteed_income,
                 dem_free::Real = sumsy.demurrage.dem_free,
-                dem_settings::Union{DemSettings, DemTiers} = sumsy.demurrage.dem_tiers)
+                dem_settings::DemSettings = sumsy.demurrage.dem_tiers)
     return SuMSy(guaranteed_income, dem_free, dem_settings, interval, seed = seed, transactional = transactional)
 end
 
