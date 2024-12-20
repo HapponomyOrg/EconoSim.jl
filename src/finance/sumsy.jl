@@ -327,6 +327,9 @@ Calculate the demurrage over a time range.
 """
 function calculate_time_range_demurrage(balance::Real, dem_tiers::DemTiers, dem_free::Real, interval::Int, timerange::Int)
     balance -= dem_free
+    b_sign = sign(balance)
+    balance *= b_sign
+
     demurrage = 0
 
     for tier in dem_tiers
@@ -345,7 +348,7 @@ function calculate_time_range_demurrage(balance::Real, dem_tiers::DemTiers, dem_
         end
     end
 
-    demurrage *= timerange / interval
+    demurrage *= timerange / interval * b_sign
 
     return Currency(demurrage)
 end
