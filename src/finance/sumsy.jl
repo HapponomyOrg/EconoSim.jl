@@ -326,8 +326,12 @@ make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
 Calculate the demurrage over a time range.
 """
 function calculate_time_range_demurrage(balance::Real, dem_tiers::DemTiers, dem_free::Real, interval::Int, timerange::Int)
-    balance -= dem_free
-    b_sign = sign(balance)
+    b_sign = sign(balance) # negative balances result in positive demurrage
+
+    if balance > 0
+        balance -= dem_free
+    end
+
     balance *= b_sign
 
     demurrage = 0
