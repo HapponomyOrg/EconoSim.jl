@@ -11,15 +11,21 @@ After creation, any field can be set on the actor, even those which are not part
 @agent struct MonetaryActor{C}(Actor) <: BalanceActor{C}
     model::ABM
     balance::AbstractBalance = Balance()
+    income::C
+    expenses::C
 end
 
 function create_monetary_actor(model::ABM;
-                                balance::AbstractBalance = Balance(),                           
+                                balance::AbstractBalance = Balance(),
+                                income::Currency = CUR_0,
+                                expenses::Currency = CUR_0,                           
                                 types::Set{Symbol} = Set{Symbol}(),
                                 behaviors::Vector{Function} = Vector{Function}())
     return MonetaryActor{Currency}(model,
                                     model = model,
                                     balance = balance,
+                                    income = income,
+                                    expenses = expenses,
                                     types = types,
                                     behaviors = behaviors)
 end
