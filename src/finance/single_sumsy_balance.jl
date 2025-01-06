@@ -208,7 +208,11 @@ function transfer_asset!(sumsy_balance1::SingleSuMSyBalance,
 end
 
 function asset_value(sumsy_balance::SingleSuMSyBalance, entry::BalanceEntry)
-    return asset_value(get_balance(sumsy_balance), entry)
+    if entry === get_sumsy_dep_entry(sumsy_balance)
+        return sumsy_assets(sumsy_balance)
+    else
+        return asset_value(get_balance(sumsy_balance), entry)
+    end
 end
 
 function sumsy_assets(sumsy_balance::SingleSuMSyBalance;
