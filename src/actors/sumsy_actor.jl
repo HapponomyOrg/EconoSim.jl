@@ -6,7 +6,8 @@
 end
 
 function create_sumsy_actor(model::ABM;
-                            balance::SuMSyBalance = SingleSuMSyBalance(model.sumsy),
+                            sumsy::SuMSy,
+                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy),
                             income::Currency = CUR_0,
                             expenses::Currency = CUR_0,
                             types::Set{Symbol} = Set{Symbol}(),
