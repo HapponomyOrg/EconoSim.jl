@@ -4,28 +4,27 @@ SINGLE_SUMSY = :SINGLE_SUMSY
 MULTI_SUMSY = :MULTI_SUMSY
 
 function add_properties!(model::ABM,
-                        sumsy::SuMSy)
+                        sumsy_interval::Int)
     properties = abmproperties(model)
-    properties[:sumsy] = sumsy
-    properties[:intervals] = Set([sumsy.interval])
+    properties[:sumsy_interval] = sumsy_interval
     properties[:total_gi] = CUR_0
     properties[:total_demurrage] = CUR_0
 end
 
-function create_sumsy_model(sumsy::SuMSy;
+function create_sumsy_model(sumsy_interval::Int;
                             actor_type::Type = SuMSyActor{Currency},
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                             actors_first::Bool = false)
     model = create_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
 
-    add_properties!(model, sumsy)
+    add_properties!(model, sumsy_interval)
 
     return model
 end
 
 function add_sumsy_actor!(model::ABM;
                             sumsy_type::Symbol = SINGLE_SUMSY,
-                            sumsy::SuMSy = model.sumsy,
+                            sumsy::SuMSy,
                             activate::Bool = true,
                             gi_eligible::Bool = true,
                             initialize::Bool = true)
@@ -54,14 +53,13 @@ function calculate_adjustments(model::ABM, actor::AbstractActor)
     balance = get_balance(actor)
     sumsy = get_sumsy(balance)
 
-    return calculate_adjustments(balance, sumsy, get_step(model))
+    return calculate_adjustments(balance, sumsy, model.sumsy_interval, get_step(model))
 end
 
 function process_model_sumsy!(model::ABM)
     step = get_step(model)
-    sumsy = model.sumsy
 
-    if process_ready(sumsy, step)
+    if mod(step, model.sumsy_interval) == 0
         sum_gi = CUR_0
         sum_dem = CUR_0
 
@@ -76,7 +74,12 @@ function process_model_sumsy!(model::ABM)
     end
 end
 
-function process_actor_sumsy!(model::ABM)
+function process_actor_sumsy!(actor::AbstractActor)
+    model = actor.model
+    gi, dem = adjust_sumsy_balance!(get_balance(actor), model.step)
+
+    model.total_gi += gi
+    model.total_demurrage += dem
 end
 
 function transfer_sumsy!(model::ABM, source::AbstractActor, destination::AbstractActor, amount::Real)
