@@ -7,12 +7,16 @@ mutable struct MultiSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     gi_eligible::Dict{BalanceEntry, Bool}
     last_adjustment::Dict{BalanceEntry, Integer}
     dem_free::Dict{BalanceEntry, C}
+    sumsy_interval::Dict{BalanceEntry, Int}
+    transactional::Dict{BalanceEntry, Bool}
     MultiSuMSyBalance(balance::Balance = Balance()) = new{Currency}(balance,
                                                             Dict{BalanceEntry, SuMSy}(),
                                                             Dict{BalanceEntry, Bool}(),
                                                             Dict{BalanceEntry, Bool}(),
                                                             Dict{BalanceEntry, Integer}(),
-                                                            Dict{BalanceEntry, Currency}())
+                                                            Dict{BalanceEntry, Currency}(),
+                                                            Dict{BalanceEntry, Int}(),
+                                                            Dict{BalanceEntry, Bool}())
 end
 
 struct SuMSyConfig
@@ -21,11 +25,21 @@ struct SuMSyConfig
     gi_eligible::Bool
     activate::Bool
     initialize::Bool
+    sumsy_interval::Int
+    transactional::Bool
     SuMSyConfig(sumsy::SuMSy,
                 dep_entry::BalanceEntry;
                 gi_eligible::Bool = true,
                 activate::Bool = true,
-                initialize::Bool = true) = new(sumsy, dep_entry, gi_eligible, activate, initialize)
+                initialize::Bool = true,
+                sumsy_interval::Int = 30,
+                transactional::Bool = false) = new(sumsy,
+                                                    dep_entry,
+                                                    gi_eligible,
+                                                    activate,
+                                                    initialize,
+                                                    sumsy_interval,
+                                                    transactional)
 end
 
 function MultiSuMSyBalance(sumsy::SuMSy,
@@ -33,14 +47,18 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                             balance::Balance = Balance();
                             activate = true,
                             gi_eligible::Bool = true,
-                            initialize = true)
+                            initialize = true,
+                            sumsy_interval::Int = 30,
+                            transactional::Bool = false)
     sumsy_balance = MultiSuMSyBalance(balance)
     set_sumsy!(sumsy_balance,
                 sumsy,
                 dep_entry,
                 gi_eligible = gi_eligible,
                 activate = activate,
-                reset_balance = initialize)
+                reset_balance = initialize,
+                sumsy_interval = sumsy_interval,
+                transactional = transactional)
     
     return sumsy_balance
 end
@@ -89,6 +107,9 @@ end
 get_balance(sumsy_balance::MultiSuMSyBalance) = sumsy_balance.balance
 
 is_sumsy(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = entry in keys(sumsy_balance.sumsy)
+
+get_sumsy_interval(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.sumsy_interval[entry]
+is_transactional(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.transactional[entry]
 
 function book_asset!(sumsy_balance::MultiSuMSyBalance,
                         entry::BalanceEntry,
@@ -174,14 +195,12 @@ function transfer_asset!(sumsy_balance1::MultiSuMSyBalance,
 end
 
 function asset_value(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry)
-    if is_sumsy(sumsy_balance, entry)
-        return sumsy_assets(sumsy_balance, entry)
-    else
-        return asset_value(get_balance(sumsy_balance), entry)
-    end
+    return asset_value(get_balance(sumsy_balance), entry)
 end
 
-function sumsy_assets(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry; timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry))
+function sumsy_assets(sumsy_balance::MultiSuMSyBalance,
+                        dep_entry::BalanceEntry;
+                        timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry))
     value = asset_value(get_balance(sumsy_balance), dep_entry)
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, dep_entry, timestamp)
 
@@ -206,18 +225,18 @@ function calculate_adjustments(sumsy_balance::MultiSuMSyBalance,
                                 dep_entry::BalanceEntry,
                                 timestamp::Int,
                                 sumsy::SuMSy = get_sumsy(sumsy_balance, dep_entry))
+    sumsy_interval = get_sumsy_interval(sumsy_balance, dep_entry)
     timerange = 0
 
     if is_sumsy_active(sumsy_balance, dep_entry)
-        if sumsy.transactional
+        if is_transactional(sumsy_balance, dep_entry)
             timerange = max(0, timestamp - get_last_adjustment(sumsy_balance, dep_entry))
         else         
-            timerange = max(0, trunc((timestamp - get_last_adjustment(sumsy_balance, dep_entry)) / sumsy.interval) * sumsy.interval)
+            timerange = max(0, trunc((timestamp - get_last_adjustment(sumsy_balance, dep_entry)) / sumsy_interval) * sumsy_interval)
         end
     end
 
     return timerange > 0 ? calculate_timerange_adjustments(sumsy_balance,
-                                                            sumsy,
                                                             dep_entry,
                                                             is_gi_eligible(sumsy_balance, dep_entry),
                                                             get_dem_free(sumsy_balance, dep_entry),
@@ -260,10 +279,14 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
                     activate::Bool = true,
                     reset_balance::Bool = true,
                     reset_dem_free::Bool = true,
-                    timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry))
+                    timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry),
+                    sumsy_interval::Int = get_sumsy_interval(sumsy_balance, dep_entry),
+                    transactional::Bool = is_transactional(sumsy_balance, dep_entry))
     sumsy_balance.sumsy[dep_entry] = sumsy
     sumsy_balance.gi_eligible[dep_entry] = gi_eligible
     sumsy_balance.sumsy_active[dep_entry] = activate
+    sumsy_balance.sumsy_interval[dep_entry] = sumsy_interval
+    sumsy_balance.transactional[dep_entry] = transactional
 
     # Do not change last adjustment if it already exists
     if !haskey(sumsy_balance.last_adjustment, dep_entry)
@@ -283,7 +306,9 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig)
                 umsy_config.dep_entry,
                 gi_eligible = sumsy_config.gi_eligible,
                 activate = sumsy_config.activate,
-                reset_balance = sumsy_config.initialize)
+                reset_balance = sumsy_config.initialize,
+                sumsy_interval = sumsy_config.sumsy_interval,
+                transactional = sumsy_config.transactional)
 end
 
 function get_sumsy(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
@@ -335,14 +360,6 @@ function is_sumsy_active(sumsy_balance::MultiSuMSyBalance)
     end
 
     return true
-end
-
-function is_transactional(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
-    try
-        return get_sumsy(sumsy_balance, dep_entry).transactional
-    catch
-        return false
-    end
 end
 
 function set_gi_eligible!(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry, flag::Bool)
