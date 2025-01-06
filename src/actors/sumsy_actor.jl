@@ -21,6 +21,8 @@ function create_sumsy_actor(model::ABM;
                                 behaviors = behaviors)
 end
 
+get_sumsy(actor::SuMSyActor) = get_sumsy(get_balance(actor))
+
 set_sumsy_active!(actor::SuMSyActor, flag::Bool) = set_sumsy_active!(actor.balance, flag)
 set_sumsy_active!(actor::SuMSyActor, dep_entry::BalanceEntry, flag::Bool) = set_sumsy_active!(actor.balance, dep_entry, flag)
 is_sumsy_active(actor::SuMSyActor) = is_sumsy_active(actor.balance)
