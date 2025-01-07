@@ -7,7 +7,8 @@ end
 
 function create_sumsy_actor(model::ABM;
                             sumsy::SuMSy,
-                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy),
+                            allow_negatives::Bool = false,
+                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy, allow_negatives = allow_negatives),
                             income::Currency = CUR_0,
                             expenses::Currency = CUR_0,
                             types::Set{Symbol} = Set{Symbol}(),
