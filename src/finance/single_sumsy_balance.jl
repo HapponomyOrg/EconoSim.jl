@@ -43,7 +43,8 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             initialize::Bool = false,
                             last_adjustment::Int = 0,
                             sumsy_interval::Int = 30,
-                            transactional::Bool = false)
+                            transactional::Bool = false,
+                            allow_negatives::Bool = false)
     sumsy_balance = SingleSuMSyBalance(balance,
                                         sumsy,
                                         sumsy_entry,
@@ -54,6 +55,10 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                                         sumsy_interval,
                                         transactional)
     
+    if allow_negatives
+        type_min_asset!(get_balance(sumsy_balance), sumsy_entry)
+    end
+
     if initialize
         reset_sumsy_balance!(sumsy_balance, reset_balance = initialize)
     end
@@ -307,10 +312,17 @@ function set_sumsy!(sumsy_balance::SingleSuMSyBalance,
                     reset_dem_free::Bool = true,
                     timestamp::Int = get_last_adjustment(sumsy_balance),
                     sumsy_interval::Int = get_sumsy_interval(sumsy_balance),
-                    transactional::Bool = is_transactional(sumsy_balance))
+                    transactional::Bool = is_transactional(sumsy_balance),
+                    allow_negatives::Bool = false)
         sumsy_balance.sumsy = sumsy
         sumsy_balance.sumsy_interval = sumsy_interval
         sumsy_balance.transactional = transactional
+
+        if allow_negatives
+            type_min_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance))
+        else
+            min_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance), 0)
+        end
 
         reset_sumsy_balance!(sumsy_balance,
                                 reset_balance = reset_balance,

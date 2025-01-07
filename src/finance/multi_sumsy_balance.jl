@@ -49,8 +49,10 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                             gi_eligible::Bool = true,
                             initialize = true,
                             sumsy_interval::Int = 30,
-                            transactional::Bool = false)
+                            transactional::Bool = false,
+                            allow_negatives::Bool = false)
     sumsy_balance = MultiSuMSyBalance(balance)
+
     set_sumsy!(sumsy_balance,
                 sumsy,
                 dep_entry,
@@ -58,7 +60,8 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                 activate = activate,
                 reset_balance = initialize,
                 sumsy_interval = sumsy_interval,
-                transactional = transactional)
+                transactional = transactional,
+                allow_negatives = allow_negatives)
     
     return sumsy_balance
 end
@@ -285,12 +288,19 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
                     reset_dem_free::Bool = true,
                     timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry),
                     sumsy_interval::Int = get_sumsy_interval(sumsy_balance, dep_entry),
-                    transactional::Bool = is_transactional(sumsy_balance, dep_entry))
+                    transactional::Bool = is_transactional(sumsy_balance, dep_entry),
+                    allow_negatives::Bool = false)
     sumsy_balance.sumsy[dep_entry] = sumsy
     sumsy_balance.gi_eligible[dep_entry] = gi_eligible
     sumsy_balance.sumsy_active[dep_entry] = activate
     sumsy_balance.sumsy_interval[dep_entry] = sumsy_interval
     sumsy_balance.transactional[dep_entry] = transactional
+
+    if allow_negatives
+        type_min_asset!(get_balance(sumsy_balance), dep_entry)
+    else
+        min_asset!(get_balance(sumsy_balance), dep_entry, 0)
+    end
 
     # Do not change last adjustment if it already exists
     if !haskey(sumsy_balance.last_adjustment, dep_entry)
@@ -304,7 +314,7 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
                             timestamp = timestamp)
 end
 
-function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig)
+function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig; allow_negatives::Bool = false)
     set_sumsy!(sumsy_balance,
                 sumsy_config.sumsy,
                 umsy_config.dep_entry,
@@ -312,7 +322,8 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig)
                 activate = sumsy_config.activate,
                 reset_balance = sumsy_config.initialize,
                 sumsy_interval = sumsy_config.sumsy_interval,
-                transactional = sumsy_config.transactional)
+                transactional = sumsy_config.transactional,
+                allow_negatives = allow_negatives)
 end
 
 function get_sumsy(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
