@@ -56,7 +56,7 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                                         transactional)
     
     if allow_negatives
-        type_min_asset!(get_balance(sumsy_balance), sumsy_entry)
+        typemin_asset!(get_balance(sumsy_balance), sumsy_entry)
     end
 
     if initialize
@@ -319,7 +319,7 @@ function set_sumsy!(sumsy_balance::SingleSuMSyBalance,
         sumsy_balance.transactional = transactional
 
         if allow_negatives
-            type_min_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance))
+            typemin_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance))
         else
             min_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance), 0)
         end

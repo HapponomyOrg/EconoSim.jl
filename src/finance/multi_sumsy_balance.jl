@@ -297,7 +297,7 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
     sumsy_balance.transactional[dep_entry] = transactional
 
     if allow_negatives
-        type_min_asset!(get_balance(sumsy_balance), dep_entry)
+        typemin_asset!(get_balance(sumsy_balance), dep_entry)
     else
         min_asset!(get_balance(sumsy_balance), dep_entry, 0)
     end
