@@ -1,6 +1,6 @@
-@agent struct SuMSyActor{C}(Actor) <: BalanceActor{C}
+@agent struct SuMSyActor{C, B}(Actor) <: BalanceActor{C}
     model::ABM
-    balance::SuMSyBalance
+    balance::B
     income::C
     expenses::C
 end
@@ -16,7 +16,7 @@ function create_sumsy_actor(model::ABM;
                             expenses::Currency = CUR_0,
                             types::Set{Symbol} = Set{Symbol}(),
                             behaviors::Vector{Function} = Vector{Function}())                            
-    return SuMSyActor{Currency}(model,
+    return SuMSyActor{Currency, typeof(balance)}(model,
                                 model = model,
                                 balance = balance,
                                 income = income,
