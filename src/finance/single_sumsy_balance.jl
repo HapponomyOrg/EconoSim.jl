@@ -45,15 +45,15 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             sumsy_interval::Int = 30,
                             transactional::Bool = false,
                             allow_negatives::Bool = false)
-    sumsy_balance = SingleSuMSyBalance(balance,
-                                        sumsy,
-                                        sumsy_entry,
-                                        activate,
-                                        gi_eligible,
-                                        sumsy.demurrage.dem_free,
-                                        last_adjustment,
-                                        sumsy_interval,
-                                        transactional)
+    sumsy_balance = SingleSuMSyBalance{Currency}(balance,
+                                                sumsy,
+                                                sumsy_entry,
+                                                activate,
+                                                gi_eligible,
+                                                sumsy.demurrage.dem_free,
+                                                last_adjustment,
+                                                sumsy_interval,
+                                                transactional)
     
     if allow_negatives
         typemin_asset!(get_balance(sumsy_balance), sumsy_entry)
