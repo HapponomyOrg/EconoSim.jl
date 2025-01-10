@@ -7,8 +7,11 @@ end
 
 function create_sumsy_actor(model::ABM;
                             sumsy::SuMSy,
+                            sumsy_interval::Int = 30,
                             allow_negatives::Bool = false,
-                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy, allow_negatives = allow_negatives),
+                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy,
+                                                                        sumsy_interval = sumsy_interval,
+                                                                        allow_negatives = allow_negatives),
                             income::Currency = CUR_0,
                             expenses::Currency = CUR_0,
                             types::Set{Symbol} = Set{Symbol}(),
