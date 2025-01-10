@@ -12,7 +12,8 @@ function add_properties!(model::ABM,
 end
 
 function create_sumsy_model(sumsy_interval::Int;
-                            actor_type::Type = SuMSyActor{Currency},
+                            balance_type::Type = SingleSuMSyBalance,
+                            actor_type::Type = SuMSyActor{Currency, balance_type},
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                             actors_first::Bool = false)
     model = create_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
