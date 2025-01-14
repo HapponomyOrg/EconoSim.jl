@@ -27,19 +27,22 @@ struct SuMSyConfig
     initialize::Bool
     sumsy_interval::Int
     transactional::Bool
+    allow_negative_sumsy::Bool
     SuMSyConfig(sumsy::SuMSy,
                 dep_entry::BalanceEntry;
                 gi_eligible::Bool = true,
                 activate::Bool = true,
                 initialize::Bool = true,
                 sumsy_interval::Int = 30,
-                transactional::Bool = false) = new(sumsy,
+                transactional::Bool = false,
+                allow_negative_sumsy::Bool = false) = new(sumsy,
                                                     dep_entry,
                                                     gi_eligible,
                                                     activate,
                                                     initialize,
                                                     sumsy_interval,
-                                                    transactional)
+                                                    transactional,
+                                                    allow_negative_sumsy)
 end
 
 function MultiSuMSyBalance(sumsy::SuMSy,
@@ -50,7 +53,12 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                             initialize = true,
                             sumsy_interval::Int = 30,
                             transactional::Bool = false,
-                            allow_negatives::Bool = false)
+                            allow_negative_assets::Bool = true,
+                            allow_negative_liabilities::Bool = true,
+                            allow_negative_sumsy::Bool = false)
+    def_min_asset!(balance, allow_negative_assets ? typemin(Currency) : CUR_0)
+    def_min_liability!(balance, allow_negative_liabilities ? typemin(Currency) : CUR_0)
+
     sumsy_balance = MultiSuMSyBalance(balance)
 
     set_sumsy!(sumsy_balance,
@@ -61,7 +69,7 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                 reset_balance = initialize,
                 sumsy_interval = sumsy_interval,
                 transactional = transactional,
-                allow_negatives = allow_negatives)
+                allow_negative_sumsy = allow_negative_sumsy)
     
     return sumsy_balance
 end
@@ -289,17 +297,17 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
                     timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry),
                     sumsy_interval::Int = get_sumsy_interval(sumsy_balance, dep_entry),
                     transactional::Bool = is_transactional(sumsy_balance, dep_entry),
-                    allow_negatives::Bool = false)
+                    allow_negative_sumsy::Bool = false)
     sumsy_balance.sumsy[dep_entry] = sumsy
     sumsy_balance.gi_eligible[dep_entry] = gi_eligible
     sumsy_balance.sumsy_active[dep_entry] = activate
     sumsy_balance.sumsy_interval[dep_entry] = sumsy_interval
     sumsy_balance.transactional[dep_entry] = transactional
 
-    if allow_negatives
+    if allow_negative_sumsy
         typemin_asset!(get_balance(sumsy_balance), dep_entry)
     else
-        min_asset!(get_balance(sumsy_balance), dep_entry, 0)
+        min_asset!(get_balance(sumsy_balance), dep_entry, CUR_0)
     end
 
     # Do not change last adjustment if it already exists
@@ -314,7 +322,7 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
                             timestamp = timestamp)
 end
 
-function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig; allow_negatives::Bool = false)
+function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig)
     set_sumsy!(sumsy_balance,
                 sumsy_config.sumsy,
                 umsy_config.dep_entry,
@@ -323,7 +331,7 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig;
                 reset_balance = sumsy_config.initialize,
                 sumsy_interval = sumsy_config.sumsy_interval,
                 transactional = sumsy_config.transactional,
-                allow_negatives = allow_negatives)
+                allow_negative_sumsy = sumsy_config.allow_negative_sumsy)
 end
 
 function get_sumsy(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)

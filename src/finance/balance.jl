@@ -166,8 +166,11 @@ function typemin_balance!(balance::Balance,
     return min_balance!(balance, entry, type, typemin(Currency) + 1)
 end
 
+def_min_asset!(balance::Balance, amount::Real = 0) = (balance.def_min_asset = amount)
 min_asset!(balance::Balance, entry::BalanceEntry, amount::Real = 0) = min_balance!(balance, entry, asset, amount)
 typemin_asset!(balance::Balance, entry::BalanceEntry) = typemin_balance!(balance, entry, asset)
+
+def_min_liability!(balance::Balance, amount::Real = 0) = (balance.def_min_liability = amount)
 min_liability!(balance::Balance, entry::BalanceEntry, amount::Real = 0) = min_balance!(balance, entry, liability, amount)
 typemin_liability!(balance::Balance, entry::BalanceEntry) = typemin_balance!(balance, entry, liability)
 
@@ -179,7 +182,10 @@ function min_balance(balance::Balance,
     return entry in keys(d) ? d[entry] : type == asset ? balance.def_min_asset : balance.def_min_liability
 end
 
+def_min_asset(balance::Balance) = balance.def_min_asset
 min_asset(balance::Balance, entry::BalanceEntry) = min_balance(balance, entry, asset)
+
+def_min_liability(balance::Balance) = balance.def_min_liability
 min_liability(balance::Balance, entry::BalanceEntry) = min_balance(balance, entry, liability)
 
 

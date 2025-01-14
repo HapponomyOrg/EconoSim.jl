@@ -17,7 +17,10 @@ This can come in handy when when specific state needs to be stored with the acto
 end
 
 function create_monetary_actor(model::ABM;
-                                balance::AbstractBalance = Balance(),
+                                allow_negative_assets::Bool = false,
+                                allow_negative_liabilities::Bool = false,
+                                balance::AbstractBalance = Balance(def_min_asset = allow_negative_assets ? typemin(Currency) : CUR_0,
+                                                                  def_min_liability = allow_negative_liabilities ? typemin(Currency) : CUR_0),
                                 income::Real = 0,
                                 expenses::Real = 0,                           
                                 types::Set{Symbol} = Set{Symbol}(),

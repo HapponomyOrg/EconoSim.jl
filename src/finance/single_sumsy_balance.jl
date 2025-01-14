@@ -44,7 +44,18 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             last_adjustment::Int = 0,
                             sumsy_interval::Int = 30,
                             transactional::Bool = false,
-                            allow_negatives::Bool = false)
+                            allow_negative_assets::Bool = true,
+                            allow_negative_liabilities::Bool = true,
+                            allow_negative_sumsy::Bool = false)
+    def_min_asset!(balance, allow_negative_assets ? typemin(Currency) : CUR_0)
+    def_min_liability!(balance, allow_negative_liabilities ? typemin(Currency) : CUR_0)
+
+    if allow_negative_sumsy
+        typemin_asset!(balance, sumsy_entry)
+    else
+        min_asset!(balance, sumsy_entry, CUR_0)
+    end
+
     sumsy_balance = SingleSuMSyBalance{Currency}(balance,
                                                 sumsy,
                                                 sumsy_entry,
@@ -54,10 +65,6 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                                                 last_adjustment,
                                                 sumsy_interval,
                                                 transactional)
-    
-    if allow_negatives
-        typemin_asset!(get_balance(sumsy_balance), sumsy_entry)
-    end
 
     if initialize
         reset_sumsy_balance!(sumsy_balance, reset_balance = initialize)
