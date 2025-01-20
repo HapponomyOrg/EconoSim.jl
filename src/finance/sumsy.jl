@@ -314,39 +314,48 @@ make_tiers(dem_tiers::DemTiers) = sort!(dem_tiers)
     * dem_free: The demurrage free amount.
     * interval: The demurrage interval.
     * timerange: The time range over which the demurrage is calculated.
-
+    * allow_negative_demurrage: Whether or not negative demurrage is allowed.
 Calculate the demurrage over a time range.
 """
-function calculate_time_range_demurrage(balance::Real, dem_tiers::DemTiers, dem_free::Real, interval::Int, timerange::Int)
-    b_sign = sign(balance) # negative balances result in positive demurrage
+function calculate_time_range_demurrage(balance::Real,
+                                        dem_tiers::DemTiers,
+                                        dem_free::Real,
+                                        interval::Int,
+                                        timerange::Int,
+                                        allow_negative_demurrage::Bool)
+    if balance > 0 || allow_negative_demurrage
+        b_sign = sign(balance) # negative balances result in positive demurrage
 
-    if balance > 0
-        balance -= dem_free
-    end
-
-    balance *= b_sign
-
-    demurrage = 0
-
-    for tier in dem_tiers
-        if balance <= 0
-            break
-        else
-            if is_right_unbounded(tier[1])
-                amount = balance
-                balance = 0
-            else
-                amount = min(span(tier[1]), balance)
-                balance -= amount
-            end
-
-            demurrage += amount * tier[2]
+        if balance > 0
+            balance -= dem_free
         end
+
+        balance *= b_sign
+
+        demurrage = 0
+
+        for tier in dem_tiers
+            if balance <= 0
+                break
+            else
+                if is_right_unbounded(tier[1])
+                    amount = balance
+                    balance = 0
+                else
+                    amount = min(span(tier[1]), balance)
+                    balance -= amount
+                end
+
+                demurrage += amount * tier[2]
+            end
+        end
+
+        demurrage *= timerange / interval * b_sign
+
+        return Currency(demurrage)
+    else
+        return CUR_0
     end
-
-    demurrage *= timerange / interval * b_sign
-
-    return Currency(demurrage)
 end
 
 function calculate_timerange_adjustments(balance::Real,
@@ -354,9 +363,10 @@ function calculate_timerange_adjustments(balance::Real,
                                             gi_eligible::Bool,
                                             dem_free::Real,
                                             interval::Int,
-                                            timerange::Int)
+                                            timerange::Int,
+                                            allow_negative_demurrage::Bool)
     guaranteed_income = gi_eligible ? sumsy.income.guaranteed_income * timerange / interval : CUR_0
-    demurrage = calculate_time_range_demurrage(balance, sumsy.demurrage.dem_tiers, dem_free, interval, timerange)
+    demurrage = calculate_time_range_demurrage(balance, sumsy.demurrage.dem_tiers, dem_free, interval, timerange, allow_negative_demurrage)
 
     return Currency(guaranteed_income), Currency(demurrage)
 end
@@ -374,7 +384,13 @@ function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance,
 
     if timerange >= interval
         for _ in 1:trunc(timerange/interval)
-            g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, dem_free, interval, interval)
+            g, d = calculate_timerange_adjustments(cur_balance,
+                                                    sumsy,
+                                                    gi_eligible,
+                                                    dem_free,
+                                                    interval,
+                                                    interval,
+                                                    allow_negative_demurrage(sumsy_balance, dep_entry))
             cur_balance += g - d
             guaranteed_income += g
             demurrage += d
@@ -383,7 +399,13 @@ function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance,
         timerange = mod(timerange, interval)
     end
 
-    g, d = calculate_timerange_adjustments(cur_balance, sumsy, gi_eligible, dem_free, interval, timerange)
+    g, d = calculate_timerange_adjustments(cur_balance,
+                                            sumsy,
+                                            gi_eligible,
+                                            dem_free,
+                                            interval,
+                                            timerange,
+                                            allow_negative_demurrage(sumsy_balance, dep_entry))
     guaranteed_income += g
     demurrage += d
 
@@ -420,13 +442,19 @@ function telo(income::Real, dem_tiers::DemTiers, dem_free::Real = 0)
     return Currency(telo_val + dem_free)
 end
 
-function time_telo(sumsy::SuMSy, iinterval::Int)
+function time_telo(sumsy::SuMSy, interval::Int, allow_negative_demurrage::Bool)
     t = 0
     eq = telo(sumsy) - sumsy.demurrage.dem_free
     balance = 0
 
     while balance < eq - 1
-        guaranteed_income, demurrage = calculate_timerange_adjustments(balance, sumsy, true, sumsy.demurrage.dem_free, interval, interval)
+        guaranteed_income, demurrage = calculate_timerange_adjustments(balance,
+                                                                        sumsy,
+                                                                        true,
+                                                                        sumsy.demurrage.dem_free,
+                                                                        interval,
+                                                                        interval,
+                                                                        allow_negative_demurrage)
         balance += guaranteed_income - demurrage
         t += 1
     end

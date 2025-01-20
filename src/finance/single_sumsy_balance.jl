@@ -13,18 +13,23 @@ mutable struct SingleSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     last_adjustment::Int64
     sumsy_interval::Int
     transactional::Bool
+    allow_negative_demurrage::Bool
 end
 
 """
-    SingleSuMSyBalance(balance::Balance = Balance(),
-                        sumsy::SuMSy,
+    SingleSuMSyBalance(sumsy::SuMSy,
+                        balance::Balance = Balance();
                         sumsy_entry::BalanceEntry = SUMSY_DEP,
                         activate::Bool = true,
                         gi_eligible::Bool = true,
-                        dem_free::C = 0,
+                        initialize::Bool = false,
                         last_adjustment::Int = 0,
                         sumsy_interval::Int = 30,
-                        transactional::Bool = false)
+                        transactional::Bool = false,
+                        allow_negative_assets::Bool = true,
+                        allow_negative_liabilities::Bool = true,
+                        allow_negative_sumsy::Bool = false,
+                        allow_negative_demurrage::Bool = false)
 
 Initialize a single SuMSy balance with the given parameters.
 * sumsy::SuMSy - The SuMSy to use for the balance.
@@ -34,6 +39,12 @@ Initialize a single SuMSy balance with the given parameters.
 * gi_eligible::Bool - Whether the balance is eligible for guaranteed income.
 * initialize::Bool - Whether to initialize the balance with the default seed and one installment of guaranteed income. If false, the balance will be set to zero.
 * last_adjustment::Int - The last adjustment timestamp. Used for future guaranteed income and demurrage calculations.
+* sumsy_interval::Int - The interval at which the SuMSy balance is adjusted. If the balance is transactional, the balance is adjusted at each transaction.
+* transactional::Bool - Whether the SuMSy balance is transactional. If true, the balance is adjusted at each transaction.
+* allow_negative_assets::Bool - Whether to allow negative assets in the balance.
+* allow_negative_liabilities::Bool - Whether to allow negative liabilities in the balance.
+* allow_negative_sumsy::Bool - Whether to allow negative SuMSy deposits in the balance.
+* allow_negative_demurrage::Bool - Whether to allow demurrage on negative deposits. This would add money to the deposit instead of subtracting it.
 """
 function SingleSuMSyBalance(sumsy::SuMSy,
                             balance::Balance = Balance();
@@ -46,7 +57,8 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             transactional::Bool = false,
                             allow_negative_assets::Bool = true,
                             allow_negative_liabilities::Bool = true,
-                            allow_negative_sumsy::Bool = false)
+                            allow_negative_sumsy::Bool = false,
+                            allow_negative_demurrage::Bool = false)
     def_min_asset!(balance, allow_negative_assets ? typemin(Currency) : CUR_0)
     def_min_liability!(balance, allow_negative_liabilities ? typemin(Currency) : CUR_0)
 
@@ -64,7 +76,8 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                                                 sumsy.demurrage.dem_free,
                                                 last_adjustment,
                                                 sumsy_interval,
-                                                transactional)
+                                                transactional,
+                                                allow_negative_demurrage)
 
     if initialize
         reset_sumsy_balance!(sumsy_balance, reset_balance = initialize)
@@ -101,10 +114,10 @@ get_sumsy_dep_entry(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.sumsy_ent
 set_last_adjustment!(sumsy_balance::SingleSuMSyBalance, timestamp::Int) = (sumsy_balance.last_adjustment = timestamp)
 get_last_adjustment(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.last_adjustment
 
-# Utility function so that SingleSuMSyBalance can be used in the same way as MultiSuMSyBalance
+# Utility functions so that SingleSuMSyBalance can be used in the same way as MultiSuMSyBalance
 get_sumsy_interval(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.sumsy_interval
-
-is_transactional(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.transactional
+allow_negative_demurrage(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.allow_negative_demurrage
+is_transactional(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.transactional
 
 function book_asset!(sumsy_balance::SingleSuMSyBalance,
                         entry::BalanceEntry,
