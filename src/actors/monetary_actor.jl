@@ -8,9 +8,9 @@ MonetaryActor - agent representing an actor that has a balance sheet.
 * balance::AbstractBalance - the balance sheet of the actor.
 
 After creation, any field can be set on the actor, even those which are not part of the structure.
-This can come in handy when when specific state needs to be stored with the actor.
+This can come in handy when specific state needs to be stored with the actor.
 """
-@agent struct MonetaryActor{C <: FixedDecimal}(Actor) <: BalanceActor{C}
+@agent struct MonetaryActor{C}(Actor) <: BalanceActor{C}
     model::ABM
     balance::AbstractBalance = Balance()
     income::C
