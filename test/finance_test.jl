@@ -270,6 +270,46 @@ end
     @test sumsy_assets(balance, timestamp = 30) == 100000
 end
 
+@testset "SingleSuMSyBalance demurrage - single - non transactional - non negative demurrage" begin
+    sumsy = SuMSy(2000, 25000, 0.1, seed = -5000)
+    balance = SingleSuMSyBalance(sumsy,
+                                    initialize = true,
+                                    sumsy_interval = 30,
+                                    transactional = false,
+                                    allow_negative_sumsy = true,
+                                    allow_negative_demurrage = false)
+
+    @test sumsy_assets(balance) == -3000
+    @test EconoSim.calculate_timerange_adjustments(balance,
+                                                    get_sumsy_dep_entry(balance),
+                                                    is_gi_eligible(balance),
+                                                    get_dem_free(balance),
+                                                    30) == (sumsy.income.guaranteed_income, 0)
+
+    adjust_sumsy_balance!(balance, 30)
+    @test sumsy_assets(balance, timestamp = 30) == -1000
+end
+
+@testset "SingleSuMSyBalance demurrage - single - non transactional - negative demurrage" begin
+    sumsy = SuMSy(2000, 25000, 0.1, seed = -5000)
+    balance = SingleSuMSyBalance(sumsy,
+                                    initialize = true,
+                                    sumsy_interval = 30,
+                                    transactional = false,
+                                    allow_negative_sumsy = true,
+                                    allow_negative_demurrage = true)
+
+    @test sumsy_assets(balance) == -3000
+    @test EconoSim.calculate_timerange_adjustments(balance,
+                                                    get_sumsy_dep_entry(balance),
+                                                    is_gi_eligible(balance),
+                                                    get_dem_free(balance),
+                                                    30) == (sumsy.income.guaranteed_income, -300)
+
+    adjust_sumsy_balance!(balance, 30)
+    @test sumsy_assets(balance, timestamp = 30) == -700
+end
+
 @testset "SingleSuMSyBalance - demurage - single - transactional" begin
     sumsy = SuMSy(2000, 25000, 0.1, seed = 5000)
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 30, transactional = true)
