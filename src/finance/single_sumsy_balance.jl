@@ -333,12 +333,12 @@ function set_sumsy!(sumsy_balance::SingleSuMSyBalance,
                     timestamp::Int = get_last_adjustment(sumsy_balance),
                     sumsy_interval::Int = get_sumsy_interval(sumsy_balance),
                     transactional::Bool = is_transactional(sumsy_balance),
-                    allow_negatives::Bool = false)
+                    allow_negative_sumsy::Bool = min_asset(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance)) < 0)
         sumsy_balance.sumsy = sumsy
         sumsy_balance.sumsy_interval = sumsy_interval
         sumsy_balance.transactional = transactional
 
-        if allow_negatives
+        if allow_negative_sumsy
             typemin_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance))
         else
             min_asset!(get_balance(sumsy_balance), get_sumsy_dep_entry(sumsy_balance), 0)
