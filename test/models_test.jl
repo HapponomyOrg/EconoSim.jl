@@ -20,7 +20,7 @@ end
     @test abmproperties(model)[:register_gi_as_income]
 
     sumsy = SuMSy(1000, 0, 0.1)
-    add_sumsy_actor!(model, sumsy = sumsy, sumsy_interval = 1)
+    actor = add_sumsy_actor!(model, sumsy = sumsy, sumsy_interval = 1)
 
     run_econo_model!(model, 1)
     @test actor.income == 1900

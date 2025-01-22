@@ -75,7 +75,7 @@ end
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
     model = create_econo_model()
-    person = create_monetary_actor(model, types = Set([:person]))
+    person = create_monetary_actor!(model, types = Set([:person]))
     make_economic_actor!(person, posessions = posessions, producers = Set([p1, p2]))
 
     @test length(producers(person)) == 2
@@ -107,7 +107,7 @@ end
     balance = Balance()
     book_asset!(balance, BalanceEntry("C"), 100)
     model = create_econo_model()
-    person = create_monetary_actor(model, balance = balance, types = Set([:person]))
+    person = create_monetary_actor!(model, balance = balance, types = Set([:person]))
     make_economic_actor!(person, posessions = posessions, producers = Set([p1, p2]))
     make_marginal!(person, needs = needs)
 
