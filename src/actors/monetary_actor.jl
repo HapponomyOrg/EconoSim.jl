@@ -17,7 +17,7 @@ This can come in handy when specific state needs to be stored with the actor.
     expenses::C
 end
 
-function create_monetary_actor(model::ABM;
+function create_monetary_actor!(model::ABM;
                                 allow_negative_assets::Bool = false,
                                 allow_negative_liabilities::Bool = false,
                                 balance::AbstractBalance = Balance(def_min_asset = allow_negative_assets ? typemin(Currency) : CUR_0,

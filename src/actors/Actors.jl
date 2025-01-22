@@ -25,7 +25,7 @@ export sumsy_assets
 
 
 include("monetary_actor.jl")
-export MonetaryActor, create_monetary_actor
+export MonetaryActor, create_monetary_actor!
 
 include("economic_actor.jl")
 export EconomicAssets, Prices
