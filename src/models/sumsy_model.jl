@@ -4,21 +4,24 @@ SINGLE_SUMSY = :SINGLE_SUMSY
 MULTI_SUMSY = :MULTI_SUMSY
 
 function add_properties!(model::ABM,
-                        sumsy_interval::Int)
+                        sumsy_interval::Int,
+                        register_gi_as_income::Bool)
     properties = abmproperties(model)
     properties[:sumsy_interval] = sumsy_interval
     properties[:total_gi] = CUR_0
     properties[:total_demurrage] = CUR_0
+    properties[:register_gi_as_income] = register_gi_as_income
 end
 
 function create_sumsy_model(sumsy_interval::Int;
                             balance_type::Type = SingleSuMSyBalance{Currency},
                             actor_type::Type = SuMSyActor{Currency, balance_type},
+                            register_gi_as_income::Bool = false,
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                             actors_first::Bool = false)
     model = create_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
 
-    add_properties!(model, sumsy_interval)
+    add_properties!(model, sumsy_interval, register_gi_as_income)
 
     return model
 end
@@ -59,6 +62,7 @@ end
 
 function process_model_sumsy!(model::ABM)
     step = get_step(model)
+    register_gi_as_income = abmproperties(model)[:register_gi_as_income]
 
     if mod(step, model.sumsy_interval) == 0
         sum_gi = CUR_0
@@ -68,6 +72,10 @@ function process_model_sumsy!(model::ABM)
             gi, dem = adjust_sumsy_balance!(get_balance(actor), step)
             sum_gi += gi
             sum_dem += dem
+
+            if register_gi_as_income
+                actor.income += gi
+            end
         end
 
         model.total_gi += sum_gi
