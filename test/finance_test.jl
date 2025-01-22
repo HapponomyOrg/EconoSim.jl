@@ -172,20 +172,20 @@ end
     b1 = SingleSuMSyBalance(sumsy, sumsy_interval = 10)
     b2 = SingleSuMSyBalance(sumsy, sumsy_interval = 10)
 
-    book_asset!(b1, get_sumsy_dep_entry(b1), 100)
+    book_asset!(b1, get_def_sumsy_entry(b1), 100)
     book_asset!(b1, DEPOSIT, 100)
 
-    book_asset!(b2, get_sumsy_dep_entry(b2), 100)
+    book_asset!(b2, get_def_sumsy_entry(b2), 100)
     book_asset!(b2, DEPOSIT, 100)
 
-    @test transfer_asset!(b1, get_sumsy_dep_entry(b1), b2, get_sumsy_dep_entry(b2), 10)
-    @test transfer_asset!(b2, get_sumsy_dep_entry(b2), b1, get_sumsy_dep_entry(b1), 10)
+    @test transfer_asset!(b1, get_def_sumsy_entry(b1), b2, get_def_sumsy_entry(b2), 10)
+    @test transfer_asset!(b2, get_def_sumsy_entry(b2), b1, get_def_sumsy_entry(b1), 10)
 
-    @test transfer_asset!(b1, DEPOSIT, b2, get_sumsy_dep_entry(b2), 10) == false
-    @test transfer_asset!(b2, DEPOSIT, b1, get_sumsy_dep_entry(b1), 10) == false
+    @test transfer_asset!(b1, DEPOSIT, b2, get_def_sumsy_entry(b2), 10) == false
+    @test transfer_asset!(b2, DEPOSIT, b1, get_def_sumsy_entry(b1), 10) == false
 
-    @test transfer_asset!(b1, get_sumsy_dep_entry(b1), b2, DEPOSIT, 10) == false
-    @test transfer_asset!(b2, get_sumsy_dep_entry(b2), b1, DEPOSIT, 10) == false
+    @test transfer_asset!(b1, get_def_sumsy_entry(b1), b2, DEPOSIT, 10) == false
+    @test transfer_asset!(b2, get_def_sumsy_entry(b2), b1, DEPOSIT, 10) == false
 end
 
 @testset "SingleSuMSyBalance - non transactional" begin
@@ -247,9 +247,9 @@ end
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 30, transactional = false)
 
     @test sumsy_assets(balance) == 7000
-    book_asset!(balance, get_sumsy_dep_entry(balance), telo(sumsy), set_to_value = true)
+    book_asset!(balance, get_def_sumsy_entry(balance), telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_sumsy_dep_entry(balance),
+                                                    get_def_sumsy_entry(balance),
                                                     is_gi_eligible(balance),
                                                     get_dem_free(balance),
                                                     30) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
@@ -263,7 +263,7 @@ end
 
     book_sumsy!(balance, 98000)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_sumsy_dep_entry(balance),
+                                                    get_def_sumsy_entry(balance),
                                                     is_gi_eligible(balance),
                                                     get_dem_free(balance),
                                                     30) == (2000, 7500)
@@ -281,7 +281,7 @@ end
 
     @test sumsy_assets(balance) == -3000
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_sumsy_dep_entry(balance),
+                                                    get_def_sumsy_entry(balance),
                                                     is_gi_eligible(balance),
                                                     get_dem_free(balance),
                                                     30) == (sumsy.income.guaranteed_income, 0)
@@ -301,7 +301,7 @@ end
 
     @test sumsy_assets(balance) == -3000
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_sumsy_dep_entry(balance),
+                                                    get_def_sumsy_entry(balance),
                                                     is_gi_eligible(balance),
                                                     get_dem_free(balance),
                                                     30) == (sumsy.income.guaranteed_income, -300)
@@ -332,9 +332,9 @@ end
 @testset "SingleSuMSyBalance - demurrage - tiers - non transactional" begin
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
     balance = SingleSuMSyBalance(sumsy, sumsy_interval = 10, transactional = false)
-    book_asset!(balance, get_sumsy_dep_entry(balance), telo(sumsy), set_to_value = true)
+    book_asset!(balance, get_def_sumsy_entry(balance), telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_sumsy_dep_entry(balance),
+                                                    get_def_sumsy_entry(balance),
                                                     is_gi_eligible(balance),
                                                     get_dem_free(balance),
                                                     10) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
@@ -369,7 +369,7 @@ end
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 10, transactional = false)
 
     @test get_dem_free(balance) == 50000
-    @test asset_value(balance, get_sumsy_dep_entry(balance)) == 2000
+    @test asset_value(balance, get_def_sumsy_entry(balance)) == 2000
     @test sumsy_assets(balance, timestamp = 0) == 2000
     
     set_sumsy!(balance,
@@ -378,7 +378,7 @@ end
                 reset_dem_free = true)
     
     @test get_dem_free(balance) == 0
-    @test asset_value(balance, get_sumsy_dep_entry(balance)) == 11000
+    @test asset_value(balance, get_def_sumsy_entry(balance)) == 11000
     @test sumsy_assets(balance, timestamp = 0) == 11000
     @test sumsy_assets(balance, timestamp = 20) == 13000
 
@@ -388,7 +388,7 @@ end
                 reset_dem_free = false)
     
     @test get_dem_free(balance) == 0
-    @test asset_value(balance, get_sumsy_dep_entry(balance)) == 5000
+    @test asset_value(balance, get_def_sumsy_entry(balance)) == 5000
     @test sumsy_assets(balance, timestamp = 0) == 5000
     @test sumsy_assets(balance, timestamp = 20) == 13550
 
@@ -398,7 +398,7 @@ end
                 reset_dem_free = true)
     
     @test get_dem_free(balance) == 20000
-    @test asset_value(balance, get_sumsy_dep_entry(balance)) == 5000
+    @test asset_value(balance, get_def_sumsy_entry(balance)) == 5000
     @test sumsy_assets(balance, timestamp = 0) == 5000
     @test sumsy_assets(balance, timestamp = 20) == 11000
 end
@@ -413,7 +413,7 @@ end
                 reset_balance = true,
                 reset_dem_free = true)
     
-    @test asset_value(balance, get_sumsy_dep_entry(balance)) == 11000
+    @test asset_value(balance, get_def_sumsy_entry(balance)) == 11000
     @test sumsy_assets(balance, timestamp = 10) == 12000
     @test sumsy_assets(balance, timestamp = 20) == 13000
 
@@ -422,7 +422,7 @@ end
                 reset_balance = false,
                 reset_dem_free = true)
     
-    @test asset_value(balance, get_sumsy_dep_entry(balance)) == 11000
+    @test asset_value(balance, get_def_sumsy_entry(balance)) == 11000
     @test sumsy_assets(balance, timestamp = 10) == 12400
     @test sumsy_assets(balance, timestamp = 15) == 13030
     @test sumsy_assets(balance, timestamp = 20) == 13660
@@ -432,7 +432,7 @@ end
     sumsy = SuMSy(4000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
     balance = SingleSuMSyBalance(sumsy, sumsy_interval = 10)
 
-    book_asset!(balance, get_sumsy_dep_entry(balance), 210000, set_to_value = true)
+    book_asset!(balance, get_def_sumsy_entry(balance), 210000, set_to_value = true)
     set_sumsy_active!(balance, false)
 
     adjust_sumsy_balance!(balance, 10)

@@ -5,30 +5,42 @@
     expenses::C
 end
 
-function create_sumsy_actor(model::ABM;
-                            sumsy::SuMSy,
+function create_sumsy_actor!(model::ABM;
+                            sumsy::SuMSy,                                                                  
+                            activate::Bool = true,
+                            gi_eligible::Bool = true,
+                            initialize::Bool = true,
                             sumsy_interval::Int = 30,
                             allow_negative_assets::Bool = true,
                             allow_negative_liabilities::Bool = true,
                             allow_negative_sumsy::Bool = false,
                             allow_negative_demurrage::Bool = false,
-                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy,
+                            balance::SuMSyBalance = SingleSuMSyBalance(sumsy,                                                                  
+                                                                        activate = activate,
+                                                                        gi_eligible = gi_eligible,
+                                                                        initialize = initialize,
                                                                         sumsy_interval = sumsy_interval,
                                                                         allow_negative_assets = allow_negative_assets,
                                                                         allow_negative_liabilities = allow_negative_liabilities,
                                                                         allow_negative_sumsy = allow_negative_sumsy,
                                                                         allow_negative_demurrage = allow_negative_demurrage),
-                            income::Currency = CUR_0,
-                            expenses::Currency = CUR_0,
+                            income::Real = CUR_0,
+                            expenses::Real = CUR_0,
                             types::Set{Symbol} = Set{Symbol}(),
                             behaviors::Vector{Function} = Vector{Function}())                            
-    return SuMSyActor{Currency, typeof(balance)}(model,
+    actor =  SuMSyActor{Currency, typeof(balance)}(model,
                                 model = model,
                                 balance = balance,
                                 income = income,
                                 expenses = expenses,
                                 types = types,
                                 behaviors = behaviors)
+
+    if model.register_gi_as_income && asset_value(balance, get_def_sumsy_entry(balance)) > CUR_0
+        actor.income += asset_value(balance, get_def_sumsy_entry(balance))
+    end
+
+    return actor
 end
 
 get_sumsy(actor::SuMSyActor) = get_sumsy(get_balance(actor))

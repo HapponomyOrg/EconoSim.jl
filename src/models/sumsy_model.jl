@@ -28,27 +28,51 @@ end
 
 function add_sumsy_actor!(model::ABM;
                             sumsy_type::Symbol = SINGLE_SUMSY,
-                            sumsy::SuMSy,
+                            sumsy::SuMSy,                                                             
                             activate::Bool = true,
                             gi_eligible::Bool = true,
-                            initialize::Bool = true)
+                            initialize::Bool = true,
+                            sumsy_interval::Int = 30,
+                            allow_negative_assets::Bool = true,
+                            allow_negative_liabilities::Bool = true,
+                            allow_negative_sumsy::Bool = false,
+                            allow_negative_demurrage::Bool = false,
+                            types::Set{Symbol} = Set{Symbol}(),
+                            behaviors::Vector{Function} = Vector{Function}())
 
     if sumsy_type == SINGLE_SUMSY
-        balance = SingleSuMSyBalance(sumsy,                                                                                
+        balance = SingleSuMSyBalance(sumsy,
+                                    sumsy_interval = sumsy_interval,                                                                     
                                     activate = activate,
                                     gi_eligible = gi_eligible,
-                                    initialize = initialize)
+                                    initialize = initialize,
+                                    allow_negative_assets = allow_negative_assets,
+                                    allow_negative_liabilities = allow_negative_liabilities,
+                                    allow_negative_sumsy = allow_negative_sumsy,
+                                    allow_negative_demurrage = allow_negative_demurrage)
     else
         balance = MultiSuMSyBalance(sumsy,
+                                    sumsy_interval = sumsy_interval, 
                                     SUMSY_DEP,                                                                             
                                     activate = activate,
                                     gi_eligible = gi_eligible,
-                                    initialize = initialize)
+                                    initialize = initialize,
+                                    allow_negative_assets = allow_negative_assets,
+                                    allow_negative_liabilities = allow_negative_liabilities,
+                                    allow_negative_sumsy = allow_negative_sumsy,
+                                    allow_negative_demurrage = allow_negative_demurrage)
     end
+
+
+
+    actor = add_actor!(model, create_sumsy_actor!(model,
+                                                    sumsy = sumsy,
+                                                    sumsy_interval = sumsy_interval,
+                                                    balance = balance,
+                                                    types = types,
+                                                    behaviors = behaviors))
     
-    actor = SuMSyActor(model, model = model, balance = balance)
     add_type!(actor, sumsy_type)
-    add_agent!(actor, model)
 
     return actor
 end
@@ -62,7 +86,7 @@ end
 
 function process_model_sumsy!(model::ABM)
     step = get_step(model)
-    register_gi_as_income = abmproperties(model)[:register_gi_as_income]
+    register_gi_as_income = model.register_gi_as_income
 
     if mod(step, model.sumsy_interval) == 0
         sum_gi = CUR_0
@@ -74,7 +98,7 @@ function process_model_sumsy!(model::ABM)
             sum_dem += dem
 
             if register_gi_as_income
-                actor.income += gi
+                actor.income += gi - dem
             end
         end
 

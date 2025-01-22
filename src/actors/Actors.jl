@@ -18,7 +18,7 @@ export BalanceActor
 export get_balance, transfer_asset!, transfer_liability!
 
 include("sumsy_actor.jl")
-export SuMSyActor, create_sumsy_actor
+export SuMSyActor, create_sumsy_actor!
 export set_sumsy_active!, is_sumsy_active, set_gi_eligible!, is_gi_eligible
 export set_contribution_settings, get_contribution_settings, is_contribution_active, paid_contribution
 export sumsy_assets

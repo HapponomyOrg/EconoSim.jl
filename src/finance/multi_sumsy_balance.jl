@@ -2,6 +2,7 @@ import Base: ==
 
 mutable struct MultiSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     balance::Balance
+    def_sumsy_entry::BalanceEntry
     sumsy::Dict{BalanceEntry, SuMSy}
     sumsy_active::Dict{BalanceEntry, Bool}
     gi_eligible::Dict{BalanceEntry, Bool}
@@ -11,16 +12,18 @@ mutable struct MultiSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     transactional::Dict{BalanceEntry, Bool}
     allow_negative_sumsy::Dict{BalanceEntry, Bool}
     allow_negative_demurrage::Dict{BalanceEntry, Bool}
-    MultiSuMSyBalance(balance::Balance = Balance()) = new{Currency}(balance,
-                                                            Dict{BalanceEntry, SuMSy}(),
-                                                            Dict{BalanceEntry, Bool}(),
-                                                            Dict{BalanceEntry, Bool}(),
-                                                            Dict{BalanceEntry, Integer}(),
-                                                            Dict{BalanceEntry, Currency}(),
-                                                            Dict{BalanceEntry, Int}(),
-                                                            Dict{BalanceEntry, Bool}(),
-                                                            Dict{BalanceEntry, Bool}(),
-                                                            Dict{BalanceEntry, Bool}())
+    MultiSuMSyBalance(balance::Balance = Balance(),
+                        def_sumsy_entry::BalanceEntry = SUMSY_DEP) = new{Currency}(balance,
+                                                                                    def_sumsy_entry,
+                                                                                    Dict{BalanceEntry, SuMSy}(),
+                                                                                    Dict{BalanceEntry, Bool}(),
+                                                                                    Dict{BalanceEntry, Bool}(),
+                                                                                    Dict{BalanceEntry, Integer}(),
+                                                                                    Dict{BalanceEntry, Currency}(),
+                                                                                    Dict{BalanceEntry, Int}(),
+                                                                                    Dict{BalanceEntry, Bool}(),
+                                                                                    Dict{BalanceEntry, Bool}(),
+                                                                                    Dict{BalanceEntry, Bool}())
 end
 
 struct SuMSyConfig
@@ -53,7 +56,7 @@ struct SuMSyConfig
 end
 
 function MultiSuMSyBalance(sumsy::SuMSy,
-                            dep_entry::BalanceEntry,
+                            def_sumsy_entry::BalanceEntry = SUMSY_DEP,
                             balance::Balance = Balance();
                             activate = true,
                             gi_eligible::Bool = true,
@@ -67,11 +70,11 @@ function MultiSuMSyBalance(sumsy::SuMSy,
     def_min_asset!(balance, allow_negative_assets ? typemin(Currency) : CUR_0)
     def_min_liability!(balance, allow_negative_liabilities ? typemin(Currency) : CUR_0)
 
-    sumsy_balance = MultiSuMSyBalance(balance)
+    sumsy_balance = MultiSuMSyBalance(balance, def_sumsy_entry)
 
     set_sumsy!(sumsy_balance,
                 sumsy,
-                dep_entry,
+                def_sumsy_entry,
                 gi_eligible = gi_eligible,
                 activate = activate,
                 reset_balance = initialize,
@@ -128,6 +131,7 @@ get_balance(sumsy_balance::MultiSuMSyBalance) = sumsy_balance.balance
 
 is_sumsy(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = entry in keys(sumsy_balance.sumsy)
 
+get_def_sumsy_entry(sumsy_balance::MultiSuMSyBalance) = sumsy_balance.def_sumsy_entry
 get_sumsy_interval(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.sumsy_interval[entry]
 is_transactional(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.transactional[entry]
 allow_negative_demurrage(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.allow_negative_demurrage[dep_entry]
@@ -224,7 +228,7 @@ function asset_value(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry)
 end
 
 function sumsy_assets(sumsy_balance::MultiSuMSyBalance,
-                        dep_entry::BalanceEntry;
+                        dep_entry::BalanceEntry = sumsy_balance.def_sumsy_entry;
                         timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry))
     value = asset_value(get_balance(sumsy_balance), dep_entry)
     guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, dep_entry, timestamp)

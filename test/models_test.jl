@@ -14,3 +14,14 @@ using Agents
     delete_model_behavior!(model, model_behavior_function)
     @test !has_model_behavior(model, model_behavior_function)
 end
+
+@testset "Registering SuMSy GI as income" begin
+    model = create_sumsy_model(1, register_gi_as_income = true, model_behaviors = process_model_sumsy!)
+    @test abmproperties(model)[:register_gi_as_income]
+
+    sumsy = SuMSy(1000, 0, 0.1)
+    add_sumsy_actor!(model, sumsy = sumsy, sumsy_interval = 1)
+
+    run_econo_model!(model, 1)
+    @test actor.income == 1900
+end

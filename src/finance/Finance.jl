@@ -18,7 +18,7 @@ export SuMSy, SuMSyDemurrage, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export telo, time_telo
 export SuMSyBalance, SingleSuMSyBalance, MultiSuMSyBalance
 export get_sumsy, is_transactional
-export get_balance, get_sumsy_dep_entry, sumsy_assets
+export get_balance, get_def_sumsy_entry, sumsy_assets
 export adjust_sumsy_balance!, reset_sumsy_balance!
 export set_sumsy!, get_sumsy
 export set_sumsy_active!, is_sumsy_active, is_transactional, set_gi_eligible!, is_gi_eligible
