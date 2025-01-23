@@ -52,8 +52,8 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             activate::Bool = true,
                             gi_eligible::Bool = true,
                             initialize::Bool = false,
-                            last_adjustment::Int = 0,
                             sumsy_interval::Int = 30,
+                            last_adjustment::Int = 0,
                             transactional::Bool = false,
                             allow_negative_assets::Bool = true,
                             allow_negative_liabilities::Bool = true,
@@ -80,7 +80,7 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                                                 allow_negative_demurrage)
 
     if initialize
-        reset_sumsy_balance!(sumsy_balance, reset_balance = initialize)
+        reset_sumsy_balance!(sumsy_balance, reset_balance = initialize, timestamp = 0)
     end
 
     return sumsy_balance

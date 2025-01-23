@@ -20,7 +20,6 @@ end
 
 function create_properties(model_behaviors::Union{Nothing, Function, Vector{Function}})
     properties = Dict{Symbol, Any}()
-    properties[:step] = 0
     properties[:model_behaviors] = behavior_vector(model_behaviors)
 
     return properties
@@ -40,6 +39,15 @@ function create_econo_model(actor_type::Type = MonetaryActor{Currency},
                 agent_step! = actor_step!,
                 model_step! = econo_model_step!,
                 agents_first = actors_first)
+end
+
+"""
+    get_step(model::ABM)
+
+Get the current step of the model. Use this instead of abmtime() if the simulation needs to start at step 1 instead of 0.
+"""
+function get_step(model::ABM)
+    return abmtime(model) + 1
 end
 
 function add_actor!(model::ABM, actor::AbstractActor)
@@ -71,8 +79,6 @@ has_model_behavior(model, behavior::Function) = behavior in model.model_behavior
 delete_model_behavior!(model, behavior::Function) = (delete_element!(model.model_behaviors, behavior); model)
 clear_model_behaviors(model) = (empty!(model.model_behaviors); model)
 
-get_step(model) = model.step
-
 function econo_model_step!(model::ABM)
     for behavior in model.model_behaviors
         behavior(model)
@@ -81,19 +87,15 @@ end
 
 """
     function stepper!(model::ABM, step::Integer)
-
-    This function makes sure the econo_model_step! and actor_step! functions have access to the current step of the model.
 """
 function stepper!(model::ABM, step::Integer)
-    model.step += 1
-
     return step >= model.run_steps
 end
 
-function econo_step!(model::ABM, steps::Integer = 1; actors_first::Bool = false)
+function econo_step!(model::ABM, steps::Integer = 1)
     abmproperties(model)[:run_steps] = steps
 
-    step!(model, actor_step!, econo_model_step!, steps, actors_first)
+    step!(model, steps)
 end
 
 function run_econo_model!(model::ABM, steps::Integer; kwargs...)

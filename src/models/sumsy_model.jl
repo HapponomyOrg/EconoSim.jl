@@ -13,7 +13,7 @@ function add_properties!(model::ABM,
     properties[:register_gi_as_income] = register_gi_as_income
 end
 
-function create_sumsy_model(sumsy_interval::Int;
+function create_sumsy_model(;sumsy_interval::Int,
                             balance_type::Type = SingleSuMSyBalance{Currency},
                             actor_type::Type = SuMSyActor{Currency, balance_type},
                             register_gi_as_income::Bool = false,
@@ -32,7 +32,7 @@ function add_sumsy_actor!(model::ABM;
                             activate::Bool = true,
                             gi_eligible::Bool = true,
                             initialize::Bool = true,
-                            sumsy_interval::Int = 30,
+                            sumsy_interval::Int = model.sumsy_interval,
                             allow_negative_assets::Bool = true,
                             allow_negative_liabilities::Bool = true,
                             allow_negative_sumsy::Bool = false,
@@ -109,12 +109,12 @@ end
 
 function process_actor_sumsy!(actor::AbstractActor)
     model = actor.model
-    gi, dem = adjust_sumsy_balance!(get_balance(actor), model.step)
+    gi, dem = adjust_sumsy_balance!(get_balance(actor), get_step(model))
 
     model.total_gi += gi
     model.total_demurrage += dem
 end
 
 function transfer_sumsy!(model::ABM, source::AbstractActor, destination::AbstractActor, amount::Real)
-    transfer_sumsy!(get_balance(source), get_balance(destination), amount, timestamp = model.step)
+    transfer_sumsy!(get_balance(source), get_balance(destination), amount, timestamp = get_step(model))
 end

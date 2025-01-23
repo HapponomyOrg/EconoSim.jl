@@ -15,7 +15,7 @@ function transfer_asset!(model::ABM,
                          destination::BalanceActor,
                          entry::BalanceEntry,
                          amount::Real)
-    transfer_asset!(get_balance(source), get_balance(destination), entry, amount, timestamp = model.step)
+    transfer_asset!(get_balance(source), get_balance(destination), entry, amount, timestamp = get_step(model))
 end
 
 function transfer_liability!(model::ABM,
@@ -23,5 +23,5 @@ function transfer_liability!(model::ABM,
                              destination::BalanceActor,
                              entry::BalanceEntry,
                              amount::Real)
-    transfer_liability!(get_balance(source), get_balance(destination), entry, amount, timestamp = model.step)
+    transfer_liability!(get_balance(source), get_balance(destination), entry, amount, timestamp = get_step(model))
 end
