@@ -282,7 +282,6 @@ function reset_sumsy_balance!(sumsy_balance::MultiSuMSyBalance,
     if reset_balance
         if is_gi_eligible(sumsy_balance, dep_entry)
             book_asset!(balance, dep_entry, get_seed(sumsy_balance, dep_entry), set_to_value = true, timestamp = timestamp)
-            book_asset!(balance, dep_entry, get_guaranteed_income(sumsy_balance, dep_entry), timestamp = timestamp)
         else
             book_asset!(balance, dep_entry, 0, set_to_value = true, timestamp = timestamp)
         end

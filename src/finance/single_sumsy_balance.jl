@@ -291,10 +291,10 @@ end
 Reset the SuMSy balance as if it was just created at the given timestamp.
     * sumsy_balance::SuMSyBalance - The SuMSy balance to reset.
     * reset_balance::Bool - Whether to reset the balance to the initial SuMSy value of an active balance.
-                            If reset, the seed amount and one installment of guaranteed income will be added to the balance.
+                            If eligible, the balance will be set to the seed amount.
                             If not, the balance will be set to zero.
     * reset_dem_free::Bool - Whether to reset the demurrage free buffer to the initial value of an active balance.
-                            If reset, the demurrage free buffer will be set to the initial value.
+                            If eligible, the demurrage free buffer will be set to the initial value.
                             If not, the demurrage free buffer will be set to zero.
     * timestamp::Int - The timestamp of the reset.
 """
@@ -307,7 +307,6 @@ function reset_sumsy_balance!(sumsy_balance::SingleSuMSyBalance;
     if reset_balance
         if is_gi_eligible(sumsy_balance)
             book_asset!(balance, get_def_sumsy_entry(sumsy_balance), get_seed(sumsy_balance), set_to_value = true, timestamp = timestamp)
-            book_asset!(balance, get_def_sumsy_entry(sumsy_balance), get_guaranteed_income(sumsy_balance), timestamp = timestamp)
         else
             book_asset!(balance, get_def_sumsy_entry(sumsy_balance), 0, set_to_value = true, timestamp = timestamp)
         end
