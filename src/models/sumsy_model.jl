@@ -13,6 +13,21 @@ function add_properties!(model::ABM,
     properties[:register_gi_as_income] = register_gi_as_income
 end
 
+"""
+    create_sumsy_model(;sumsy_interval::Int,
+                        balance_type::Type = SingleSuMSyBalance{Currency},
+                        actor_type::Type = SuMSyActor{Currency, balance_type},
+                        register_gi_as_income::Bool = false,
+                        model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
+                        actors_first::Bool = false)
+    * sumsy_interval::Int - Number of steps between SuMSy adjustments
+    * balance_type::Type - Type of SuMSy balance
+    * actor_type::Type - Type of SuMSy actor
+    * register_gi_as_income::Bool - Whether to register the Net Guaranteed Income as income.
+                                    Only a positive Net Guaranteed Income is registered as income.
+    * model_behaviors::Union{Nothing, Function, Vector{Function}} - Vector of model behaviors
+    * actors_first::Bool - Whether to process actor behaviors before model behaviors.
+"""
 function create_sumsy_model(;sumsy_interval::Int,
                             balance_type::Type = SingleSuMSyBalance{Currency},
                             actor_type::Type = SuMSyActor{Currency, balance_type},
@@ -98,7 +113,7 @@ function process_model_sumsy!(model::ABM)
             sum_dem += dem
 
             if register_gi_as_income
-                actor.income += gi - dem
+                actor.income += max(CUR_0, gi - dem)
             end
         end
 
