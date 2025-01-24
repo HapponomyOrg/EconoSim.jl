@@ -161,7 +161,7 @@ end
 
     @test telo(sumsy) == 230000
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 10)
-    book_sumsy!(balance, telo(sumsy) - 4000, timestamp = 0)
+    book_sumsy!(balance, telo(sumsy), timestamp = 0)
     @test sumsy_assets(balance, timestamp = 0) == 230000
     @test EconoSim.calculate_adjustments(balance, 10) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
 end
@@ -192,9 +192,9 @@ end
     sumsy = SuMSy(1000, 0, 0.1, seed = 500)
 
     balance = SingleSuMSyBalance(sumsy, activate = true, initialize = true, sumsy_interval = 10)
-    @test sumsy_assets(balance, timestamp = 0) == 1500
-    @test sumsy_assets(balance, timestamp = 10) == 2350
-    @test sumsy_assets(balance, timestamp = 20) == 3115
+    @test sumsy_assets(balance, timestamp = 0) == 500
+    @test sumsy_assets(balance, timestamp = 10) == 1450
+    @test sumsy_assets(balance, timestamp = 20) == 2305
 
     balance = SingleSuMSyBalance(sumsy, activate = true, initialize = false, sumsy_interval = 10)
     @test sumsy_assets(balance, timestamp = 0) == 0
@@ -206,8 +206,8 @@ end
     sumsy = SuMSy(1000, 0, 0.1, seed = 500)
 
     balance = SingleSuMSyBalance(sumsy, activate = true, initialize = true, sumsy_interval = 10, transactional = true)
-    @test sumsy_assets(balance, timestamp = 0) == 1500
-    @test sumsy_assets(balance, timestamp = 5) == 1925
+    @test sumsy_assets(balance, timestamp = 0) == 500
+    @test sumsy_assets(balance, timestamp = 5) == 975
 
     balance = SingleSuMSyBalance(sumsy, activate = true, initialize = false, sumsy_interval = 10, transactional = true)
     @test sumsy_assets(balance, timestamp = 0) == 0
@@ -215,13 +215,13 @@ end
     @test sumsy_assets(balance, timestamp = 10) == 1000
 
     balance = SingleSuMSyBalance(sumsy, activate = false, initialize = true, sumsy_interval = 10, transactional = true)
-    @test sumsy_assets(balance, timestamp = 0) == 1500
-    @test sumsy_assets(balance, timestamp = 5) == 1500
-    @test sumsy_assets(balance, timestamp = 10) == 1500
+    @test sumsy_assets(balance, timestamp = 0) == 500
+    @test sumsy_assets(balance, timestamp = 5) == 500
+    @test sumsy_assets(balance, timestamp = 10) == 500
 end
 
 @testset "SingleSuMSyBalance - transfer - non transactional" begin
-    sumsy = SuMSy(2000, 25000, 0.1)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = 2000)
     balance1 = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 30, transactional = false)
     balance2 = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 30, transactional = false)
 
@@ -246,7 +246,7 @@ end
     sumsy = SuMSy(2000, 25000, 0.1, seed = 5000)
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 30, transactional = false)
 
-    @test sumsy_assets(balance) == 7000
+    @test sumsy_assets(balance) == 5000
     book_asset!(balance, get_def_sumsy_entry(balance), telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
                                                     get_def_sumsy_entry(balance),
@@ -271,7 +271,7 @@ end
 end
 
 @testset "SingleSuMSyBalance demurrage - single - non transactional - non negative demurrage" begin
-    sumsy = SuMSy(2000, 25000, 0.1, seed = -5000)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = -3000)
     balance = SingleSuMSyBalance(sumsy,
                                     initialize = true,
                                     sumsy_interval = 30,
@@ -291,7 +291,7 @@ end
 end
 
 @testset "SingleSuMSyBalance demurrage - single - non transactional - negative demurrage" begin
-    sumsy = SuMSy(2000, 25000, 0.1, seed = -5000)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = -3000)
     balance = SingleSuMSyBalance(sumsy,
                                     initialize = true,
                                     sumsy_interval = 30,
@@ -311,7 +311,7 @@ end
 end
 
 @testset "SingleSuMSyBalance - demurage - single - transactional" begin
-    sumsy = SuMSy(2000, 25000, 0.1, seed = 5000)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = 7000)
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 30, transactional = true)
 
     @test sumsy_assets(balance) == 7000
@@ -350,7 +350,7 @@ end
 end
 
 @testset "SingleSuMSyBalance - demurrage - tiers - transactional" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], seed = 2000)
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 10, transactional = true)
     @test sumsy_assets(balance) == 2000
 
@@ -365,7 +365,7 @@ end
 end
 
 @testset "SingleSuMSyBalance - demurrage - override SuMSy - non transactional" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], seed = 2000)
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 10, transactional = false)
 
     @test get_dem_free(balance) == 50000
@@ -373,7 +373,7 @@ end
     @test sumsy_assets(balance, timestamp = 0) == 2000
     
     set_sumsy!(balance,
-                SuMSy(1000, 0, 0, seed = 10000),
+                SuMSy(1000, 0, 0, seed = 11000),
                 reset_balance = true,
                 reset_dem_free = true)
     
@@ -383,7 +383,7 @@ end
     @test sumsy_assets(balance, timestamp = 20) == 13000
 
     set_sumsy!(balance,
-                SuMSy(5000, 1000, 0.1, seed = 0),
+                SuMSy(5000, 1000, 0.1, seed = 5000),
                 reset_balance = true,
                 reset_dem_free = false)
     
@@ -404,12 +404,12 @@ end
 end
 
 @testset "SingleSuMSyBalance - demurrage - overrides - transactional" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], seed = 2000)
     balance = SingleSuMSyBalance(sumsy, initialize = true, sumsy_interval = 10, transactional = true)
     @test sumsy_assets(balance, timestamp = 0) == 2000
     
     set_sumsy!(balance,
-                SuMSy(1000, 0, 0, seed = 10000),
+                SuMSy(1000, 0, 0, seed = 11000),
                 reset_balance = true,
                 reset_dem_free = true)
     
@@ -443,7 +443,7 @@ end
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
     balance = SingleSuMSyBalance(sumsy, sumsy_interval = 10)
 
-    set_sumsy!(balance, SuMSy(sumsy, seed = 1000), reset_balance = true, reset_dem_free = true)
+    set_sumsy!(balance, SuMSy(sumsy, seed = 3000), reset_balance = true, reset_dem_free = true)
     @test sumsy_assets(balance) == 3000
 
     set_sumsy!(balance, SuMSy(sumsy, guaranteed_income = 5000), reset_balance = false, reset_dem_free = false)
@@ -468,7 +468,7 @@ end
 end
 
 @testset "MultiSuMSyBalance - non transactional" begin
-    sumsy = SuMSy(1000, 0, 0.1, seed = 500)
+    sumsy = SuMSy(1000, 0, 0.1, seed = 1500)
 
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, activate = true, initialize = true, sumsy_interval = 10, transactional = false)
     @test sumsy_assets(balance, SUMSY_DEP, timestamp = 0) == 1500
@@ -482,7 +482,7 @@ end
 end
 
 @testset "MultiSuMSyBalance - transactional" begin
-    sumsy = SuMSy(1000, 0, 0.1, seed = 500)
+    sumsy = SuMSy(1000, 0, 0.1, seed = 1500)
 
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, activate = true, initialize = true, sumsy_interval = 10, transactional = true)
     @test sumsy_assets(balance, SUMSY_DEP, timestamp = 0) == 1500
@@ -500,7 +500,7 @@ end
 end
 
 @testset "MultiSuMSyBalance - transfer - non transactional" begin
-    sumsy = SuMSy(2000, 25000, 0.1)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = 2000)
     balance1 = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 30, transactional = false)
     balance2 = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 30, transactional = false)
 
@@ -522,7 +522,7 @@ end
 end
 
 @testset "MultiSuMSyBalance demurrage - single - non transactional" begin
-    sumsy = SuMSy(2000, 25000, 0.1, seed = 5000)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = 7000)
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 30, transactional = false)
 
     @test sumsy_assets(balance, SUMSY_DEP) == 7000
@@ -550,7 +550,7 @@ end
 end
 
 @testset "MultiSuMSyBalance - demurage - single - transactional" begin
-    sumsy = SuMSy(2000, 25000, 0.1, seed = 5000)
+    sumsy = SuMSy(2000, 25000, 0.1, seed = 7000)
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 30, transactional = true)
 
     @test sumsy_assets(balance, SUMSY_DEP) == 7000
@@ -589,7 +589,7 @@ end
 end
 
 @testset "MultiSuMSyBalance - demurrage - tiers - transactional" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], seed = 2000)
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10, transactional = true)
     @test sumsy_assets(balance, SUMSY_DEP) == 2000
 
@@ -604,7 +604,7 @@ end
 end
 
 @testset "MultiSuMSyBalance - demurrage - override SuMSy - non transactional" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], seed = 2000)
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10, transactional = false)
 
     @test get_dem_free(balance, SUMSY_DEP) == 50000
@@ -612,7 +612,7 @@ end
     @test sumsy_assets(balance, SUMSY_DEP, timestamp = 0) == 2000
     
     set_sumsy!(balance,
-                SuMSy(1000, 0, 0, seed = 10000),
+                SuMSy(1000, 0, 0, seed = 11000),
                 SUMSY_DEP,
                 reset_balance = true,
                 reset_dem_free = true)
@@ -623,7 +623,7 @@ end
     @test sumsy_assets(balance, SUMSY_DEP, timestamp = 20) == 13000
 
     set_sumsy!(balance,
-                SuMSy(5000, 1000, 0.1, seed = 0),
+                SuMSy(5000, 1000, 0.1, seed = 5000),
                 SUMSY_DEP,
                 reset_balance = true,
                 reset_dem_free = false)
@@ -646,12 +646,12 @@ end
 end
 
 @testset "MultiSuMSyBalance - demurrage - overrides - transactional" begin
-    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
+    sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)], seed = 2000)
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10, transactional = true)
     @test sumsy_assets(balance, SUMSY_DEP, timestamp = 0) == 2000
     
     set_sumsy!(balance,
-                SuMSy(1000, 0, 0, seed = 10000),
+                SuMSy(1000, 0, 0, seed = 11000),
                 SUMSY_DEP,
                 reset_balance = true,
                 reset_dem_free = true)
@@ -687,7 +687,7 @@ end
     sumsy = SuMSy(2000, 50000, [(0, 0.1), (50000, 0.2), (150000, 0.5)])
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10, transactional = false)
 
-    set_sumsy!(balance, SuMSy(sumsy, seed = 1000), SUMSY_DEP, reset_balance = true, reset_dem_free = true)
+    set_sumsy!(balance, SuMSy(sumsy, seed = 3000), SUMSY_DEP, reset_balance = true, reset_dem_free = true)
     @test sumsy_assets(balance, SUMSY_DEP) == 3000
 
     set_sumsy!(balance, SuMSy(sumsy, guaranteed_income = 5000), SUMSY_DEP, reset_balance = false, reset_dem_free = false)
