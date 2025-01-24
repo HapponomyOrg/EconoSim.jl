@@ -35,11 +35,6 @@ function create_sumsy_actor!(model::ABM;
                                 expenses = expenses,
                                 types = types,
                                 behaviors = behaviors)
-
-    if model.register_gi_as_income && asset_value(balance, get_def_sumsy_entry(balance)) > CUR_0
-        actor.income += asset_value(balance, get_def_sumsy_entry(balance))
-    end
-
     return actor
 end
 
