@@ -93,6 +93,14 @@ function calculate_adjustments(model::ABM, actor::AbstractActor)
     return calculate_adjustments(balance, sumsy, model.sumsy_interval, get_step(model))
 end
 
+"""
+    process_model_sumsy!(model::ABM)
+    * model - SuMSy model
+
+    Adjusts the SuMSy balance of all actors in the model.
+    Registers guaranteed income and demurrage for the current step in actor.gi and actor.dem.
+    Registers accumulative guaranteed income and demurrage for the model in model.data_total_gi and model.data_total_demurrage.
+"""
 function process_model_sumsy!(model::ABM)
     step = get_step(model)
 
@@ -114,8 +122,8 @@ function process_model_sumsy!(model::ABM)
             actor.dem = dem
         end
 
-        model.total_gi += sum_gi
-        model.total_demurrage += sum_dem
+        model.data_total_gi += sum_gi
+        model.data_total_demurrage += sum_dem
     end
 end
 
@@ -126,8 +134,8 @@ function process_actor_sumsy!(actor::AbstractActor)
     actor.gi = gi
     actor.dem = dem
 
-    model.total_gi += gi
-    model.total_demurrage += dem
+    model.data_total_gi += gi
+    model.data_total_demurrage += dem
 end
 
 function transfer_sumsy!(model::ABM, source::AbstractActor, destination::AbstractActor, amount::Real)
