@@ -7,8 +7,8 @@ function add_properties!(model::ABM,
                         sumsy_interval::Int)
     properties = abmproperties(model)
     properties[:sumsy_interval] = sumsy_interval
-    properties[:total_gi] = CUR_0
-    properties[:total_demurrage] = CUR_0
+    properties[:data_total_gi] = CUR_0
+    properties[:data_total_demurrage] = CUR_0
 end
 
 """
