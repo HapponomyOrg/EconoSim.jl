@@ -812,3 +812,19 @@ end
     book_asset!(b, BalanceEntry("DEP"), 10)
     @test typeof(asset_value(b, BalanceEntry("DEP"))) == FixedDecimal{Int128, 6}
 end
+
+@testset "Calculate SuMSy deposit" begin
+    sumsy = SuMSy(2000, 0, 0.1)
+
+    @test calculate_sumsy_deposit(sumsy, 0) == 0
+    @test calculate_sumsy_deposit(sumsy, 1) == 2000
+    @test calculate_sumsy_deposit(sumsy, 2) == 3800
+    @test calculate_sumsy_deposit(sumsy, 3) == 5420
+
+    sumsy = SuMSy(2000, 1000, 0.1)
+
+    @test calculate_sumsy_deposit(sumsy, 0) == 0
+    @test calculate_sumsy_deposit(sumsy, 1) == 2000
+    @test calculate_sumsy_deposit(sumsy, 2) == 3900
+    @test calculate_sumsy_deposit(sumsy, 3) == 5610
+end
