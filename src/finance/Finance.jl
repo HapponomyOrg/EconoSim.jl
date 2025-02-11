@@ -15,7 +15,7 @@ include("single_sumsy_balance.jl")
 include("multi_sumsy_balance.jl")
 export SUMSY_DEP, SUMSY_DEBT
 export SuMSy, SuMSyDemurrage, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
-export telo, time_telo
+export telo, time_telo, calculate_sumsy_deposit
 export SuMSyBalance, SingleSuMSyBalance, MultiSuMSyBalance
 export get_sumsy, is_transactional
 export get_balance, get_def_sumsy_entry, sumsy_assets
