@@ -461,3 +461,21 @@ function time_telo(sumsy::SuMSy, interval::Int, allow_negative_demurrage::Bool)
 
     return t
 end
+
+function calculate_sumsy_deposit(sumsy::SuMSy,
+                                periods::Int,
+                                start_amount::Real = CUR_0,
+                                allow_negative_demurrage::Bool = false)
+    amount = Currency(start_amount)
+
+    for _ in 1:periods
+        amount += sumsy.income.guaranteed_income - calculate_time_range_demurrage(amount,
+                                                                                sumsy.demurrage.dem_tiers,
+                                                                                sumsy.demurrage.dem_free,
+                                                                                1,
+                                                                                1,
+                                                                                allow_negative_demurrage)
+    end
+
+    return amount
+end
