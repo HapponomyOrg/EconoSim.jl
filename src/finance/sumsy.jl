@@ -469,12 +469,12 @@ function calculate_sumsy_deposit(sumsy::SuMSy,
     amount = Currency(start_amount)
 
     for _ in 1:periods
-        amount += sumsy.income.guaranteed_income - calculate_time_range_demurrage(amount,
+        amount += Currency(sumsy.income.guaranteed_income - calculate_time_range_demurrage(amount,
                                                                                 sumsy.demurrage.dem_tiers,
                                                                                 sumsy.demurrage.dem_free,
                                                                                 1,
                                                                                 1,
-                                                                                allow_negative_demurrage)
+                                                                                allow_negative_demurrage))
     end
 
     return amount
