@@ -278,8 +278,8 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance,
 
     return timerange > 0 ? calculate_timerange_adjustments(sumsy_balance,
                                                             get_def_sumsy_entry(sumsy_balance),
-                                                            sumsy_balance.gi_eligible,
-                                                            sumsy_balance.dem_free,
+                                                            is_gi_eligible(sumsy_balance),
+                                                            get_dem_free(sumsy_balance),
                                                             Int(timerange)) : (CUR_0, CUR_0)
 end
 
