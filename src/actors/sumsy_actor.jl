@@ -31,8 +31,6 @@ function create_sumsy_actor!(model::ABM;
                                                                         allow_negative_liabilities = allow_negative_liabilities,
                                                                         allow_negative_sumsy = allow_negative_sumsy,
                                                                         allow_negative_demurrage = allow_negative_demurrage),
-                            income::Real = CUR_0,
-                            expenses::Real = CUR_0,
                             types::Set{Symbol} = Set{Symbol}(),
                             behaviors::Vector{Function} = Vector{Function}())                            
     actor =  SuMSyActor{Currency, typeof(balance)}(model,
