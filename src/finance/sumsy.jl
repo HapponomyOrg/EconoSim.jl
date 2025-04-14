@@ -372,10 +372,10 @@ function calculate_timerange_adjustments(balance::Real,
 end
 
 function calculate_timerange_adjustments(sumsy_balance::SuMSyBalance,
-                                            dep_entry::BalanceEntry,
-                                            gi_eligible::Bool,
-                                            dem_free::Real,
-                                            timerange::Int)
+                                            timerange::Int,
+                                            dep_entry::BalanceEntry = SUMSY_DEP)
+    gi_eligible = is_gi_eligible(sumsy_balance, dep_entry)
+    dem_free = get_dem_free(sumsy_balance, dep_entry)
     sumsy = get_sumsy(sumsy_balance, dep_entry)
     interval = get_sumsy_interval(sumsy_balance, dep_entry)
     guaranteed_income = CUR_0

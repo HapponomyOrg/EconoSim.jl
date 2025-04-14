@@ -252,8 +252,7 @@ end
 
 function calculate_adjustments(sumsy_balance::MultiSuMSyBalance,
                                 dep_entry::BalanceEntry,
-                                timestamp::Int,
-                                sumsy::SuMSy = get_sumsy(sumsy_balance, dep_entry))
+                                timestamp::Int)
     sumsy_interval = get_sumsy_interval(sumsy_balance, dep_entry)
     timerange = 0
 
@@ -266,10 +265,8 @@ function calculate_adjustments(sumsy_balance::MultiSuMSyBalance,
     end
 
     return timerange > 0 ? calculate_timerange_adjustments(sumsy_balance,
-                                                            dep_entry,
-                                                            is_gi_eligible(sumsy_balance, dep_entry),
-                                                            get_dem_free(sumsy_balance, dep_entry),
-                                                            Int(timerange)) : (CUR_0, CUR_0)
+                                                            Int(timerange),
+                                                            dep_entry) : (CUR_0, CUR_0)
 end
 
 function reset_sumsy_balance!(sumsy_balance::MultiSuMSyBalance,

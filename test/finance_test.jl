@@ -249,10 +249,8 @@ end
     @test sumsy_assets(balance) == 5000
     book_asset!(balance, get_def_sumsy_entry(balance), telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_def_sumsy_entry(balance),
-                                                    is_gi_eligible(balance),
-                                                    get_dem_free(balance),
-                                                    30) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
+                                                    30,
+                                                    get_def_sumsy_entry(balance)) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
     clear!(balance)
 
     adjust_sumsy_balance!(balance, 0)
@@ -263,10 +261,8 @@ end
 
     book_sumsy!(balance, 98000)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_def_sumsy_entry(balance),
-                                                    is_gi_eligible(balance),
-                                                    get_dem_free(balance),
-                                                    30) == (2000, 7500)
+                                                    30,
+                                                    get_def_sumsy_entry(balance)) == (2000, 7500)
     @test sumsy_assets(balance, timestamp = 30) == 100000
 end
 
@@ -281,10 +277,8 @@ end
 
     @test sumsy_assets(balance) == -3000
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_def_sumsy_entry(balance),
-                                                    is_gi_eligible(balance),
-                                                    get_dem_free(balance),
-                                                    30) == (sumsy.income.guaranteed_income, 0)
+                                                    30,
+                                                    get_def_sumsy_entry(balance)) == (sumsy.income.guaranteed_income, 0)
 
     adjust_sumsy_balance!(balance, 30)
     @test sumsy_assets(balance, timestamp = 30) == -1000
@@ -301,10 +295,8 @@ end
 
     @test sumsy_assets(balance) == -3000
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_def_sumsy_entry(balance),
-                                                    is_gi_eligible(balance),
-                                                    get_dem_free(balance),
-                                                    30) == (sumsy.income.guaranteed_income, -300)
+                                                    30,
+                                                    get_def_sumsy_entry(balance)) == (sumsy.income.guaranteed_income, -300)
 
     adjust_sumsy_balance!(balance, 30)
     @test sumsy_assets(balance, timestamp = 30) == -700
@@ -334,10 +326,8 @@ end
     balance = SingleSuMSyBalance(sumsy, sumsy_interval = 10, transactional = false)
     book_asset!(balance, get_def_sumsy_entry(balance), telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    get_def_sumsy_entry(balance),
-                                                    is_gi_eligible(balance),
-                                                    get_dem_free(balance),
-                                                    10) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
+                                                    10,
+                                                    get_def_sumsy_entry(balance)) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
 
     clear!(balance)
     book_sumsy!(balance, 210000, timestamp = 0)
@@ -528,10 +518,8 @@ end
     @test sumsy_assets(balance, SUMSY_DEP) == 7000
     book_asset!(balance, SUMSY_DEP, telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    SUMSY_DEP,
-                                                    is_gi_eligible(balance, SUMSY_DEP),
-                                                    get_dem_free(balance, SUMSY_DEP),
-                                                    30) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
+                                                    30,
+                                                    SUMSY_DEP) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
     clear!(balance)
 
     adjust_sumsy_balance!(balance, SUMSY_DEP, 0)
@@ -542,10 +530,8 @@ end
 
     book_sumsy!(balance, SUMSY_DEP, 98000)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    SUMSY_DEP,
-                                                    is_gi_eligible(balance, SUMSY_DEP),
-                                                    get_dem_free(balance, SUMSY_DEP),
-                                                    30) == (2000, 7500)
+                                                    30,
+                                                    SUMSY_DEP) == (2000, 7500)
     @test sumsy_assets(balance, SUMSY_DEP, timestamp = 30) == 100000
 end
 
@@ -573,10 +559,8 @@ end
     balance = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10, transactional = false)
     book_asset!(balance, SUMSY_DEP, telo(sumsy), set_to_value = true)
     @test EconoSim.calculate_timerange_adjustments(balance,
-                                                    SUMSY_DEP,
-                                                    is_gi_eligible(balance, SUMSY_DEP),
-                                                    get_dem_free(balance, SUMSY_DEP),
-                                                    10) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
+                                                    10,
+                                                    SUMSY_DEP) == (sumsy.income.guaranteed_income, sumsy.income.guaranteed_income)
 
     clear!(balance)
     book_sumsy!(balance, SUMSY_DEP, 210000, timestamp = 0)

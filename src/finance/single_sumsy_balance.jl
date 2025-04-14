@@ -277,10 +277,8 @@ function calculate_adjustments(sumsy_balance::SingleSuMSyBalance,
     end
 
     return timerange > 0 ? calculate_timerange_adjustments(sumsy_balance,
-                                                            get_def_sumsy_entry(sumsy_balance),
-                                                            is_gi_eligible(sumsy_balance),
-                                                            get_dem_free(sumsy_balance),
-                                                            Int(timerange)) : (CUR_0, CUR_0)
+                                                            Int(timerange),
+                                                            get_def_sumsy_entry(sumsy_balance)) : (CUR_0, CUR_0)
 end
 
 """
@@ -351,8 +349,16 @@ function set_sumsy!(sumsy_balance::SingleSuMSyBalance,
         return sumsy
 end
 
+get_sumsy(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.sumsy
+
 # Utility function so that SingleSuMSyBalance can be used in the same way as MultiSuMSyBalance
-get_sumsy(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.sumsy
+function get_sumsy(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        return get_sumsy(sumsy_balance)
+    else
+        return nothing
+    end
+end
 
 """
     set_sumsy_active!(sumsy_balance::SingleSuMSyBalance, sumsy::SuMSy, flag::Bool)
@@ -364,7 +370,7 @@ function set_sumsy_active!(sumsy_balance::SingleSuMSyBalance, flag::Bool)
 end
 
 function set_sumsy_active!(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry, flag::Bool)
-    if dep_entry == sumsy_balance.sumsy_entry
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
         set_sumsy_active!(sumsy_balance, flag)
     end
 end
@@ -374,27 +380,61 @@ function is_sumsy_active(sumsy_balance::SingleSuMSyBalance)
 end
 
 function is_sumsy_active(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
-    return is_sumsy_active(sumsy_balance) && dep_entry == sumsy_balance.sumsy_entry
+    return  dep_entry == get_def_sumsy_entry(sumsy_balance) && is_sumsy_active(sumsy_balance)
 end
 
 function set_gi_eligible!(sumsy_balance::SingleSuMSyBalance, flag::Bool)
     sumsy_balance.gi_eligible = flag
 end
 
+function set_gi_eligible!(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry, flag::Bool)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        set_gi_eligible!(sumsy_balance, flag)
+    end
+end
+
 function is_gi_eligible(sumsy_balance::SingleSuMSyBalance)
     return sumsy_balance.gi_eligible
+end
+
+function is_gi_eligible(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    return dep_entry == get_def_sumsy_entry(sumsy_balance) && is_gi_eligible(sumsy_balance)
 end
 
 function get_seed(sumsy_balance::SingleSuMSyBalance)
     return sumsy_balance.sumsy.income.seed
 end
 
+function get_seed(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        return get_seed(sumsy_balance)
+    else
+        return CUR_0
+    end
+end
+
 function get_guaranteed_income(sumsy_balance::SingleSuMSyBalance)    
     return sumsy_balance.sumsy.income.guaranteed_income
 end
 
+function get_guaranteed_income(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        return get_guaranteed_income(sumsy_balance)
+    else
+        return CUR_0
+    end
+end
+
 function get_dem_tiers(sumsy_balance::SingleSuMSyBalance)
     return sumsy_balance.sumsy.demurrage.dem_tiers
+end
+
+function get_dem_tiers(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        return get_dem_tiers(sumsy_balance)
+    else
+        return make_tiers([0])
+    end
 end
 
 """
@@ -406,12 +446,34 @@ function get_initial_dem_free(sumsy_balance::SingleSuMSyBalance)
     return sumsy_balance.sumsy.demurrage.dem_free
 end
 
+function get_initial_dem_free(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        return get_initial_dem_free(sumsy_balance)
+    else
+        return CUR_0
+    end
+end
+
 function set_dem_free!(sumsy_balance::SingleSuMSyBalance, amount::Real)
     sumsy_balance.dem_free = Currency(amount)
 end
 
+function set_dem_free!(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry, amount::Real)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        set_dem_free!(sumsy_balance, amount)
+    end
+end
+
 function get_dem_free(sumsy_balance::SingleSuMSyBalance)
     if is_gi_eligible(sumsy_balance)
+        return sumsy_balance.dem_free
+    else
+        return CUR_0
+    end
+end
+
+function get_dem_free(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance) && is_gi_eligible(sumsy_balance)
         return sumsy_balance.dem_free
     else
         return CUR_0
@@ -436,6 +498,16 @@ function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
     book_asset!(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance), amount, timestamp = timestamp, set_to_value = set_to_value)
 end
 
+function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
+                        dep_entry::BalanceEntry,
+                        amount::Real;
+                        timestamp::Int = get_last_transaction(sumsy_balance),
+                        set_to_value::Bool = false)
+    if dep_entry == get_def_sumsy_entry(sumsy_balance)
+        book_sumsy!(sumsy_balance, amount, timestamp = timestamp, set_to_value = set_to_value)
+    end
+end
+
 """
     transfer_sumsy!(source::SingleSuMSyBalance,
                     destination::SingleSuMSyBalance,
@@ -458,6 +530,16 @@ function transfer_sumsy!(source::SingleSuMSyBalance,
     end
 
     transfer_asset!(get_balance(source), get_def_sumsy_entry(source), get_balance(destination), get_def_sumsy_entry(destination), amount, timestamp = timestamp)
+end
+
+function transfer_sumsy!(source::SingleSuMSyBalance,
+                        destination::SingleSuMSyBalance,
+                        dep_entry::BalanceEntry,
+                        amount::Real;
+                        timestamp::Int = max(get_last_transaction(source), get_last_transaction(destination)))
+    if dep_entry == get_def_sumsy_entry(source)
+        transfer_sumsy!(source, destination, amount, timestamp = timestamp)
+    end
 end
 
 """
@@ -488,6 +570,17 @@ function transfer_dem_free!(source::SingleSuMSyBalance,
     set_dem_free!(destination, get_dem_free(destination) + amount)
 
     return amount
+end
+
+
+function transfer_dem_free!(source::SingleSuMSyBalance,
+                            destination::SingleSuMSyBalance,
+                            dep_entry::BalanceEntry,
+                            amount::Real;
+                            timestamp::Int = max(get_last_adjustment(source), get_last_adjustment(destination)))
+    if dep_entry == get_def_sumsy_entry(source)
+        transfer_dem_free!(source, destination, amount, timestamp = timestamp)
+    end
 end
 
 function sumsy_loan!(creditor::SingleSuMSyBalance,
