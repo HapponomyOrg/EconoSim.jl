@@ -495,12 +495,7 @@ function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
         adjust_sumsy_balance!(sumsy_balance, timestamp)
     end
 
-    if book_asset!(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance), amount, timestamp = timestamp, set_to_value = set_to_value)
-        set_last_adjustment!(sumsy_balance, timestamp)
-        return true
-    else    
-        return false
-    end
+    book_asset!(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance), amount, timestamp = timestamp, set_to_value = set_to_value)
 end
 
 function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
