@@ -495,7 +495,12 @@ function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
         adjust_sumsy_balance!(sumsy_balance, timestamp)
     end
 
-    book_asset!(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance), amount, timestamp = timestamp, set_to_value = set_to_value)
+    if book_asset!(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance), amount, timestamp = timestamp, set_to_value = set_to_value)
+        set_last_adjustment!(sumsy_balance, timestamp)
+        return true
+    else    
+        return false
+    end
 end
 
 function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
@@ -505,6 +510,8 @@ function book_sumsy!(sumsy_balance::SingleSuMSyBalance,
                         set_to_value::Bool = false)
     if dep_entry == get_def_sumsy_entry(sumsy_balance)
         book_sumsy!(sumsy_balance, amount, timestamp = timestamp, set_to_value = set_to_value)
+    else
+        return false
     end
 end
 
@@ -539,6 +546,8 @@ function transfer_sumsy!(source::SingleSuMSyBalance,
                         timestamp::Int = max(get_last_transaction(source), get_last_transaction(destination)))
     if dep_entry == get_def_sumsy_entry(source)
         transfer_sumsy!(source, destination, amount, timestamp = timestamp)
+    else
+        return false
     end
 end
 
@@ -580,6 +589,8 @@ function transfer_dem_free!(source::SingleSuMSyBalance,
                             timestamp::Int = max(get_last_adjustment(source), get_last_adjustment(destination)))
     if dep_entry == get_def_sumsy_entry(source)
         transfer_dem_free!(source, destination, amount, timestamp = timestamp)
+    else
+        return 0
     end
 end
 
