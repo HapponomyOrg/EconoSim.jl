@@ -34,7 +34,7 @@ Each cycle the model runs, all model behavior functions are called in order.
 function create_econo_model(actor_type::Type = MonetaryActor{Currency},
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                             actors_first::Bool = false)
-    return ABM(actor_type,
+    return StandardABM(actor_type,
                 properties = create_properties(model_behaviors),
                 agent_step! = actor_step!,
                 model_step! = econo_model_step!,
