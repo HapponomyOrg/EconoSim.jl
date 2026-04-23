@@ -10,9 +10,8 @@ MonetaryActor - agent representing an actor that has a balance sheet.
 After creation, any field can be set on the actor, even those which are not part of the structure.
 This can come in handy when specific state needs to be stored with the actor.
 """
-@agent struct MonetaryActor{C}(Actor) <: BalanceActor{C}
+@agent struct MonetaryActor{C, B}(BalanceActor{B}) <: AbstractBalanceActor
     model::ABM
-    balance::AbstractBalance = Balance()
     income::C
     expenses::C
 end
@@ -26,11 +25,12 @@ function create_monetary_actor!(model::ABM;
                                 expenses::Real = 0,                           
                                 types::Set{Symbol} = Set{Symbol}(),
                                 behaviors::Vector{Function} = Vector{Function}())
-    return MonetaryActor{Currency}(model,
-                                    model = model,
-                                    balance = balance,
-                                    income = income,
-                                    expenses = expenses,
-                                    types = types,
-                                    behaviors = behaviors)
+
+    return MonetaryActor{Currency, typeof(balance)}(model,
+                                                    model = model,
+                                                    balance = balance,
+                                                    income = income,
+                                                    expenses = expenses,
+                                                    types = types,
+                                                    behaviors = behaviors)
 end

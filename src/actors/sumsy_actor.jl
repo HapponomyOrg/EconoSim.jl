@@ -5,9 +5,7 @@ SuMSyActor - Actor that has a SuMSy balance.
     * gi::Currency : Total guaranteed income received.
     * dem::Currency : Total demurrage paid.
 """
-@agent struct SuMSyActor{C, B}(Actor) <: BalanceActor{C}
-    model::ABM
-    balance::B
+@agent struct SuMSyActor{C, B}(MonetaryActor{C, B}) <: AbstractBalanceActor
     gi::C
     dem::C
 end
@@ -37,11 +35,13 @@ function create_sumsy_actor!(model::ABM;
                             behaviors::Vector{Function} = Vector{Function}())                            
     actor =  SuMSyActor{Currency, typeof(balance)}(model,
                                 model = model,
-                                balance = balance,
-                                gi = CUR_0,
-                                dem = CUR_0,
                                 types = types,
-                                behaviors = behaviors)
+                                behaviors = behaviors,
+                                balance = balance,
+                                income = CUR_0,
+                                expenses = CUR_0,
+                                gi = CUR_0,
+                                dem = CUR_0)
     return actor
 end
 

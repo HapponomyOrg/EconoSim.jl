@@ -21,11 +21,11 @@ struct EconomicAssets
 end
 
 """
-    make_economic_actor(actor::BalanceActor) - Add economic assets and parameters to an actor.
+    make_economic_actor(actor::AbstractBalanceActor) - Add economic assets and parameters to an actor.
 # Fields
-* actor::BalanceActor
+* actor::AbstractBalanceActor
 """
-function make_economic_actor!(actor:: BalanceActor;
+function make_economic_actor!(actor:: AbstractBalanceActor;
                                 posessions::Entities = Entities(),
                                 stock::Stock = PhysicalStock(),
                                 producers::Set{Producer} = Set{Producer}(),
@@ -35,24 +35,24 @@ function make_economic_actor!(actor:: BalanceActor;
     return actor
 end
 
-economic_assets(actor::BalanceActor) = actor.economic_assets
-posessions(actor::BalanceActor) = economic_assets(actor).posessions
-stock(actor::BalanceActor) = economic_assets(actor).stock
-producers(actor::BalanceActor) = economic_assets(actor).producers
-prices(actor::BalanceActor) = economic_assets(actor).prices
+economic_assets(actor::AbstractBalanceActor) = actor.economic_assets
+posessions(actor::AbstractBalanceActor) = economic_assets(actor).posessions
+stock(actor::AbstractBalanceActor) = economic_assets(actor).stock
+producers(actor::AbstractBalanceActor) = economic_assets(actor).producers
+prices(actor::AbstractBalanceActor) = economic_assets(actor).prices
 
-push_producer!(actor::BalanceActor, producer::Producer) = (push!(producers(actor), producer); actor)
-delete_producer!(actor::BalanceActor, producer::Producer) = (delete!(producers(actor), producer); actor)
+push_producer!(actor::AbstractBalanceActor, producer::Producer) = (push!(producers(actor), producer); actor)
+delete_producer!(actor::AbstractBalanceActor, producer::Producer) = (delete!(producers(actor), producer); actor)
 
-get_posessions(actor::BalanceActor, bp::Blueprint) = bp in keys(posessions(actor)) ? length(posessions(actor)[bp]) : 0
-get_stock(actor::BalanceActor, bp::Blueprint) = current_stock(stock(actor), bp)
+get_posessions(actor::AbstractBalanceActor, bp::Blueprint) = bp in keys(posessions(actor)) ? length(posessions(actor)[bp]) : 0
+get_stock(actor::AbstractBalanceActor, bp::Blueprint) = current_stock(stock(actor), bp)
 
 """
-    get_production_output(actor::BalanceActor)
+    get_production_output(actor::AbstractBalanceActor)
 
 Get the set of all blueprints produced by the actor.
 """
-function get_production_output(actor::BalanceActor)
+function get_production_output(actor::AbstractBalanceActor)
     production = Set{Blueprint}()
 
     for producer in keys(producers(actor))
@@ -62,9 +62,9 @@ function get_production_output(actor::BalanceActor)
     return production
 end
 
-set_price!(actor::BalanceActor, bp::Blueprint, price::Price) = (prices(actor)[bp] = price; actor)
-get_price(actor::BalanceActor, bp::Blueprint) = haskey(prices(actor), bp) ? prices(actor)[bp] : nothing
-get_price(model, actor::BalanceActor, bp::Blueprint) = isnothing(get_price(actor, bp)) ? get_price(model, bp) : get_price(actor, bp)
+set_price!(actor::AbstractBalanceActor, bp::Blueprint, price::Price) = (prices(actor)[bp] = price; actor)
+get_price(actor::AbstractBalanceActor, bp::Blueprint) = haskey(prices(actor), bp) ? prices(actor)[bp] : nothing
+get_price(model, actor::AbstractBalanceActor, bp::Blueprint) = isnothing(get_price(actor, bp)) ? get_price(model, bp) : get_price(actor, bp)
 
 """
     purchase!(model::ABM, buyer::EconomicAssets, seller::EconomicAssets, bp::Blueprint, units::Integer, pre_sales::Function...)
@@ -77,7 +77,7 @@ Atempt to purchase a number of units from the seller.
 * bp::Blueprint
 * units::Integer
 * pre_sales::Function : functions which need to be executed before a sale takes place. These functions need to have the following signature:
-    pre_sale(model::ABM, buyer::BalanceActor, seller::BalanceActor)
+    pre_sale(model::ABM, buyer::AbstractBalanceActor, seller::AbstractBalanceActor)
 """
 function purchase!(model::ABM, buyer::Actor, seller::Actor, bp::Blueprint, units::Integer, pre_sales::Function...)
     available_units = 0
@@ -102,11 +102,11 @@ end
 # Behavior functions
 
 """
-    produce_stock!(model::ABM, actor::BalanceActor)
+    produce_stock!(model::ABM, actor::AbstractBalanceActor)
 
 Resupply stocks as needed.
 """
-function produce_stock!(model::ABM, actor::BalanceActor)
+function produce_stock!(model::ABM, actor::AbstractBalanceActor)
     stock = stock(actor)
 
     for producer in producers(actor)
