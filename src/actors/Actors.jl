@@ -14,7 +14,7 @@ export has_behavior, add_behavior!, delete_bahavior!, clear_behaviors
 export actor_step!
 
 include("balance_actor.jl")
-export BalanceActor
+export AbstractBalanceActor, BalanceActor
 export get_balance, transfer_asset!, transfer_liability!
 
 include("monetary_actor.jl")
