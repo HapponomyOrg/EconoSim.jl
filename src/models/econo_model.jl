@@ -31,7 +31,7 @@ end
 Create a default model with 0 or more model behavior functions.
 Each cycle the model runs, all model behavior functions are called in order.
 """
-function create_econo_model(actor_type::Type = MonetaryActor{Currency},
+function create_econo_model(actor_type::Type = MonetaryActor{Currency, Balance},
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                             actors_first::Bool = false)
     return StandardABM(actor_type,
