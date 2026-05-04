@@ -87,10 +87,7 @@ function add_sumsy_actor!(model::ABM;
 end
 
 function calculate_adjustments(model::ABM, actor::AbstractActor)
-    balance = get_balance(actor)
-    sumsy = get_sumsy(balance)
-
-    return calculate_adjustments(balance, sumsy, model.sumsy_interval, get_step(model))
+    return calculate_adjustments(get_balance(actor), get_step(model))
 end
 
 """
