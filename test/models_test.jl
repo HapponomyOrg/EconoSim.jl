@@ -22,24 +22,36 @@ end
     actor_1 = add_sumsy_actor!(model, sumsy = sumsy, initialize = false)
     actor_2 = add_sumsy_actor!(model, sumsy = sumsy, initialize = false)
 
+    actor_1.data_gi = CUR_0
+    actor_1.data_demurrage = CUR_0
+    actor_2.data_gi = CUR_0
+    actor_2.data_demurrage = CUR_0
     data = run_econo_model!(model, 1, adata = [:gi, :dem], mdata = [:data_total_gi, :data_total_demurrage], init = true)
     @test data[2][!, :data_total_gi][end] == 0
     @test data[2][!, :data_total_demurrage][end] == 0
-    @test actor_1.gi == actor_2.gi == 0
-    @test actor_1.dem == actor_2.dem == 0
+    @test actor_1.data_gi == actor_2.data_gi == 0
+    @test actor_1.data_demurrage == actor_2.data_demurrage == 0
     @test asset_value(get_balance(actor_1), SUMSY_DEP) == asset_value(get_balance(actor_2), SUMSY_DEP) == 0
 
+    actor_1.data_gi = CUR_0
+    actor_1.data_demurrage = CUR_0
+    actor_2.data_gi = CUR_0
+    actor_2.data_demurrage = CUR_0
     data = run_econo_model!(model, 29, adata = [:gi, :dem], mdata = [:data_total_gi, :data_total_demurrage], init = true)
     @test data[2][!, :data_total_gi][end] == 2000
     @test data[2][!, :data_total_demurrage][end] == 0
-    @test actor_1.gi == actor_2.gi == 1000
-    @test actor_1.dem == actor_2.dem == 0
+    @test actor_1.data_gi == actor_2.data_gi == 1000
+    @test actor_1.data_demurrage == actor_2.data_demurrage == 0
     @test asset_value(get_balance(actor_1), SUMSY_DEP) == asset_value(get_balance(actor_2), SUMSY_DEP) == 1000
 
+    actor_1.data_gi = CUR_0
+    actor_1.data_demurrage = CUR_0
+    actor_2.data_gi = CUR_0
+    actor_2.data_demurrage = CUR_0
     data = run_econo_model!(model, 30, adata = [:gi, :dem], mdata = [:data_total_gi, :data_total_demurrage], init = true)
     @test data[2][!, :data_total_gi][end] == 4000
     @test data[2][!, :data_total_demurrage][end] == 200
-    @test actor_1.gi == actor_2.gi == 1000
-    @test actor_1.dem == actor_2.dem == 100
+    @test actor_1.data_gi == actor_2.data_gi == 1000
+    @test actor_1.data_demurrage == actor_2.data_demurrage == 100
     @test asset_value(get_balance(actor_1), SUMSY_DEP) == asset_value(get_balance(actor_2), SUMSY_DEP) == 1900
 end
