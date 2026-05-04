@@ -11,7 +11,7 @@ include("actor.jl")
 export AbstractActor, Actor, create_actor
 export has_type, add_type!, delete_type!
 export has_behavior, add_behavior!, delete_bahavior!, clear_behaviors
-export actor_step!
+export activate_actor!
 
 include("balance_actor.jl")
 export AbstractBalanceActor, BalanceActor

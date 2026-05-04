@@ -53,7 +53,7 @@ add_behavior!(actor::AbstractActor, behavior::Function) = (push!(actor.behaviors
 delete_behavior!(actor::AbstractActor, behavior::Function) = (delete_element!(actor.behaviors, behavior); actor)
 clear_behaviors(actor::AbstractActor) = (empty!(actor.behaviors); actor)
 
-function actor_step!(actor::AbstractActor, model::ABM)
+function activate_actor!(actor::AbstractActor, model::ABM)
     for behavior in actor.behaviors
         behavior(model, actor)
     end
