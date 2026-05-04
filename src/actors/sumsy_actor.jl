@@ -6,8 +6,8 @@ SuMSyActor - Actor that has a SuMSy balance.
     * dem::Currency : Total demurrage paid.
 """
 @agent struct SuMSyActor{C, B}(MonetaryActor{C, B}) <: AbstractBalanceActor
-    gi::C
-    dem::C
+    data_gi::C
+    data_demurrage::C
 end
 
 function create_sumsy_actor!(model::ABM;
@@ -40,8 +40,8 @@ function create_sumsy_actor!(model::ABM;
                                 balance = balance,
                                 income = CUR_0,
                                 expenses = CUR_0,
-                                gi = CUR_0,
-                                dem = CUR_0)
+                                data_gi = CUR_0,
+                                data_demurrage = CUR_0)
     return actor
 end
 

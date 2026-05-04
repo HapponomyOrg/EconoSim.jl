@@ -26,9 +26,8 @@ end
 function create_sumsy_model(;sumsy_interval::Int,
                             balance_type::Type = SingleSuMSyBalance{Currency},
                             actor_type::Type = SuMSyActor{Currency, balance_type},
-                            model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
-                            actors_first::Bool = false)
-    model = create_econo_model(actor_type, behavior_vector(model_behaviors), actors_first)
+                            model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
+    model = create_econo_model(actor_type, behavior_vector(model_behaviors), false)
 
     add_properties!(model, sumsy_interval)
 
@@ -80,7 +79,6 @@ function add_sumsy_actor!(model::ABM;
                                                     balance = balance,
                                                     types = types,
                                                     behaviors = behaviors))
-    
     add_type!(actor, sumsy_type)
 
     return actor
@@ -101,11 +99,6 @@ end
 function process_model_sumsy!(model::ABM)
     step = get_step(model)
 
-    for actor in allagents(model)
-        actor.gi = CUR_0
-        actor.dem = CUR_0
-    end
-
     if mod(step, model.sumsy_interval) == 0
         sum_gi = CUR_0
         sum_dem = CUR_0
@@ -115,8 +108,8 @@ function process_model_sumsy!(model::ABM)
             sum_gi += gi
             sum_dem += dem
 
-            actor.gi = gi
-            actor.dem = dem
+            actor.data_gi += gi
+            actor.data_demurrage += dem
         end
 
         model.data_total_gi += sum_gi
@@ -128,8 +121,8 @@ function process_actor_sumsy!(actor::AbstractActor)
     model = actor.model
     gi, dem = adjust_sumsy_balance!(get_balance(actor), get_step(model))
     
-    actor.gi = gi
-    actor.dem = dem
+    actor.data_gi += gi
+    actor.data_demurrage += dem
 
     model.data_total_gi += gi
     model.data_total_demurrage += dem
