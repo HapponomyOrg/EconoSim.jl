@@ -11,7 +11,7 @@ After creation, any field can be set on the actor, even those which are not part
 This can come in handy when specific state needs to be stored with the actor.
 """
 @agent struct MonetaryActor{C, B}(BalanceActor{B}) <: AbstractBalanceActor
-    model::ABM
+    model::ABM # TODO Remove model and refactor functions so model is passed where needed.
     income::C
     expenses::C
 end
