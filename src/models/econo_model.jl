@@ -50,7 +50,7 @@ function get_step(model::ABM)
     return abmtime(model) + 1
 end
 
-function add_actor!(model::ABM, actor::AbstractActor)
+function add_actor!(model::ABM, actor::A) where {A <: AbstractActor}
     add_agent!(actor, model)
 
     return actor
