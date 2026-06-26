@@ -117,8 +117,7 @@ function process_model_sumsy!(model::ABM)
     end
 end
 
-function process_actor_sumsy!(actor::AbstractActor)
-    model = actor.model
+function process_actor_sumsy!(model::ABM, actor::AbstractActor)
     gi, dem = adjust_sumsy_balance!(get_balance(actor), get_step(model))
     
     actor.data_gi += gi
