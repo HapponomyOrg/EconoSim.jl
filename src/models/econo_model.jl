@@ -57,8 +57,8 @@ function add_actor!(model::ABM, actor::A) where {A <: AbstractActor}
 end
 
 function activate_actors!(model::ABM, scheduler = Schedulers.fastest)
-    for actor in scheduler(model)
-        activate_actor!(model, actor)
+    for actor_id in scheduler(model)
+        activate_actor!(model, model[actor_id])
     end
 end
 
