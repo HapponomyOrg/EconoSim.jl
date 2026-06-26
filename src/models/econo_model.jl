@@ -56,6 +56,12 @@ function add_actor!(model::ABM, actor::AbstractActor)
     return actor
 end
 
+function activate_actors!(model::ABM, scheduler = Schedulers.fastest)
+    for actor in scheduler(model)
+        activate_actor!(model, actor)
+    end
+end
+
 """
     function add_model_behavior!(model, behavior::Function; position::Integer = length(model.model_behaviors) + 1)
 
