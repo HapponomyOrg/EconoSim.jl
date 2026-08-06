@@ -118,6 +118,7 @@ get_last_adjustment(sumsy_balance::SingleSuMSyBalance) = sumsy_balance.last_adju
 get_sumsy_interval(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.sumsy_interval
 allow_negative_demurrage(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.allow_negative_demurrage
 is_transactional(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.transactional
+set_transactional(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUMSY_DEP, transactional::Bool) = sumsy_balance.transactional = transactional
 
 function book_asset!(sumsy_balance::SingleSuMSyBalance,
                         entry::BalanceEntry,
