@@ -561,11 +561,11 @@ function transfer_dem_free!(source::SingleSuMSyBalance,
                             amount::Real;
                             timestamp::Int = max(get_last_adjustment(source), get_last_adjustment(destination)))
     if is_transactional(source)
-        adjust_sumsy_balance(source, timestamp)
+        adjust_sumsy_balance!(source, timestamp)
     end
 
     if is_transactional(destination)
-        adjust_sumsy_balance(destination, timestamp)
+        adjust_sumsy_balance!(destination, timestamp)
     end
 
     available_dem_free = get_dem_free(source)

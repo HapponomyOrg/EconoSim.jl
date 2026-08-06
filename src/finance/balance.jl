@@ -343,7 +343,7 @@ function transfer!(balance1::Balance,
                 type2::EntryType,
                 entry2::BalanceEntry,
                 amount::Real;
-                timestamp::Int = balance.last_transaction,
+                timestamp::Int = max(balance1.last_transaction, balance2.last_transaction),
                 skip_check::Bool = false)
     go = skip_check ? true : check_transfer(balance1, type1, entry1, balance2, type2, entry2, amount)
 

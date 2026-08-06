@@ -73,7 +73,7 @@ transfer!(sumsy_balance1::SuMSyBalance,
             type2::EntryType,
             entry2::BalanceEntry,
             amount::Real;
-            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                 transfer!(get_balance(sumsy_balance1),
                             type1,
                             entry1,
@@ -88,7 +88,7 @@ transfer!(sumsy_balance1::SuMSyBalance,
                 type2::EntryType,
                 entry::BalanceEntry,
                 amount::Real;
-                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                     transfer!(get_balance(sumsy_balance1),
                                 type1,
                                 get_balance(sumsy_balance2),
@@ -100,7 +100,7 @@ transfer_asset!(sumsy_balance1::SuMSyBalance,
                 sumsy_balance2::SuMSyBalance,
                 entry::BalanceEntry,
                 amount::Real;
-                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                     transfer_asset!(get_balance(sumsy_balance1),
                                     get_balance(sumsy_balance2),
                                     entry,
@@ -111,7 +111,7 @@ transfer_asset!(sumsy_balance1::SuMSyBalance,
                 sumsy_balance2::SuMSyBalance,
                 entry2::BalanceEntry,
                 amount::Real;
-                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                     transfer_asset!(get_balance(sumsy_balance1),
                                     entry1,
                                     get_balance(sumsy_balance2),
@@ -122,7 +122,7 @@ transfer_liability!(sumsy_balance1::SuMSyBalance,
                     sumsy_balance2::SuMSyBalance,
                     entry::BalanceEntry,
                     amount::Real;
-                    timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                    timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                         transfer_liability!(get_balance(sumsy_balance1),
                                             get_balance(sumsy_balance2),
                                             entry,
@@ -133,7 +133,7 @@ transfer_liability!(sumsy_balance1::SuMSyBalance,
                     sumsy_balance2::SuMSyBalance,
                     entry2::BalanceEntry,
                     amount::Real;
-                    timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                    timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                         transfer_liability!(get_balance(sumsy_balance1),
                                             entry1,
                                             get_balance(sumsy_balance2),
@@ -147,7 +147,7 @@ queue_transfer!(sumsy_balance1::SuMSyBalance,
                 type2::EntryType,
                 entry2::BalanceEntry,
                 amount::Real;
-                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                     queue_transfer!(get_balance(sumsy_balance1),
                                     type1,
                                     entry1,
@@ -161,7 +161,7 @@ queue_asset_transfer!(sumsy_balance1::SuMSyBalance,
                         sumsy_balance2::SuMSyBalance,
                         entry2::BalanceEntry,
                         amount::Real;
-                        timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                        timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                             queue_asset_transfer!(get_balance(sumsy_balance1),
                                                     entry1,
                                                     get_balance(sumsy_balance2),
@@ -171,7 +171,7 @@ queue_asset_transfer!(sumsy_balance1::SuMSyBalance,
                         sumsy_balance2::SuMSyBalance,
                         entry::BalanceEntry,
                         amount::Real;
-                        timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                        timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                             queue_asset_transfer!(get_balance(sumsy_balance1),
                                                     get_balance(sumsy_balance2),
                                                     entry,
@@ -182,7 +182,7 @@ queue_liability_transfer!(sumsy_balance1::SuMSyBalance,
                             sumsy_balance2::SuMSyBalance,
                             entry2::BalanceEntry,
                             amount::Real;
-                            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                                 queue_liability_transfer!(get_balance(sumsy_balance1),
                                                             entry1,
                                                             get_balance(sumsy_balance2),
@@ -193,7 +193,7 @@ queue_liability_transfer!(sumsy_balance1::SuMSyBalance,
                             sumsy_balance2::SuMSyBalance,
                             entry::BalanceEntry,
                             amount::Real;
-                            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance_2))) =
+                            timestamp::Int = max(get_last_adjustment(sumsy_balance1), get_last_adjustment(sumsy_balance2))) =
                                 queue_liability_transfer!(get_balance(sumsy_balance1),
                                                             get_balance(sumsy_balance2),
                                                             entry,

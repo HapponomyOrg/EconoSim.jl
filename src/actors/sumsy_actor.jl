@@ -47,11 +47,11 @@ end
 
 get_sumsy(actor::SuMSyActor) = get_sumsy(get_balance(actor))
 
-set_sumsy_active!(actor::SuMSyActor, flag::Bool) = set_sumsy_active!(actor.balance, flag)
-set_sumsy_active!(actor::SuMSyActor, dep_entry::BalanceEntry, flag::Bool) = set_sumsy_active!(actor.balance, dep_entry, flag)
-is_sumsy_active(actor::SuMSyActor) = is_sumsy_active(actor.balance)
-is_sumsy_active(actor::SuMSyActor, dep_entry::BalanceEntry) = is_sumsy_active(actor.balance, dep_entry)
-set_gi_eligible!(actor::SuMSyActor, flag::Bool) = set_gi_eligible!(actor.balance, flag)
-is_gi_eligible(actor::SuMSyActor) = is_gi_eligible(actor.balance)
+set_sumsy_active!(actor::SuMSyActor, flag::Bool) = set_sumsy_active!(get_balance(actor), flag)
+set_sumsy_active!(actor::SuMSyActor, dep_entry::BalanceEntry, flag::Bool) = set_sumsy_active!(get_balance(actor), dep_entry, flag)
+is_sumsy_active(actor::SuMSyActor) = is_sumsy_active(get_balance(actor))
+is_sumsy_active(actor::SuMSyActor, dep_entry::BalanceEntry) = is_sumsy_active(get_balance(actor), dep_entry)
+set_gi_eligible!(actor::SuMSyActor, flag::Bool) = set_gi_eligible!(get_balance(actor), flag)
+is_gi_eligible(actor::SuMSyActor) = is_gi_eligible(get_balance(actor))
 
-sumsy_assets(actor::SuMSyActor, step::Int = get_last_adjustment(actor.balance)) = sumsy_assets(actor.balance, timestamp = step)
+sumsy_assets(actor::SuMSyActor, step::Int = get_last_adjustment(get_balance(actor))) = sumsy_assets(get_balance(actor), timestamp = step)
