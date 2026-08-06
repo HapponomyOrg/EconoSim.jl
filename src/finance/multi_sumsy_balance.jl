@@ -134,7 +134,7 @@ is_sumsy(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = entry in keys(
 get_def_sumsy_entry(sumsy_balance::MultiSuMSyBalance) = sumsy_balance.def_sumsy_entry
 get_sumsy_interval(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.sumsy_interval[entry]
 is_transactional(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.transactional[entry]
-set_transactional(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry, transactional::Bool) = sumsy_balance.transactional[entry] = transactional
+set_transactional(sumsy_balance::MultiSuMSyBalance, transactional::Bool, entry::BalanceEntry) = sumsy_balance.transactional[entry] = transactional
 allow_negative_demurrage(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.allow_negative_demurrage[entry]
 
 function book_asset!(sumsy_balance::MultiSuMSyBalance,
