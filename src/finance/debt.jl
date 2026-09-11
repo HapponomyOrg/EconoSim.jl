@@ -195,7 +195,8 @@ function process_debt!(debt::Debt)
         if book_asset!(debt.debtor, debt.money_entry, -(installment_to_pay + interest_to_pay + debt.rest_interest))
             pop!(debt.installments)
             paid_installment = installment_to_pay
-            paid_interest = interest_to_pay
+            paid_interest = interest_to_pay + debt.rest_interest
+            debt.rest_interest = CUR_0
         else
             money = asset_value(debt.debtor, debt.money_entry)
 
