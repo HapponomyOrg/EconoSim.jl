@@ -30,6 +30,8 @@ mutable struct Debt{C <: FixedDecimal}
     debt_entry::BalanceEntry
     creation::Int64
     interval::Int64
+    compounded_interest::Bool
+    rest_interest::C
     Debt(creditor::Balance,
         debtor::Balance,
         installments::Vector{<:Real},
@@ -38,7 +40,8 @@ mutable struct Debt{C <: FixedDecimal}
         money_entry::BalanceEntry = DEPOSIT,
         debt_entry::BalanceEntry = DEBT,
         creation::Int64 = 0,
-        interval = 0) = new{Currency}(uuid4(),
+        interval = 0,
+        compounded_interest::Bool = false) = new{Currency}(uuid4(),
             creditor,
             debtor,
             installments,
@@ -47,7 +50,9 @@ mutable struct Debt{C <: FixedDecimal}
             money_entry,
             debt_entry,
             creation,
-            interval)
+            interval,
+            compounded_interest,
+            CUR_0)
 end
 
 """
@@ -81,7 +86,8 @@ function Debt(creditor::Balance,
             money_entry::BalanceEntry = DEPOSIT,
             debt_entry::BalanceEntry = DEBT,
             creation::Int64 = 0,
-            interval::Int64 = 0)
+            interval::Int64 = 0,
+            compounded_interest::Bool = false)
     installment = Currency(amount / installments)
     rest = Currency(amount) - installment * installments
     installment_vector = fill(installment, (installments))
@@ -89,7 +95,7 @@ function Debt(creditor::Balance,
     # Make sure the entire debt is paid off.
     installment_vector[1] = installment + rest
 
-    return Debt(creditor, debtor, installment_vector, interest_rate; bank_debt = bank_debt, money_entry = money_entry, debt_entry = debt_entry, creation = creation, interval = interval)
+    return Debt(creditor, debtor, installment_vector, interest_rate; bank_debt = bank_debt, money_entry = money_entry, debt_entry = debt_entry, creation = creation, interval = interval, compounded_interest = compounded_interest)
 end
 
 """
@@ -128,10 +134,13 @@ function borrow(creditor::Balance,
             bank_loan::Bool = true,
             negative_allowed::Bool = true,
             money_entry::BalanceEntry = DEPOSIT,
-            debt_entry::BalanceEntry = DEBT)
+            debt_entry::BalanceEntry = DEBT,
+            compounded_interest::Bool = false)
     if !(bank_loan || negative_allowed)
         amount = min(asset_value(creditor, money_entry))
     end
+
+    amount = Currency(amount)
 
     # adjust creditor balance
     if bank_loan
@@ -155,7 +164,8 @@ function borrow(creditor::Balance,
                 money_entry = money_entry,
                 debt_entry = debt_entry,
                 creation = timestamp,
-                interval = interval)
+                interval = interval,
+                compounded_interest = compounded_interest)
 end
 
 function bank_loan(creditor::Balance,
@@ -166,32 +176,79 @@ function bank_loan(creditor::Balance,
             interval = 1,
             timestamp::Int64 = 0;
             money_entry::BalanceEntry = DEPOSIT,
-            debt_entry::BalanceEntry = DEBT)
-    return borrow(creditor, debtor, amount, interest_rate, installments, interval, timestamp, bank_loan = true, money_entry = money_entry, debt_entry = debt_entry)
+            debt_entry::BalanceEntry = DEBT,
+            compounded_interest::Bool = false)
+    return borrow(creditor, debtor, amount, interest_rate, installments, interval, timestamp, bank_loan = true, money_entry = money_entry, debt_entry = debt_entry, compounded_interest = compounded_interest)
 end
+
+debt_settled(debt::Debt) = isempty(debt.installments)
 
 function process_debt!(debt::Debt)
     if !debt_settled(debt)
-        interest = sum(debt.installments) * debt.interest_rate
-        installment = debt.installments[end]
+        interest_to_pay = Currency(sum(debt.installments) * debt.interest_rate)
+        installment_to_pay = debt.installments[end]
+
+        paid_installment = CUR_0
+        paid_interest = CUR_0
 
         # adjust debtor balance
-        if book_asset!(debt.debtor, debt.money_entry, -(installment + interest))
+        if book_asset!(debt.debtor, debt.money_entry, -(installment_to_pay + interest_to_pay + debt.rest_interest))
             pop!(debt.installments)
-            book_liability!(debt.debtor, debt.debt_entry, -installment)
+            paid_installment = installment_to_pay
+            paid_interest = interest_to_pay
+        else
+            money = asset_value(debt.debtor, debt.money_entry)
 
-            #adjust creditor balance
-            if debt.bank_debt
-                book_liability!(debt.creditor, debt.money_entry, -(installment + interest))
-            else
-                book_asset!(debt.creditor, debt.money_entry, installment + interest)
+            if length(debt.installments) > 1
+                # Downpayment period shuld not be changed, even if full payment of installment is not possible.
+                # Exception when last installment cannot be paid in full.
+                pop!(debt.installments)
+
+                # Calculate which part of the installment cannot be paid.
+                unpaid_debt = min(installment_to_pay, installment_to_pay + interest_to_pay + debt.rest_interest - money)
+                paid_installment = installment_to_pay - unpaid_debt
             end
 
-            book_asset!(debt.creditor, DEBT, -installment)
+            # Handle inability to pay interest
+            if money < interest_to_pay + debt.rest_interest
+                if debt.compounded_interest
+                    # Add nonpaid interest to unpaid_debt.
+                    # When compounded interest is used, rest_interest is always 0.
+                    unpaid_debt += interest_to_pay - money
+                else
+                    # Adjust rest_interest. Inability to pay rest_interest does not increase rest_interest.
+                    debt.rest_interest += interest_to_pay - money
+                end
+
+                paid_interest = money
+            else
+                paid_interest = interest_to_pay + debt.rest_interest
+                debt.rest_interest = CUR_0
+            end
+
+            installment_increase = Currency(unpaid_debt / length(debt.installments))
+            rest_increase = unpaid_debt - installment_increase * length(debt.installments)
+
+            for i in eachindex(debt.installments)
+                debt.installments[i] += installment_increase
+            end
+
+            debt.installments[end] += rest_increase
+
+            book_asset!(debt.debtor, debt.money_entry, -money)
         end
+
+        book_liability!(debt.debtor, debt.debt_entry, -paid_installment)
+
+        #adjust creditor balance
+        if debt.bank_debt
+            book_liability!(debt.creditor, debt.money_entry, -(paid_installment + paid_interest))
+        else
+            book_asset!(debt.creditor, debt.money_entry, paid_installment + paid_interest)
+        end
+
+        book_asset!(debt.creditor, DEBT, -paid_installment)
     end
 
     return debt
 end
-
-debt_settled(debt::Debt) = isempty(debt.installments)
