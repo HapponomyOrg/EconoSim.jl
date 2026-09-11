@@ -181,7 +181,7 @@ function bank_loan(creditor::Balance,
     return borrow(creditor, debtor, amount, interest_rate, installments, interval, timestamp, bank_loan = true, money_entry = money_entry, debt_entry = debt_entry, compounded_interest = compounded_interest)
 end
 
-debt_settled(debt::Debt) = isempty(debt.installments)
+debt_settled(debt::Debt) = isempty(debt.installments) && debt.rest_interest == CUR_0
 
 function process_debt!(debt::Debt)
     if !debt_settled(debt)
@@ -204,11 +204,11 @@ function process_debt!(debt::Debt)
                 # Downpayment period shuld not be changed, even if full payment of installment is not possible.
                 # Exception when last installment cannot be paid in full.
                 pop!(debt.installments)
-
-                # Calculate which part of the installment cannot be paid.
-                unpaid_debt = min(installment_to_pay, installment_to_pay + interest_to_pay + debt.rest_interest - money)
-                paid_installment = installment_to_pay - unpaid_debt
             end
+
+            # Calculate which part of the installment cannot be paid.
+            unpaid_debt = min(installment_to_pay, installment_to_pay + interest_to_pay + debt.rest_interest - money)
+            paid_installment = installment_to_pay - unpaid_debt
 
             # Handle inability to pay interest
             if money < interest_to_pay + debt.rest_interest
