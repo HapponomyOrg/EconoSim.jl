@@ -207,15 +207,15 @@ function process_debt!(debt::Debt)
             end
 
             # Calculate which part of the installment cannot be paid.
-            unpaid_debt = min(installment_to_pay, installment_to_pay + interest_to_pay + debt.rest_interest - money)
-            paid_installment = installment_to_pay - unpaid_debt
+            shortfall = min(installment_to_pay, installment_to_pay + interest_to_pay + debt.rest_interest - money)
+            paid_installment = installment_to_pay - shortfall
 
             # Handle inability to pay interest
             if money < interest_to_pay + debt.rest_interest
                 if debt.compounded_interest
-                    # Add nonpaid interest to unpaid_debt.
+                    # Add nonpaid interest to shortfall.
                     # When compounded interest is used, rest_interest is always 0.
-                    unpaid_debt += interest_to_pay - money
+                    shortfall += interest_to_pay - money
                 else
                     # Adjust rest_interest. Inability to pay rest_interest does not increase rest_interest.
                     debt.rest_interest += interest_to_pay - money
@@ -227,8 +227,8 @@ function process_debt!(debt::Debt)
                 debt.rest_interest = CUR_0
             end
 
-            installment_increase = Currency(unpaid_debt / length(debt.installments))
-            rest_increase = unpaid_debt - installment_increase * length(debt.installments)
+            installment_increase = Currency(shortfall / length(debt.installments))
+            rest_increase = shortfall - installment_increase * length(debt.installments)
 
             for i in eachindex(debt.installments)
                 debt.installments[i] += installment_increase
@@ -251,5 +251,5 @@ function process_debt!(debt::Debt)
         book_asset!(debt.creditor, DEBT, -paid_installment)
     end
 
-    return debt
+    return debt, (paid_installment, paid_interest, shortfall)
 end
