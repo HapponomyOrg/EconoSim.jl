@@ -190,6 +190,7 @@ function process_debt!(debt::Debt)
 
         paid_installment = CUR_0
         paid_interest = CUR_0
+        shortfall = CUR_0
 
         # adjust debtor balance
         if book_asset!(debt.debtor, debt.money_entry, -(installment_to_pay + interest_to_pay + debt.rest_interest))
@@ -199,11 +200,14 @@ function process_debt!(debt::Debt)
             debt.rest_interest = CUR_0
         else
             money = asset_value(debt.debtor, debt.money_entry)
+            spread_shortfall = true
 
             if length(debt.installments) > 1
                 # Downpayment period shuld not be changed, even if full payment of installment is not possible.
                 # Exception when last installment cannot be paid in full.
                 pop!(debt.installments)
+            else
+                spread_shortfall = false
             end
 
             # Calculate which part of the installment cannot be paid.
@@ -227,14 +231,18 @@ function process_debt!(debt::Debt)
                 debt.rest_interest = CUR_0
             end
 
-            installment_increase = Currency(shortfall / length(debt.installments))
-            rest_increase = shortfall - installment_increase * length(debt.installments)
+            if spread_shortfall
+                installment_increase = Currency(shortfall / length(debt.installments))
+                rest_increase = shortfall - installment_increase * length(debt.installments)
 
-            for i in eachindex(debt.installments)
-                debt.installments[i] += installment_increase
+                for i in eachindex(debt.installments)
+                    debt.installments[i] += installment_increase
+                end
+
+                debt.installments[end] += rest_increase
+            else
+                debt.installments[end] = shortfall
             end
-
-            debt.installments[end] += rest_increase
 
             book_asset!(debt.debtor, debt.money_entry, -money)
         end
