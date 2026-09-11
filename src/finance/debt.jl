@@ -173,20 +173,22 @@ end
 function process_debt!(debt::Debt)
     if !debt_settled(debt)
         interest = sum(debt.installments) * debt.interest_rate
-        installment = pop!(debt.installments)
+        installment = debt.installments[end]
 
         # adjust debtor balance
-        book_asset!(debt.debtor, debt.money_entry, -(installment + interest))
-        book_liability!(debt.debtor, debt.debt_entry, -installment)
+        if book_asset!(debt.debtor, debt.money_entry, -(installment + interest))
+            pop!(debt.installments)
+            book_liability!(debt.debtor, debt.debt_entry, -installment)
 
-        #adjust creditor balance
-        if debt.bank_debt
-            book_liability!(debt.creditor, debt.money_entry, -(installment + interest))
-        else
-            book_asset!(debt.creditor, debt.money_entry, installment + interest)
+            #adjust creditor balance
+            if debt.bank_debt
+                book_liability!(debt.creditor, debt.money_entry, -(installment + interest))
+            else
+                book_asset!(debt.creditor, debt.money_entry, installment + interest)
+            end
+
+            book_asset!(debt.creditor, DEBT, -installment)
         end
-
-        book_asset!(debt.creditor, DEBT, -installment)
     end
 
     return debt
