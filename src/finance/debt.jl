@@ -184,13 +184,13 @@ end
 debt_settled(debt::Debt) = isempty(debt.installments) && debt.rest_interest == CUR_0
 
 function process_debt!(debt::Debt)
+    paid_installment = CUR_0
+    paid_interest = CUR_0
+    shortfall = CUR_0
+
     if !debt_settled(debt)
         interest_to_pay = Currency(sum(debt.installments) * debt.interest_rate)
         installment_to_pay = debt.installments[end]
-
-        paid_installment = CUR_0
-        paid_interest = CUR_0
-        shortfall = CUR_0
 
         # adjust debtor balance
         if book_asset!(debt.debtor, debt.money_entry, -(installment_to_pay + interest_to_pay + debt.rest_interest))
