@@ -1,12 +1,12 @@
 # EconoSimCore
 
-Dependency-free economic simulation primitives extracted from `EconoSim.jl`,
-designed to compile to WebAssembly with
-[WasmTarget.jl](https://github.com/GroupTherapyOrg/WasmTarget.jl).
+Dependency-free economic simulation primitives extracted from `EconoSim.jl`:
+integer fixed-point money, concrete balance sheets, the SuMSy money system,
+debt contracts, and a deterministic RNG.
 
-This is Phase 1 of the WASM-ready core plan. The canonical document is
-[`MoneySim.jl/docs/plans/2026-10-21-wasm-ready-core.md`](https://github.com/HapponomyOrg/MoneySim.jl/blob/main/docs/plans/2026-10-21-wasm-ready-core.md)
-in the workspace (it will move with the MoneySim pull request).
+The wasm ABI, build, and TypeScript generation live in
+`sim.wasm/wasm/`; this package contains no wasm tooling or WasmTarget
+dependency.
 
 ## What is here
 
@@ -28,25 +28,6 @@ dependencies. Money is exact integer fixed point; rates are permyriad.
 julia --project=core -e 'using Pkg; Pkg.test()'
 ```
 
-## Wasm compile smoke test
-
-The smoke test compiles a SuMSy account and a balance booking kernel. It uses
-the `sim.wasm/julia` environment because that is where WasmTarget is installed:
-
-```bash
-julia --project=../sim.wasm/julia core/test/wasm_smoke.jl /tmp/econosim_core_smoke.wasm
-```
-
-Then instantiate it with Node (WasmGC, Node 20+):
-
-```bash
-node core/test/wasm_smoke.mjs /tmp/econosim_core_smoke.wasm
-```
-
-The module has no imports. `sumsy_smoke(10)` returns the same scaled value as
-the native Julia test, which is the first native↔wasm parity check for the
-core.
-
 ## Design notes
 
 - `Money` is `Int64` scaled by `10^4` (currency × 10,000); one currency unit is
@@ -66,7 +47,7 @@ core.
 ## Not here yet
 
 - `MoneySimCore` (population, transactions, taxes, government, GDP, metrics).
-- The wasm ABI (`engine_*` / `result_*` / schema generation).
 - The Agents.jl adapter in the root `EconoSim` package.
 
-Those are later phases in the plan.
+The wasm build package is `sim.wasm/wasm/`. See
+`sim.wasm/docs/plans/` in the workspace for the cross-repo plan.
