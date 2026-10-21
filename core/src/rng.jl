@@ -21,11 +21,11 @@ end
 
 @inline function next_u64!(rng::Rng)::UInt64
     x = rng.state
-    x ⊻= x << 13
-    x ⊻= x >> 7
-    x ⊻= x << 17
+    x ⊻= x >> 12
+    x ⊻= x << 25
+    x ⊻= x >> 27
     rng.state = x
-    return x
+    return x * 0x2545f4914f6cdd1d
 end
 
 """

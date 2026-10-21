@@ -20,7 +20,7 @@ using EconoSimCore
 
         @test apply_rate(money(1_000), 100) == money(10)
         @test apply_rate(money(1_000), 2_000) == money(200)
-        @test apply_rate(money(-1_000), 100) == money(-10)
+        @test apply_rate(money(-1_000), 100) == scaled(-99_999)
 
         share, remainder = split_amount(money(10), 3)
         @test share == scaled(33_333)

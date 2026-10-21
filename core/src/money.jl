@@ -6,6 +6,7 @@
 
 const SCALE = Int64(10_000)
 const PERMYRIAD = SCALE
+const HALF = SCALE ÷ 2
 
 """
     Money(value::Int64)
@@ -84,8 +85,15 @@ Apply a permyriad rate to an amount. The intermediate product is split so that
 `q * rate` cannot overflow for realistic simulation amounts.
 """
 @inline function apply_rate(value::Money, permyriad_rate::Int64)
-    q, r = divrem(value.value, PERMYRIAD)
-    return Money(q * permyriad_rate + div(r * permyriad_rate, PERMYRIAD))
+    x = value.value
+    p = max(permyriad_rate, Int64(1))
+    if x <= typemax(Int64) ÷ p
+        return Money((x * permyriad_rate + HALF) ÷ SCALE)
+    end
+    hi = (x ÷ SCALE) * permyriad_rate
+    lo = ((x % SCALE) * permyriad_rate + HALF) ÷ SCALE
+    return Money(hi >= (typemax(Int64) >> 1) - lo ?
+                 (typemax(Int64) >> 1) : (hi + lo))
 end
 
 @inline apply_rate(value::Money, permyriad_rate::Real) =
@@ -103,5 +111,5 @@ function split_amount(total::Money, parts::Int)
     return Money(q), Money(r)
 end
 
-export SCALE, PERMYRIAD, Money, money, scaled, currency, MONEY_ZERO
+export SCALE, PERMYRIAD, HALF, Money, money, scaled, currency, MONEY_ZERO
 export permyriad, rate, apply_rate, split_amount
