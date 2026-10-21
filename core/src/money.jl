@@ -58,6 +58,7 @@ Base.iszero(m::Money) = m.value == 0
 @inline Base.sign(m::Money) = sign(m.value)
 
 Base.Float64(m::Money) = currency(m)
+Base.broadcastable(m::Money) = Ref(m)
 Base.show(io::IO, m::Money) = print(io, "Money(", currency(m), ")")
 
 @inline Base.div(a::Money, b::Integer) = Money(div(a.value, b))
