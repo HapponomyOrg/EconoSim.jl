@@ -25,8 +25,12 @@ function Balance(; def_min_asset::Money = MONEY_ZERO,
                    last_transaction::Integer = 0)
     assets = fill(MONEY_ZERO, N_ENTRIES)
     liabilities = fill(MONEY_ZERO, N_ENTRIES)
-    min_assets = fill(def_min_asset, N_ENTRIES)
-    min_liabilities = fill(def_min_liability, N_ENTRIES)
+    min_assets = Vector{Money}(undef, N_ENTRIES)
+    min_liabilities = Vector{Money}(undef, N_ENTRIES)
+    for i in 1:N_ENTRIES
+        min_assets[i] = def_min_asset
+        min_liabilities[i] = def_min_liability
+    end
     min_liabilities[entry_index(EQUITY)] = typemin(Money)
     return Balance(assets, liabilities, min_assets, min_liabilities, Int64(last_transaction))
 end
@@ -47,12 +51,16 @@ end
 @inline validate(balance::Balance) = assets_value(balance) == liabilities_value(balance)
 
 function def_min_asset!(balance::Balance, amount::Money = MONEY_ZERO)
-    fill!(balance.min_assets, amount)
+    for i in 1:N_ENTRIES
+        balance.min_assets[i] = amount
+    end
     return balance
 end
 
 function def_min_liability!(balance::Balance, amount::Money = MONEY_ZERO)
-    fill!(balance.min_liabilities, amount)
+    for i in 1:N_ENTRIES
+        balance.min_liabilities[i] = amount
+    end
     balance.min_liabilities[entry_index(EQUITY)] = typemin(Money)
     return balance
 end

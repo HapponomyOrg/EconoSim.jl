@@ -4,18 +4,17 @@
 # The set is fixed at compile time, so a balance sheet can store one value per
 # entry in a plain Vector.
 
-@enum Entry::Int32 begin
-    EQUITY = 1
-    DEPOSIT = 2
-    DEBT = 3
-    SUMSY_DEPOSIT = 4
-    SUMSY_DEBT = 5
-end
+const Entry = Int32
+const Side = Int32
 
-@enum Side::Int32 begin
-    ASSET = 1
-    LIABILITY = 2
-end
+const EQUITY = Int32(1)
+const DEPOSIT = Int32(2)
+const DEBT = Int32(3)
+const SUMSY_DEPOSIT = Int32(4)
+const SUMSY_DEBT = Int32(5)
+
+const ASSET = Int32(1)
+const LIABILITY = Int32(2)
 
 const N_ENTRIES = 5
 
