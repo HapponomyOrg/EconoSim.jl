@@ -50,4 +50,15 @@ end
 
 @inline rand_bool(rng::Rng, probability::Float64 = 0.5) = rand_unit(rng) < probability
 
-export Rng, next_u64!, rand_index, rand_unit, rand_bool
+"""
+    rand_between(rng, low, high) -> Integer
+
+Uniform integer in the inclusive range `low:high`.
+"""
+@inline function rand_between(rng::Rng, low::Integer, high::Integer)
+    high <= low && return Int64(low)
+    span = UInt64(high - low) + UInt64(1)
+    return Int64(low) + Int64(rem(next_u64!(rng), span))
+end
+
+export Rng, next_u64!, rand_index, rand_unit, rand_bool, rand_between

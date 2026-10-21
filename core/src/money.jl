@@ -66,6 +66,33 @@ Base.show(io::IO, m::Money) = print(io, "Money(", currency(m), ")")
 @inline Base.rem(a::Money, b::Integer) = Money(rem(a.value, b))
 @inline Base.divrem(a::Money, b::Integer) = (Money(div(a.value, b)), Money(rem(a.value, b)))
 
+"""
+    saturating_add(a::Money, b::Money) -> Money
+
+Add two amounts, clamping at `typemax(Int64)` / `typemin(Int64)` instead of
+wrapping. The loan circuit uses this because paper-1 growth runs can exceed the
+scaled Int64 range; clamping keeps the series finite and signed.
+"""
+@inline function saturating_add(a::Money, b::Money)
+    s = a.value + b.value
+    if b.value > 0 && s < a.value
+        return Money(typemax(Int64))
+    elseif b.value < 0 && s > a.value
+        return Money(typemin(Int64))
+    end
+    return Money(s)
+end
+
+@inline function saturating_add(a::Int64, b::Int64)
+    s = a + b
+    if b > 0 && s < a
+        return typemax(Int64)
+    elseif b < 0 && s > a
+        return typemin(Int64)
+    end
+    return s
+end
+
 """    permyriad(x::Real) -> Int64
 
 Convert a rate to permyriad (rate × 10,000), rounded to an integer.
@@ -112,4 +139,4 @@ function split_amount(total::Money, parts::Int)
 end
 
 export SCALE, PERMYRIAD, HALF, Money, money, scaled, currency, MONEY_ZERO
-export permyriad, rate, apply_rate, split_amount
+export permyriad, rate, apply_rate, split_amount, saturating_add
