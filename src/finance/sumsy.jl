@@ -218,7 +218,6 @@ The lower bound of the first tuple is always set to 0.
 * demurrage_comment: The transaction comment for demurrage bookings.
 * net_income_comment: The transaction comment for net income bookings. These transactions combine demurrage and guaranteed income in one transaction.
 * dep_entry: The balance entry used for depositing GI.
-* transactional: Whether or not the SuMSy implementation is transaction based. Transaction based SuMSy implementations apply partial guaranteed income and demurrage before each transaction.
 """
 struct SuMSyIncome{C <: FixedDecimal}
     seed::C
@@ -478,4 +477,170 @@ function calculate_sumsy_deposit(sumsy::SuMSy,
     end
 
     return amount
+end
+"""
+    SuMSyAccrual
+
+Bookkeeping that keeps the guaranteed income exact over a SuMSy period when settlements are more frequent than the period.
+
+Guaranteed income and demurrage are defined per period (`sumsy_interval`). They are settled every `granularity` steps,
+each settlement receiving `granularity / sumsy_interval` of the period's guaranteed income and demurrage rates.
+The guaranteed income is rounded on its running total, so a full period always pays exactly the guaranteed income.
+
+* gi_steps: the number of steps, since the start of the running period, for which guaranteed income was settled.
+* gi_booked: the guaranteed income booked for those steps.
+"""
+mutable struct SuMSyAccrual{C <: FixedDecimal}
+    gi_steps::Int
+    gi_booked::C
+end
+
+SuMSyAccrual() = SuMSyAccrual{Currency}(0, CUR_0)
+
+function check_granularity(granularity::Int)
+    granularity >= 1 || throw(ArgumentError("granularity must be at least 1, got $granularity"))
+
+    return granularity
+end
+
+Base.copy(a::SuMSyAccrual{C}) where {C} = SuMSyAccrual{C}(a.gi_steps, a.gi_booked)
+
+"""
+Demurrage tiers in a concrete form for fast settlement: (span, unbounded, rate).
+"""
+fast_tiers(dem_tiers::DemTiers, ::Type{C}) where {C} = [(is_right_unbounded(t[1]) ? zero(C) : C(span(t[1])),
+                                                        is_right_unbounded(t[1]),
+                                                        Float64(value(t[2]))) for t in dem_tiers]
+
+"""
+Same calculation as `calculate_time_range_demurrage`, with concrete types.
+"""
+function fast_time_range_demurrage(balance::C,
+                                    tiers::Vector{Tuple{C, Bool, Float64}},
+                                    dem_free::C,
+                                    interval::Int,
+                                    timerange::Int,
+                                    allow_negative_demurrage::Bool) where {C <: FixedDecimal}
+    if balance > 0 || allow_negative_demurrage
+        b_sign = sign(balance)
+
+        if balance > 0
+            balance -= dem_free
+        end
+
+        balance *= b_sign
+        demurrage = 0.0
+
+        for (tier_span, unbounded, rate) in tiers
+            if balance <= 0
+                break
+            elseif unbounded
+                amount = balance
+                balance = zero(C)
+            else
+                amount = min(tier_span, balance)
+                balance -= amount
+            end
+
+            demurrage += amount * rate
+        end
+
+        demurrage *= timerange / interval * b_sign
+
+        return C(demurrage)
+    else
+        return zero(C)
+    end
+end
+
+"""
+Settle `granules` granules. Function barrier: all arguments have concrete types.
+
+# Returns
+(guaranteed_income, demurrage, gi_steps, gi_booked)
+"""
+function settle_granules(base::C,
+                        granules::Int,
+                        granularity::Int,
+                        interval::Int,
+                        income::C,
+                        gi_eligible::Bool,
+                        tiers::Vector{Tuple{C, Bool, Float64}},
+                        dem_free::C,
+                        negative_demurrage::Bool,
+                        gi_steps::Int,
+                        gi_booked::C) where {C <: FixedDecimal}
+    guaranteed_income = zero(C)
+    demurrage = zero(C)
+
+    for _ in 1:granules
+        d = fast_time_range_demurrage(base, tiers, dem_free, interval, granularity, negative_demurrage)
+        g = zero(C)
+
+        if gi_eligible
+            gi_steps += granularity
+            due = C(income * gi_steps / interval)
+            g = due - gi_booked
+            gi_booked = due
+
+            if gi_steps % interval == 0
+                # Full periods paid exactly: restart the running total.
+                gi_steps = 0
+                gi_booked = zero(C)
+            end
+        end
+
+        base += g - d
+        guaranteed_income += g
+        demurrage += d
+    end
+
+    return guaranteed_income, demurrage, gi_steps, gi_booked
+end
+
+"""
+    accrue_sumsy(sumsy_balance::SuMSyBalance, dep_entry::BalanceEntry, timestamp::Int)
+
+Calculate the guaranteed income and demurrage that must be booked to settle all complete granules up to `timestamp`.
+Nothing is changed.
+
+Every granule is settled on the balance at the end of the granule. Steps after the last complete granule carry over
+to the next settlement. Because SuMSy bookings and transfers settle the elapsed granules first, the result does not
+depend on how often the balance is adjusted.
+
+# Returns
+(guaranteed_income, demurrage, accrual, last_adjustment): the amounts to book, the accrual state and the
+last adjustment timestamp after booking them.
+"""
+function accrue_sumsy(sumsy_balance::SuMSyBalance, dep_entry::BalanceEntry, timestamp::Int)
+    accrual = get_accrual(sumsy_balance, dep_entry)
+    last_adjustment = get_last_adjustment(sumsy_balance, dep_entry)
+
+    if !is_sumsy_active(sumsy_balance, dep_entry)
+        # Inactive balances do not accrue. Restart the granules when the balance is adjusted.
+        return CUR_0, CUR_0, SuMSyAccrual(), max(timestamp, last_adjustment)
+    end
+
+    granularity = get_granularity(sumsy_balance, dep_entry)
+    granules = max(0, (timestamp - last_adjustment) ÷ granularity)
+
+    if granules == 0
+        return CUR_0, CUR_0, copy(accrual), last_adjustment
+    end
+
+    base = asset_value(get_balance(sumsy_balance), dep_entry)
+    C = typeof(base)
+    guaranteed_income, demurrage, gi_steps, gi_booked = settle_granules(base,
+                                                                        granules,
+                                                                        granularity,
+                                                                        get_sumsy_interval(sumsy_balance, dep_entry),
+                                                                        C(get_guaranteed_income(sumsy_balance, dep_entry)),
+                                                                        is_gi_eligible(sumsy_balance, dep_entry),
+                                                                        fast_tiers(get_dem_tiers(sumsy_balance, dep_entry), C),
+                                                                        C(get_dem_free(sumsy_balance, dep_entry)),
+                                                                        allow_negative_demurrage(sumsy_balance, dep_entry),
+                                                                        accrual.gi_steps,
+                                                                        C(accrual.gi_booked))
+
+    return guaranteed_income, demurrage, SuMSyAccrual{C}(gi_steps, gi_booked), last_adjustment + granules * granularity
 end

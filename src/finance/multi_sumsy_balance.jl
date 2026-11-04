@@ -9,9 +9,10 @@ mutable struct MultiSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
     last_adjustment::Dict{BalanceEntry, Integer}
     dem_free::Dict{BalanceEntry, C}
     sumsy_interval::Dict{BalanceEntry, Int}
-    transactional::Dict{BalanceEntry, Bool}
+    granularity::Dict{BalanceEntry, Int}
     allow_negative_sumsy::Dict{BalanceEntry, Bool}
     allow_negative_demurrage::Dict{BalanceEntry, Bool}
+    accrual::Dict{BalanceEntry, SuMSyAccrual{C}}
     MultiSuMSyBalance(balance::Balance = Balance(),
                         def_sumsy_entry::BalanceEntry = SUMSY_DEP) = new{Currency}(balance,
                                                                                     def_sumsy_entry,
@@ -21,9 +22,10 @@ mutable struct MultiSuMSyBalance{C <: FixedDecimal} <: SuMSyBalance{C}
                                                                                     Dict{BalanceEntry, Integer}(),
                                                                                     Dict{BalanceEntry, Currency}(),
                                                                                     Dict{BalanceEntry, Int}(),
+                                                                                    Dict{BalanceEntry, Int}(),
                                                                                     Dict{BalanceEntry, Bool}(),
                                                                                     Dict{BalanceEntry, Bool}(),
-                                                                                    Dict{BalanceEntry, Bool}())
+                                                                                    Dict{BalanceEntry, SuMSyAccrual{Currency}}())
 end
 
 struct SuMSyConfig
@@ -33,7 +35,7 @@ struct SuMSyConfig
     activate::Bool
     initialize::Bool
     sumsy_interval::Int
-    transactional::Bool
+    granularity::Int
     allow_negative_sumsy::Bool
     allow_negative_demurrage::Bool
     SuMSyConfig(sumsy::SuMSy,
@@ -42,7 +44,7 @@ struct SuMSyConfig
                 activate::Bool = true,
                 initialize::Bool = true,
                 sumsy_interval::Int = 30,
-                transactional::Bool = false,
+                granularity::Int = sumsy_interval,
                 allow_negative_sumsy::Bool = false,
                 allow_negative_demurrage::Bool = false) = new(sumsy,
                                                     dep_entry,
@@ -50,7 +52,7 @@ struct SuMSyConfig
                                                     activate,
                                                     initialize,
                                                     sumsy_interval,
-                                                    transactional,
+                                                    check_granularity(granularity),
                                                     allow_negative_sumsy,
                                                     allow_negative_demurrage)
 end
@@ -62,7 +64,7 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                             gi_eligible::Bool = true,
                             initialize = true,
                             sumsy_interval::Int = 30,
-                            transactional::Bool = false,
+                            granularity::Int = sumsy_interval,
                             allow_negative_assets::Bool = true,
                             allow_negative_liabilities::Bool = true,
                             allow_negative_sumsy::Bool = false,
@@ -79,7 +81,7 @@ function MultiSuMSyBalance(sumsy::SuMSy,
                 activate = activate,
                 reset_balance = initialize,
                 sumsy_interval = sumsy_interval,
-                transactional = transactional,
+                granularity = granularity,
                 allow_negative_sumsy = allow_negative_sumsy,
                 allow_negative_demurrage = allow_negative_demurrage)
     
@@ -133,8 +135,17 @@ is_sumsy(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = entry in keys(
 
 get_def_sumsy_entry(sumsy_balance::MultiSuMSyBalance) = sumsy_balance.def_sumsy_entry
 get_sumsy_interval(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.sumsy_interval[entry]
-is_transactional(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = sumsy_balance.transactional[entry]
-set_transactional(sumsy_balance::MultiSuMSyBalance, transactional::Bool, entry::BalanceEntry) = sumsy_balance.transactional[entry] = transactional
+get_granularity(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry) = get(sumsy_balance.granularity, entry) do
+    get_sumsy_interval(sumsy_balance, entry)
+end
+
+"""
+    set_granularity!(sumsy_balance::MultiSuMSyBalance, granularity::Int, entry::BalanceEntry)
+
+Change the number of steps between settlements. Settle the entry first (`adjust_sumsy_balance!`), otherwise the
+granules that have elapsed are settled with the new granularity.
+"""
+set_granularity!(sumsy_balance::MultiSuMSyBalance, granularity::Int, entry::BalanceEntry) = (sumsy_balance.granularity[entry] = check_granularity(granularity))
 allow_negative_demurrage(sumsy_balance::MultiSuMSyBalance, entry::BalanceEntry = SUMSY_DEP) = sumsy_balance.allow_negative_demurrage[entry]
 
 function book_asset!(sumsy_balance::MultiSuMSyBalance,
@@ -243,10 +254,11 @@ end
                         timestamp::Int)
 """
 function adjust_sumsy_balance!(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry, timestamp::Int)
-    guaranteed_income, demurrage = calculate_adjustments(sumsy_balance, dep_entry, timestamp)
+    guaranteed_income, demurrage, accrual, last_adjustment = accrue_sumsy(sumsy_balance, dep_entry, timestamp)
 
     book_asset!(get_balance(sumsy_balance), dep_entry, guaranteed_income - demurrage, timestamp = timestamp)
-    set_last_adjustment!(sumsy_balance, dep_entry, timestamp)
+    sumsy_balance.accrual[dep_entry] = accrual
+    sumsy_balance.last_adjustment[dep_entry] = last_adjustment
 
     return guaranteed_income, demurrage
 end
@@ -254,20 +266,13 @@ end
 function calculate_adjustments(sumsy_balance::MultiSuMSyBalance,
                                 dep_entry::BalanceEntry,
                                 timestamp::Int)
-    sumsy_interval = get_sumsy_interval(sumsy_balance, dep_entry)
-    timerange = 0
-
-    if is_sumsy_active(sumsy_balance, dep_entry)
-        if is_transactional(sumsy_balance, dep_entry)
-            timerange = max(0, timestamp - get_last_adjustment(sumsy_balance, dep_entry))
-        else         
-            timerange = max(0, trunc((timestamp - get_last_adjustment(sumsy_balance, dep_entry)) / sumsy_interval) * sumsy_interval)
-        end
+    if !haskey(sumsy_balance.sumsy, dep_entry)
+        return CUR_0, CUR_0
     end
 
-    return timerange > 0 ? calculate_timerange_adjustments(sumsy_balance,
-                                                            Int(timerange),
-                                                            dep_entry) : (CUR_0, CUR_0)
+    guaranteed_income, demurrage, _, _ = accrue_sumsy(sumsy_balance, dep_entry, timestamp)
+
+    return guaranteed_income, demurrage
 end
 
 function reset_sumsy_balance!(sumsy_balance::MultiSuMSyBalance,
@@ -293,9 +298,8 @@ function reset_sumsy_balance!(sumsy_balance::MultiSuMSyBalance,
         end
     end
 
-    if is_transactional(sumsy_balance, dep_entry)
-        set_last_adjustment!(sumsy_balance, dep_entry, timestamp)
-    end
+    # Start settling from the reset timestamp.
+    set_last_adjustment!(sumsy_balance, dep_entry, timestamp)
 end
 
 function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
@@ -307,14 +311,14 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
                     reset_dem_free::Bool = true,
                     timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry),
                     sumsy_interval::Int = get_sumsy_interval(sumsy_balance, dep_entry),
-                    transactional::Bool = is_transactional(sumsy_balance, dep_entry),
+                    granularity::Int = haskey(sumsy_balance.granularity, dep_entry) ? sumsy_balance.granularity[dep_entry] : sumsy_interval,
                     allow_negative_sumsy::Bool = false,
                     allow_negative_demurrage::Bool = false)
     sumsy_balance.sumsy[dep_entry] = sumsy
     sumsy_balance.gi_eligible[dep_entry] = gi_eligible
     sumsy_balance.sumsy_active[dep_entry] = activate
     sumsy_balance.sumsy_interval[dep_entry] = sumsy_interval
-    sumsy_balance.transactional[dep_entry] = transactional
+    sumsy_balance.granularity[dep_entry] = check_granularity(granularity)
     sumsy_balance.allow_negative_demurrage[dep_entry] = allow_negative_demurrage
 
     if allow_negative_sumsy
@@ -325,7 +329,7 @@ function set_sumsy!(sumsy_balance::MultiSuMSyBalance,
 
     # Do not change last adjustment if it already exists
     if !haskey(sumsy_balance.last_adjustment, dep_entry)
-        sumsy_balance.last_adjustment[dep_entry] = timestamp
+        set_last_adjustment!(sumsy_balance, dep_entry, timestamp)
     end
     
     reset_sumsy_balance!(sumsy_balance,
@@ -338,12 +342,12 @@ end
 function set_sumsy!(sumsy_balance::MultiSuMSyBalance, sumsy_config::SuMSyConfig)
     set_sumsy!(sumsy_balance,
                 sumsy_config.sumsy,
-                umsy_config.dep_entry,
+                sumsy_config.dep_entry,
                 gi_eligible = sumsy_config.gi_eligible,
                 activate = sumsy_config.activate,
                 reset_balance = sumsy_config.initialize,
                 sumsy_interval = sumsy_config.sumsy_interval,
-                transactional = sumsy_config.transactional,
+                granularity = sumsy_config.granularity,
                 allow_negative_sumsy = sumsy_config.allow_negative_sumsy,
                 allow_negative_demurrage = sumsy_config.allow_negative_demurrage)
 end
@@ -469,10 +473,20 @@ function get_dem_free(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
     end
 end
 
+"""
+    set_last_adjustment!(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry, timestamp::Int)
+
+Set the last adjustment timestamp of a SuMSy entry. A new SuMSy period starts at that timestamp.
+"""
 function set_last_adjustment!(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry, timestamp::Int)
+    sumsy_balance.accrual[dep_entry] = SuMSyAccrual()
     sumsy_balance.last_adjustment[dep_entry] = timestamp
 
     return timestamp
+end
+
+get_accrual(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry) = get(sumsy_balance.accrual, dep_entry) do
+    SuMSyAccrual()
 end
 
 function get_last_adjustment(sumsy_balance::MultiSuMSyBalance, dep_entry::BalanceEntry)
@@ -487,15 +501,14 @@ end
     book_sumsy!(balance::Balance, sumsy::SuMSy, amount::Real, timestamp = 0)
 
 Books an amount on the asset side of the balance, under the SuMSy deposit entry.
-If SuMSy is transactional and active for the balance, partial guaranteed income and demurrage are calculated and applied first,
-and the timestamp is stored on the balance.
+The granules that have elapsed up to the timestamp are settled first, so the booking only affects later granules.
 """
 function book_sumsy!(sumsy_balance::MultiSuMSyBalance,
                         dep_entry::BalanceEntry,
                         amount::Real;
                         timestamp::Int = get_last_adjustment(sumsy_balance, dep_entry),
                         set_to_value::Bool = false)
-    if !set_to_value && is_transactional(sumsy_balance, dep_entry)
+    if !set_to_value
         adjust_sumsy_balance!(sumsy_balance, dep_entry, timestamp)
     end
 
@@ -519,13 +532,9 @@ function transfer_sumsy!(source::MultiSuMSyBalance,
                             dep_entry::BalanceEntry,
                             amount::Real;
                             timestamp::Int = max(get_last_adjustment(source, dep_entry), get_last_adjustment(destination, dep_entry)))
-    if is_transactional(source, dep_entry)
-        adjust_sumsy_balance!(source, dep_entry, timestamp)
-    end
-
-    if is_transactional(destination, dep_entry)
-        adjust_sumsy_balance!(destination, dep_entry, timestamp)
-    end
+    # Settle the elapsed granules first.
+    adjust_sumsy_balance!(source, dep_entry, timestamp)
+    adjust_sumsy_balance!(destination, dep_entry, timestamp)
 
     transfer_asset!(get_balance(source),
                     get_balance(destination),
@@ -538,7 +547,7 @@ end
     transfer_dem_free!(source::Balance, destination::Balance, amount::Real)
 
 Transfer a part or all of the demurrage free buffer from one balance to another. No more than the available demurrage free buffer can be transferred.
-If the SuMSy implementation is transaction based, partial guaranteed income and demurrage will be calculated and applied first.
+The granules that have elapsed up to the timestamp are settled first.
 * source::Balance - the balance from which the demurrage free amount is taken.
 * destination::Balance - the balance to which the demurrage free buffer is transferred.
 * amount::Real - the amount to be transferred.
@@ -549,13 +558,9 @@ function transfer_dem_free!(source::MultiSuMSyBalance,
                             dep_entry::BalanceEntry,
                             amount::Real;
                             timestamp::Int = max(get_last_adjustment(source, dep_entry), get_last_adjustment(destination, dep_entry)))
-    if is_transactional(source, dep_entry)
-        adjust_balance(source, dep_entry, timestamp)
-    end
-
-    if is_transactional(destination, dep_entry)
-        adjust_balance(destination, dep_entry, timestamp)
-    end
+    # Settle the elapsed granules first.
+    adjust_sumsy_balance!(source, dep_entry, timestamp)
+    adjust_sumsy_balance!(destination, dep_entry, timestamp)
 
     available_dem_free = get_dem_free(source, dep_entry)
     amount = min(amount, available_dem_free)

@@ -4,32 +4,37 @@ SINGLE_SUMSY = :SINGLE_SUMSY
 MULTI_SUMSY = :MULTI_SUMSY
 
 function add_properties!(model::ABM,
-                        sumsy_interval::Int)
+                        sumsy_interval::Int,
+                        granularity::Int = sumsy_interval)
     properties = abmproperties(model)
     properties[:sumsy_interval] = sumsy_interval
+    properties[:sumsy_granularity] = check_granularity(granularity)
     properties[:data_total_gi] = CUR_0
     properties[:data_total_demurrage] = CUR_0
 end
 
 """
     create_sumsy_model(;sumsy_interval::Int,
+                        granularity::Int = sumsy_interval,
                         balance_type::Type = SingleSuMSyBalance{Currency},
                         actor_type::Type = SuMSyActor{Currency, balance_type},
                         model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing,
                         actors_first::Bool = false)
-    * sumsy_interval::Int - Number of steps between SuMSy adjustments
+    * sumsy_interval::Int - The SuMSy period. Guaranteed income and demurrage rates are expressed per period.
+    * granularity::Int - Number of steps between SuMSy settlements. Default for actors added with add_sumsy_actor!.
     * balance_type::Type - Type of SuMSy balance
     * actor_type::Type - Type of SuMSy actor
     * model_behaviors::Union{Nothing, Function, Vector{Function}} - Vector of model behaviors
     * actors_first::Bool - Whether to process actor behaviors before model behaviors.
 """
 function create_sumsy_model(;sumsy_interval::Int,
+                            granularity::Int = sumsy_interval,
                             balance_type::Type = SingleSuMSyBalance{Currency},
                             actor_type::Type = SuMSyActor{Currency, balance_type},
                             model_behaviors::Union{Nothing, Function, Vector{Function}} = nothing)
     model = create_econo_model(actor_type, behavior_vector(model_behaviors), false)
 
-    add_properties!(model, sumsy_interval)
+    add_properties!(model, sumsy_interval, granularity)
 
     return model
 end
@@ -41,6 +46,7 @@ function add_sumsy_actor!(model::ABM;
                             gi_eligible::Bool = true,
                             initialize::Bool = true,
                             sumsy_interval::Int = model.sumsy_interval,
+                            granularity::Int = model.sumsy_granularity,
                             allow_negative_assets::Bool = true,
                             allow_negative_liabilities::Bool = true,
                             allow_negative_sumsy::Bool = false,
@@ -50,7 +56,8 @@ function add_sumsy_actor!(model::ABM;
 
     if sumsy_type == SINGLE_SUMSY
         balance = SingleSuMSyBalance(sumsy,
-                                    sumsy_interval = sumsy_interval,                                                                     
+                                    sumsy_interval = sumsy_interval,
+                                    granularity = granularity,                                                                     
                                     activate = activate,
                                     gi_eligible = gi_eligible,
                                     initialize = initialize,
@@ -60,8 +67,9 @@ function add_sumsy_actor!(model::ABM;
                                     allow_negative_demurrage = allow_negative_demurrage)
     else
         balance = MultiSuMSyBalance(sumsy,
-                                    sumsy_interval = sumsy_interval, 
-                                    SUMSY_DEP,                                                                             
+                                    SUMSY_DEP,
+                                    sumsy_interval = sumsy_interval,
+                                    granularity = granularity,                                                                             
                                     activate = activate,
                                     gi_eligible = gi_eligible,
                                     initialize = initialize,
@@ -76,6 +84,7 @@ function add_sumsy_actor!(model::ABM;
     actor = add_actor!(model, create_sumsy_actor!(model,
                                                     sumsy = sumsy,
                                                     sumsy_interval = sumsy_interval,
+                                                    granularity = granularity,
                                                     balance = balance,
                                                     types = types,
                                                     behaviors = behaviors))
@@ -92,14 +101,14 @@ end
     process_model_sumsy!(model::ABM)
     * model - SuMSy model
 
-    Adjusts the SuMSy balance of all actors in the model.
+    Settles the SuMSy balance of all actors in the model every `sumsy_granularity` steps.
     Registers guaranteed income and demurrage for the current step in actor.gi and actor.dem.
     Registers accumulative guaranteed income and demurrage for the model in model.data_total_gi and model.data_total_demurrage.
 """
 function process_model_sumsy!(model::ABM)
     step = get_step(model)
 
-    if mod(step, model.sumsy_interval) == 0
+    if mod(step, model.sumsy_granularity) == 0
         sum_gi = CUR_0
         sum_dem = CUR_0
 
