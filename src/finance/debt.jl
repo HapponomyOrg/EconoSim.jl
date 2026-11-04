@@ -136,17 +136,19 @@ function borrow(creditor::Balance,
             money_entry::BalanceEntry = DEPOSIT,
             debt_entry::BalanceEntry = DEBT,
             compounded_interest::Bool = false)
-    if !(bank_loan || negative_allowed)
-        amount = min(asset_value(creditor, money_entry))
-    end
-
     amount = Currency(amount)
+
+    if !(bank_loan || negative_allowed)
+        # Only lend out what the creditor actually has available.
+        amount = min(amount, available_asset(creditor, money_entry))
+    end
 
     # adjust creditor balance
     if bank_loan
         book_liability!(creditor, money_entry, amount)
     else
-        book_asset!(creditor, money_entry, -amount)
+        # When negative_allowed is true the creditor's money entry may go below its minimum.
+        book_asset!(creditor, money_entry, -amount, skip_check = negative_allowed)
     end
 
     book_asset!(creditor, debt_entry, amount)
@@ -181,6 +183,24 @@ function bank_loan(creditor::Balance,
     return borrow(creditor, debtor, amount, interest_rate, installments, interval, timestamp, bank_loan = true, money_entry = money_entry, debt_entry = debt_entry, compounded_interest = compounded_interest)
 end
 
+"""
+    available_asset(balance::Balance, entry::BalanceEntry)
+
+The amount that can be deducted from an asset entry without breaking its minimum. Never negative.
+An entry without a practical minimum (see `typemin_asset!`) returns `typemax(Currency)`.
+"""
+function available_asset(balance::Balance, entry::BalanceEntry)
+    value = asset_value(balance, entry)
+    minimum = min_asset(balance, entry)
+
+    # Guard against overflow when the minimum is (close to) typemin.
+    if minimum < CUR_0 && value > typemax(Currency) + minimum
+        return typemax(Currency)
+    end
+
+    return max(CUR_0, Currency(value - minimum))
+end
+
 debt_settled(debt::Debt) = isempty(debt.installments) && debt.rest_interest == CUR_0
 
 function process_debt!(debt::Debt)
@@ -199,7 +219,9 @@ function process_debt!(debt::Debt)
             paid_interest = interest_to_pay + debt.rest_interest
             debt.rest_interest = CUR_0
         else
-            money = asset_value(debt.debtor, debt.money_entry)
+            # Only what is available above the entry's minimum can be paid.
+            # Never negative, so paid amounts can't become negative either.
+            money = available_asset(debt.debtor, debt.money_entry)
             spread_shortfall = true
 
             if length(debt.installments) > 1
@@ -219,7 +241,13 @@ function process_debt!(debt::Debt)
                 if debt.compounded_interest
                     # Add nonpaid interest to shortfall.
                     # When compounded interest is used, rest_interest is always 0.
-                    shortfall += interest_to_pay - money
+                    capitalised_interest = interest_to_pay - money
+                    shortfall += capitalised_interest
+
+                    # The unpaid interest becomes part of the debt on both balance sheets,
+                    # otherwise later installments would exceed the booked debt.
+                    book_liability!(debt.debtor, debt.debt_entry, capitalised_interest)
+                    book_asset!(debt.creditor, debt.debt_entry, capitalised_interest)
                 else
                     # Adjust rest_interest. Inability to pay rest_interest does not increase rest_interest.
                     debt.rest_interest += interest_to_pay - money
@@ -244,6 +272,7 @@ function process_debt!(debt::Debt)
                 debt.installments[end] = shortfall
             end
 
+            # money never exceeds what is available, so this booking always succeeds.
             book_asset!(debt.debtor, debt.money_entry, -money)
         end
 
@@ -256,7 +285,7 @@ function process_debt!(debt::Debt)
             book_asset!(debt.creditor, debt.money_entry, paid_installment + paid_interest)
         end
 
-        book_asset!(debt.creditor, DEBT, -paid_installment)
+        book_asset!(debt.creditor, debt.debt_entry, -paid_installment)
     end
 
     return debt, (paid_installment, paid_interest, shortfall)
