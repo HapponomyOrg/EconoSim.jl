@@ -19,15 +19,26 @@ has_liability(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = has_liability(
 
 clear!(sumsy_balance::SuMSyBalance) = clear!(get_balance(sumsy_balance))
 
-min_balance!(sumsy_balance::SuMSyBalance,
+"""
+    min_balance!(sumsy_balance::SuMSyBalance, entry::BalanceEntry, type::EntryType, amount::Real = 0)
+
+The minimum of a SuMSy entry can't be above 0, otherwise demurrage could take the entry below its minimum.
+"""
+function min_balance!(sumsy_balance::SuMSyBalance,
                 entry::BalanceEntry,
                 type::EntryType,
-                amount::Real = 0) = min_balance!(get_balance(sumsy_balance), entry, type, amount)
+                amount::Real = 0)
+    if type == asset && amount > 0 && is_sumsy(sumsy_balance, entry)
+        throw(ArgumentError("the minimum of SuMSy entry $(entry.name) must not be above 0, got $amount"))
+    end
+
+    return min_balance!(get_balance(sumsy_balance), entry, type, amount)
+end
 typemin_balance!(sumsy_balance::SuMSyBalance,
                     entry::BalanceEntry,
                     type::EntryType) = typemin_balance!(get_balance(sumsy_balance), entry, type)
 
-min_asset!(sumsy_balance::SuMSyBalance, entry::BalanceEntry, amount::Real = 0) = min_asset!(get_balance(sumsy_balance), entry, amount)
+min_asset!(sumsy_balance::SuMSyBalance, entry::BalanceEntry, amount::Real = 0) = min_balance!(sumsy_balance, entry, asset, amount)
 typemin_asset!(sumsy_balance::SuMSyBalance, entry::BalanceEntry) = typemin_asset!(get_balance(sumsy_balance), entry)
 
 min_liability!(sumsy_balance::SuMSyBalance, entry::BalanceEntry, amount::Real = 0) = min_liability!(get_balance(sumsy_balance), entry, amount)
@@ -497,8 +508,15 @@ end
 
 SuMSyAccrual() = SuMSyAccrual{Currency}(0, CUR_0)
 
-function check_granularity(granularity::Int)
+"""
+    check_granularity(granularity::Int, sumsy_interval::Int)
+
+A granularity must be at least 1 and at most the SuMSy period. A longer granularity could charge more demurrage in one
+settlement than the balance holds.
+"""
+function check_granularity(granularity::Int, sumsy_interval::Int)
     granularity >= 1 || throw(ArgumentError("granularity must be at least 1, got $granularity"))
+    granularity <= sumsy_interval || throw(ArgumentError("granularity must not exceed the SuMSy period ($sumsy_interval), got $granularity"))
 
     return granularity
 end
@@ -596,6 +614,19 @@ function settle_granules(base::C,
     end
 
     return guaranteed_income, demurrage, gi_steps, gi_booked
+end
+
+"""
+    book_settlement!(sumsy_balance::SuMSyBalance, dep_entry::BalanceEntry, amount::Real, timestamp::Int)
+
+Book a net settlement (guaranteed income - demurrage) on a SuMSy entry. A positive settlement is always booked, even on
+an entry that is below its minimum. A negative settlement that would take the entry below its minimum books nothing and
+throws, so a settlement is never skipped silently.
+"""
+function book_settlement!(sumsy_balance::SuMSyBalance, dep_entry::BalanceEntry, amount::Real, timestamp::Int)
+    if !book_asset!(get_balance(sumsy_balance), dep_entry, amount, timestamp = timestamp, skip_check = amount >= 0)
+        error("settling $amount would take SuMSy entry $(dep_entry.name) below its minimum; nothing was booked")
+    end
 end
 
 """

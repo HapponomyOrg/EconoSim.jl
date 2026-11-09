@@ -189,6 +189,63 @@ end
     set_granularity!(b, 2)
     @test get_granularity(b) == 2
     @test_throws ArgumentError set_granularity!(b, -1)
+
+    # The granularity can't exceed the SuMSy period.
+    @test_throws ArgumentError SingleSuMSyBalance(sumsy, sumsy_interval = 10, granularity = 11)
+    @test_throws ArgumentError MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10, granularity = 11)
+    @test_throws ArgumentError EconoSim.SuMSyConfig(sumsy, SUMSY_DEP, sumsy_interval = 10, granularity = 11)
+    @test_throws ArgumentError create_sumsy_model(sumsy_interval = 10, granularity = 11)
+    @test_throws ArgumentError set_granularity!(b, 11)
+    @test get_granularity(b) == 2
+
+    # set_sumsy! changes nothing when the granularity doesn't fit the new period.
+    @test_throws ArgumentError set_sumsy!(b, SuMSy(2000, 0, 0.1), sumsy_interval = 1)
+    @test get_sumsy(b) === sumsy
+    @test EconoSim.get_sumsy_interval(b) == 10
+
+    m = MultiSuMSyBalance(sumsy, SUMSY_DEP, sumsy_interval = 10)
+    @test_throws ArgumentError set_granularity!(m, 11, SUMSY_DEP)
+    @test_throws ArgumentError set_sumsy!(m, SuMSy(2000, 0, 0.1), SUMSY_DEP, sumsy_interval = 5)
+    @test get_sumsy(m, SUMSY_DEP) === sumsy
+    @test EconoSim.get_sumsy_interval(m, SUMSY_DEP) == 10
+end
+
+@testset "SuMSy timing - SuMSy minimum cannot be raised" begin
+    sumsy = SuMSy(1000, 0, 0.1)
+    other = BalanceEntry("Other")
+
+    for b in (SingleSuMSyBalance(sumsy), MultiSuMSyBalance(sumsy, SUMSY_DEP))
+        @test_throws ArgumentError min_asset!(b, SUMSY_DEP, 1)
+        @test_throws ArgumentError min_balance!(b, SUMSY_DEP, asset, 1)
+        @test min_asset(b, SUMSY_DEP) == 0
+
+        # Lowering the minimum is allowed.
+        min_asset!(b, SUMSY_DEP, -10)
+        @test min_asset(b, SUMSY_DEP) == -10
+
+        # Other entries are not affected.
+        min_asset!(b, other, 1)
+        @test min_asset(b, other) == 1
+    end
+end
+
+@testset "SuMSy timing - settlement is never skipped silently" begin
+    # A minimum above 0 set directly on the inner balance bypasses the guard.
+    b = SingleSuMSyBalance(SuMSy(0, 0, 0.1), sumsy_interval = 10)
+    book_sumsy!(b, 51, timestamp = 0)
+    min_asset!(get_balance(b), SUMSY_DEP, 50)
+
+    # Demurrage of 5.1 would take the balance to 45.9: nothing is booked and the clock doesn't move.
+    @test_throws ErrorException adjust_sumsy_balance!(b, 10)
+    @test asset_value(get_balance(b), SUMSY_DEP) == 51
+    @test get_last_adjustment(b) == 0
+
+    # Guaranteed income is always booked, even on an entry below its minimum.
+    b = SingleSuMSyBalance(SuMSy(10, 0, 0.1), sumsy_interval = 10)
+    min_asset!(get_balance(b), SUMSY_DEP, 50)
+    @test adjust_sumsy_balance!(b, 10) == (10, 0)
+    @test asset_value(get_balance(b), SUMSY_DEP) == 10
+    @test get_last_adjustment(b) == 10
 end
 
 @testset "SuMSy timing - model settles every granule" begin

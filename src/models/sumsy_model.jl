@@ -8,7 +8,7 @@ function add_properties!(model::ABM,
                         granularity::Int = sumsy_interval)
     properties = abmproperties(model)
     properties[:sumsy_interval] = sumsy_interval
-    properties[:sumsy_granularity] = check_granularity(granularity)
+    properties[:sumsy_granularity] = check_granularity(granularity, sumsy_interval)
     properties[:data_total_gi] = CUR_0
     properties[:data_total_demurrage] = CUR_0
 end

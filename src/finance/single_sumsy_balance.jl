@@ -62,6 +62,7 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                             allow_negative_liabilities::Bool = true,
                             allow_negative_sumsy::Bool = false,
                             allow_negative_demurrage::Bool = false)
+    check_granularity(granularity, sumsy_interval)
     def_min_asset!(balance, allow_negative_assets ? typemin(Currency) : CUR_0)
     def_min_liability!(balance, allow_negative_liabilities ? typemin(Currency) : CUR_0)
 
@@ -79,7 +80,7 @@ function SingleSuMSyBalance(sumsy::SuMSy,
                                                 sumsy.demurrage.dem_free,
                                                 last_adjustment,
                                                 sumsy_interval,
-                                                check_granularity(granularity),
+                                                granularity,
                                                 allow_negative_demurrage,
                                                 SuMSyAccrual())
 
@@ -140,7 +141,9 @@ get_granularity(sumsy_balance::SingleSuMSyBalance, dep_entry::BalanceEntry = SUM
 Change the number of steps between settlements. Settle the balance first (`adjust_sumsy_balance!`), otherwise the
 granules that have elapsed are settled with the new granularity.
 """
-set_granularity!(sumsy_balance::SingleSuMSyBalance, granularity::Int, dep_entry::BalanceEntry = SUMSY_DEP) = (sumsy_balance.granularity = check_granularity(granularity))
+set_granularity!(sumsy_balance::SingleSuMSyBalance, granularity::Int, dep_entry::BalanceEntry = SUMSY_DEP) = (sumsy_balance.granularity = check_granularity(granularity, get_sumsy_interval(sumsy_balance)))
+
+is_sumsy(sumsy_balance::SingleSuMSyBalance, entry::BalanceEntry) = entry == get_def_sumsy_entry(sumsy_balance)
 
 function book_asset!(sumsy_balance::SingleSuMSyBalance,
                         entry::BalanceEntry,
@@ -272,15 +275,18 @@ function sumsy_assets(sumsy_balance::SingleSuMSyBalance;
 end
 
 """
-    adjust_sumsy_balance!(sumsy_balance::SuMSyBalance,
-                        sumsy_params::SuMSyParams,
-                        timestamp::Int)
+    adjust_sumsy_balance!(sumsy_balance::SingleSuMSyBalance, timestamp::Int)
+
+Settle all complete granules up to `timestamp`. See `book_settlement!`.
+
+# Returns
+(guaranteed_income, demurrage)
 """
 function adjust_sumsy_balance!(sumsy_balance::SingleSuMSyBalance, timestamp::Int)
     dep_entry = get_def_sumsy_entry(sumsy_balance)
     guaranteed_income, demurrage, accrual, last_adjustment = accrue_sumsy(sumsy_balance, dep_entry, timestamp)
 
-    book_asset!(get_balance(sumsy_balance), dep_entry, guaranteed_income - demurrage, timestamp = timestamp)
+    book_settlement!(sumsy_balance, dep_entry, guaranteed_income - demurrage, timestamp)
     sumsy_balance.accrual = accrual
     sumsy_balance.last_adjustment = last_adjustment
 
@@ -349,9 +355,10 @@ function set_sumsy!(sumsy_balance::SingleSuMSyBalance,
                     sumsy_interval::Int = get_sumsy_interval(sumsy_balance),
                     granularity::Int = get_granularity(sumsy_balance),
                     allow_negative_sumsy::Bool = min_asset(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance)) < 0)
+        check_granularity(granularity, sumsy_interval)
         sumsy_balance.sumsy = sumsy
         sumsy_balance.sumsy_interval = sumsy_interval
-        sumsy_balance.granularity = check_granularity(granularity)
+        sumsy_balance.granularity = granularity
 
         if allow_negative_sumsy
             typemin_asset!(get_balance(sumsy_balance), get_def_sumsy_entry(sumsy_balance))

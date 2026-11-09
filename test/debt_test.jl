@@ -262,3 +262,79 @@ end
     typemin_asset!(b, DEPOSIT)
     @test EconoSim.available_asset(b, DEPOSIT) == typemax(Currency)
 end
+
+@testset "Debt - bank keeps interest, destroys principal" begin
+    bank = Balance() # Plain balance: the bank's deposits can't go below 0.
+    debtor = Balance()
+    book_asset!(debtor, DEPOSIT, 100)
+    debt = bank_loan(bank, debtor, 100, 0.1, 1)
+
+    _, paid = process_debt!(debt)
+    @test paid == (100, 10, 0)
+    @test debt_settled(debt)
+    @test asset_value(debtor, DEPOSIT) == 90
+    @test liability_value(debtor, DEBT) == 0
+    @test liability_value(bank, DEPOSIT) == 0 # The principal is destroyed.
+    @test asset_value(bank, DEPOSIT) == 10 # The interest is kept by the bank.
+    @test asset_value(bank, DEBT) == 0
+    @test equity(bank) == 10
+    @test validate(bank) && validate(debtor)
+end
+
+@testset "Debt - capitalised interest is kept by the bank" begin
+    bank = Balance()
+    debtor = Balance()
+    debt = bank_loan(bank, debtor, 100, 0.1, 2, compounded_interest = true)
+    book_asset!(debtor, DEPOSIT, -100)
+
+    # Nothing can be paid: the interest is added to the debt.
+    _, paid = process_debt!(debt)
+    @test paid == (0, 0, 60)
+    @test debt.installments == [Currency(110)]
+    @test debt.capitalised_interest == 10
+    @test liability_value(debtor, DEBT) == 110
+    @test asset_value(bank, DEBT) == 110
+
+    book_asset!(debtor, DEPOSIT, 200)
+    _, paid = process_debt!(debt)
+    @test paid == (110, 11, 0)
+    @test debt_settled(debt)
+    @test debt.capitalised_interest == 0
+    @test liability_value(bank, DEPOSIT) == 0 # Exactly the principal of 100 is destroyed.
+    @test asset_value(bank, DEPOSIT) == 21 # 10 capitalised interest + 11 interest.
+    @test asset_value(bank, DEBT) == 0
+    @test equity(bank) == 21
+    @test asset_value(debtor, DEPOSIT) == 79
+    @test validate(bank) && validate(debtor)
+end
+
+@testset "Debt - process_debt! is all-or-nothing" begin
+    bank = Balance()
+    debtor = Balance()
+    debt = bank_loan(bank, debtor, 100, 0, 2)
+    book_liability!(debtor, DEBT, -80) # The debt entry is reduced outside the Debt.
+
+    @test_throws ErrorException process_debt!(debt)
+    @test debt.installments == fill(Currency(50), 2)
+    @test asset_value(debtor, DEPOSIT) == 100
+    @test liability_value(debtor, DEBT) == 20
+    @test liability_value(bank, DEPOSIT) == 100
+    @test asset_value(bank, DEBT) == 100
+end
+
+@testset "Debt - borrow validates before booking" begin
+    creditor = Balance()
+    debtor = Balance()
+
+    @test_throws ArgumentError borrow(creditor, debtor, -50, 0, 1, bank_loan = false, negative_allowed = false)
+    @test_throws ArgumentError bank_loan(creditor, debtor, 100, 0, 0)
+
+    # The debtor's debt entry can't take the loan.
+    min_liability!(debtor, DEBT, 10)
+    @test_throws ArgumentError bank_loan(creditor, debtor, 5, 0, 1)
+
+    for balance in (creditor, debtor), entry in (DEPOSIT, DEBT)
+        @test asset_value(balance, entry) == 0
+        @test liability_value(balance, entry) == 0
+    end
+end

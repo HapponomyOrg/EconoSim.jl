@@ -18,6 +18,9 @@ A transferable debt contract between two balance sheets.
 * debt_entry: the entry to be used to book the debt.
 * creation: the timestamp of the creation of the debt.
 * interval: the interval between installments. This can be 0.
+* rest_interest: unpaid interest that is not compounded.
+* capitalised_interest: the part of the remaining installments that is compounded interest. A bank never created this
+    money, so when it is repaid the bank keeps it instead of destroying it.
 """
 mutable struct Debt{C <: FixedDecimal}
     id::UUID
@@ -32,6 +35,7 @@ mutable struct Debt{C <: FixedDecimal}
     interval::Int64
     compounded_interest::Bool
     rest_interest::C
+    capitalised_interest::C
     Debt(creditor::Balance,
         debtor::Balance,
         installments::Vector{<:Real},
@@ -52,6 +56,7 @@ mutable struct Debt{C <: FixedDecimal}
             creation,
             interval,
             compounded_interest,
+            CUR_0,
             CUR_0)
 end
 
@@ -136,11 +141,27 @@ function borrow(creditor::Balance,
             money_entry::BalanceEntry = DEPOSIT,
             debt_entry::BalanceEntry = DEBT,
             compounded_interest::Bool = false)
+    amount >= 0 || throw(ArgumentError("amount must not be negative, got $amount"))
+    installments >= 1 || throw(ArgumentError("installments must be at least 1, got $installments"))
     amount = Currency(amount)
 
     if !(bank_loan || negative_allowed)
         # Only lend out what the creditor actually has available.
         amount = min(amount, available_asset(creditor, money_entry))
+    end
+
+    # Book all or nothing.
+    if bank_loan
+        creditor_money_ok = check_booking(creditor, money_entry, liability, false, amount)
+    else
+        creditor_money_ok = negative_allowed || check_booking(creditor, money_entry, asset, false, -amount)
+    end
+
+    if !(creditor_money_ok &&
+            check_booking(creditor, debt_entry, asset, false, amount) &&
+            check_booking(debtor, money_entry, asset, false, amount) &&
+            check_booking(debtor, debt_entry, liability, false, amount))
+        throw(ArgumentError("borrowing $amount would break a balance minimum; nothing was booked"))
     end
 
     # adjust creditor balance
@@ -203,90 +224,128 @@ end
 
 debt_settled(debt::Debt) = isempty(debt.installments) && debt.rest_interest == CUR_0
 
+"""
+    process_debt!(debt::Debt)
+
+Pay the next installment plus interest. When the debtor can't pay in full, it pays what is available above its
+minimum: interest first, the unpaid principal is spread over the remaining installments and unpaid interest is
+kept in `rest_interest` or, with compounded interest, added to the debt.
+
+For bank debt only the repaid principal is destroyed. The interest, including repaid capitalised interest, is kept
+by the bank as its own money, which raises its equity.
+
+All bookings are checked first. If one would break a balance minimum nothing is changed and an error is thrown.
+
+# Returns
+(debt, (paid_installment, paid_interest, shortfall))
+"""
 function process_debt!(debt::Debt)
-    paid_installment = CUR_0
-    paid_interest = CUR_0
+    if debt_settled(debt)
+        return debt, (CUR_0, CUR_0, CUR_0)
+    end
+
+    installments = copy(debt.installments)
+    rest_interest = debt.rest_interest
+    interest_to_pay = Currency(sum(installments) * debt.interest_rate)
+    installment_to_pay = installments[end]
+    amount_due = installment_to_pay + interest_to_pay + rest_interest
+    capitalised_interest = CUR_0
     shortfall = CUR_0
 
-    if !debt_settled(debt)
-        interest_to_pay = Currency(sum(debt.installments) * debt.interest_rate)
-        installment_to_pay = debt.installments[end]
+    if check_booking(debt.debtor, debt.money_entry, asset, false, -amount_due)
+        pop!(installments)
+        payment = amount_due
+        paid_installment = installment_to_pay
+        paid_interest = interest_to_pay + rest_interest
+        rest_interest = CUR_0
+    else
+        # Only what is available above the entry's minimum can be paid.
+        # Never negative, so paid amounts can't become negative either.
+        payment = available_asset(debt.debtor, debt.money_entry)
+        spread_shortfall = true
 
-        # adjust debtor balance
-        if book_asset!(debt.debtor, debt.money_entry, -(installment_to_pay + interest_to_pay + debt.rest_interest))
-            pop!(debt.installments)
-            paid_installment = installment_to_pay
-            paid_interest = interest_to_pay + debt.rest_interest
-            debt.rest_interest = CUR_0
+        if length(installments) > 1
+            # Downpayment period shuld not be changed, even if full payment of installment is not possible.
+            # Exception when last installment cannot be paid in full.
+            pop!(installments)
         else
-            # Only what is available above the entry's minimum can be paid.
-            # Never negative, so paid amounts can't become negative either.
-            money = available_asset(debt.debtor, debt.money_entry)
-            spread_shortfall = true
-
-            if length(debt.installments) > 1
-                # Downpayment period shuld not be changed, even if full payment of installment is not possible.
-                # Exception when last installment cannot be paid in full.
-                pop!(debt.installments)
-            else
-                spread_shortfall = false
-            end
-
-            # Calculate which part of the installment cannot be paid.
-            shortfall = min(installment_to_pay, installment_to_pay + interest_to_pay + debt.rest_interest - money)
-            paid_installment = installment_to_pay - shortfall
-
-            # Handle inability to pay interest
-            if money < interest_to_pay + debt.rest_interest
-                if debt.compounded_interest
-                    # Add nonpaid interest to shortfall.
-                    # When compounded interest is used, rest_interest is always 0.
-                    capitalised_interest = interest_to_pay - money
-                    shortfall += capitalised_interest
-
-                    # The unpaid interest becomes part of the debt on both balance sheets,
-                    # otherwise later installments would exceed the booked debt.
-                    book_liability!(debt.debtor, debt.debt_entry, capitalised_interest)
-                    book_asset!(debt.creditor, debt.debt_entry, capitalised_interest)
-                else
-                    # Adjust rest_interest. Inability to pay rest_interest does not increase rest_interest.
-                    debt.rest_interest += interest_to_pay - money
-                end
-
-                paid_interest = money
-            else
-                paid_interest = interest_to_pay + debt.rest_interest
-                debt.rest_interest = CUR_0
-            end
-
-            if spread_shortfall
-                installment_increase = Currency(shortfall / length(debt.installments))
-                rest_increase = shortfall - installment_increase * length(debt.installments)
-
-                for i in eachindex(debt.installments)
-                    debt.installments[i] += installment_increase
-                end
-
-                debt.installments[end] += rest_increase
-            else
-                debt.installments[end] = shortfall
-            end
-
-            # money never exceeds what is available, so this booking always succeeds.
-            book_asset!(debt.debtor, debt.money_entry, -money)
+            spread_shortfall = false
         end
 
-        book_liability!(debt.debtor, debt.debt_entry, -paid_installment)
+        # Calculate which part of the installment cannot be paid.
+        shortfall = min(installment_to_pay, amount_due - payment)
+        paid_installment = installment_to_pay - shortfall
 
-        #adjust creditor balance
-        if debt.bank_debt
-            book_liability!(debt.creditor, debt.money_entry, -(paid_installment + paid_interest))
+        # Handle inability to pay interest
+        if payment < interest_to_pay + rest_interest
+            if debt.compounded_interest
+                # Add nonpaid interest to shortfall.
+                # When compounded interest is used, rest_interest is always 0.
+                capitalised_interest = interest_to_pay - payment
+                shortfall += capitalised_interest
+            else
+                # Adjust rest_interest. Inability to pay rest_interest does not increase rest_interest.
+                rest_interest += interest_to_pay - payment
+            end
+
+            paid_interest = payment
         else
-            book_asset!(debt.creditor, debt.money_entry, paid_installment + paid_interest)
+            paid_interest = interest_to_pay + rest_interest
+            rest_interest = CUR_0
         end
 
-        book_asset!(debt.creditor, debt.debt_entry, -paid_installment)
+        if spread_shortfall
+            installment_increase = Currency(shortfall / length(installments))
+            rest_increase = shortfall - installment_increase * length(installments)
+
+            for i in eachindex(installments)
+                installments[i] += installment_increase
+            end
+
+            installments[end] += rest_increase
+        else
+            installments[end] = shortfall
+        end
     end
+
+    # The unpaid capitalised interest becomes part of the debt on both balance sheets,
+    # otherwise later installments would exceed the booked debt.
+    debt_change = capitalised_interest - paid_installment
+
+    # Repaid capitalised interest was never created as money, so it is interest, not principal.
+    repaid_capitalised = min(paid_installment, debt.capitalised_interest)
+    repaid_principal = paid_installment - repaid_capitalised
+
+    if debt.bank_debt
+        # The principal is destroyed, the interest is kept by the bank.
+        creditor_money_ok = check_booking(debt.creditor, debt.money_entry, liability, false, -repaid_principal) &&
+                            check_booking(debt.creditor, debt.money_entry, asset, false, paid_interest + repaid_capitalised)
+    else
+        creditor_money_ok = check_booking(debt.creditor, debt.money_entry, asset, false, paid_installment + paid_interest)
+    end
+
+    if !(creditor_money_ok &&
+            check_booking(debt.debtor, debt.money_entry, asset, false, -payment) &&
+            check_booking(debt.debtor, debt.debt_entry, liability, false, debt_change) &&
+            check_booking(debt.creditor, debt.debt_entry, asset, false, debt_change))
+        error("processing debt $(debt.id) would break a balance minimum; nothing was booked")
+    end
+
+    book_asset!(debt.debtor, debt.money_entry, -payment)
+    book_liability!(debt.debtor, debt.debt_entry, debt_change)
+
+    if debt.bank_debt
+        book_liability!(debt.creditor, debt.money_entry, -repaid_principal)
+        book_asset!(debt.creditor, debt.money_entry, paid_interest + repaid_capitalised)
+    else
+        book_asset!(debt.creditor, debt.money_entry, paid_installment + paid_interest)
+    end
+
+    book_asset!(debt.creditor, debt.debt_entry, debt_change)
+
+    debt.installments = installments
+    debt.rest_interest = rest_interest
+    debt.capitalised_interest += capitalised_interest - repaid_capitalised
 
     return debt, (paid_installment, paid_interest, shortfall)
 end
