@@ -61,6 +61,19 @@ mutable struct Debt{C <: FixedDecimal}
 end
 
 """
+    split_down(total::FixedDecimal, n::Integer)
+
+Split `total` into `n` equal parts rounded down to the currency unit. Returns `(part, leftover)` with
+`part * n + leftover == total` and a leftover of 0 up to n - 1 units. Rounding to the nearest unit instead can give a
+negative leftover, which made a tiny loan's first installment negative so that its last payments could not be booked.
+"""
+function split_down(total::FixedDecimal{T, f}, n::Integer) where {T, f}
+    part = reinterpret(FixedDecimal{T, f}, fld(total.i, T(n)))
+
+    return part, total - part * n
+end
+
+"""
     Debt(creditor::Balance,
         debtor::Balance,
         amount::Real,
@@ -72,7 +85,8 @@ end
         creation::Int64 = 0,
         interval::Int64 = 0)
 
-Create a debt contract between two balances with a number of equal installments.
+Create a debt contract between two balances with a number of equal installments. Installments are rounded down to the
+currency unit; the leftover goes into the first installment, which is paid last, so no installment is negative.
 
 * creditor: the balance sheet receiving the installments.
 * debtor: the balance sheet from which the installments will be subtracted.
@@ -93,11 +107,10 @@ function Debt(creditor::Balance,
             creation::Int64 = 0,
             interval::Int64 = 0,
             compounded_interest::Bool = false)
-    installment = Currency(amount / installments)
-    rest = Currency(amount) - installment * installments
+    installment, rest = split_down(Currency(amount), installments)
     installment_vector = fill(installment, (installments))
 
-    # Make sure the entire debt is paid off.
+    # Make sure the entire debt is paid off. The leftover is never negative.
     installment_vector[1] = installment + rest
 
     return Debt(creditor, debtor, installment_vector, interest_rate; bank_debt = bank_debt, money_entry = money_entry, debt_entry = debt_entry, creation = creation, interval = interval, compounded_interest = compounded_interest)
@@ -295,14 +308,14 @@ function process_debt!(debt::Debt)
         end
 
         if spread_shortfall
-            installment_increase = Currency(shortfall / length(installments))
-            rest_increase = shortfall - installment_increase * length(installments)
+            # Rounded down, with the leftover in the first installment (paid last), as in the Debt constructor.
+            installment_increase, rest_increase = split_down(shortfall, length(installments))
 
             for i in eachindex(installments)
                 installments[i] += installment_increase
             end
 
-            installments[end] += rest_increase
+            installments[1] += rest_increase
         else
             installments[end] = shortfall
         end

@@ -338,3 +338,52 @@ end
         @test liability_value(balance, entry) == 0
     end
 end
+
+@testset "Debt - installments are rounded down, never negative" begin
+    unit = eps(Currency)
+    bank = Balance()
+    debtor = Balance()
+
+    for amount in (17 * unit, Currency(100), Currency(100) + 6 * unit, Currency(1) - unit, Currency(0)), n in (1, 3, 12, 20)
+        installments = Debt(bank, debtor, amount, 0, n).installments
+        @test sum(installments) == amount
+        @test all(i -> i >= 0, installments)
+        @test all(i -> i == installments[end], installments[2:end])
+        @test 0 <= installments[1] - installments[end] < n * unit
+    end
+
+    # 100 / 12 already rounded down to the nearest unit, so its installments are unchanged.
+    @test Debt(bank, debtor, 100, 0, 12).installments == [Currency(100) - 11 * Currency(100 / 12); fill(Currency(100 / 12), 11)]
+end
+
+@testset "Debt - a tiny bank loan is paid off in full" begin
+    unit = eps(Currency)
+    bank = Balance()
+    debtor = Balance()
+    debt = bank_loan(bank, debtor, 17 * unit, 0, 20) # Rounding to nearest gave 19 x 1 unit and -2 units.
+
+    for _ in 1:20
+        process_debt!(debt)
+    end
+
+    @test debt_settled(debt)
+    @test liability_value(debtor, DEBT) == 0
+    @test asset_value(debtor, DEPOSIT) == 0
+    @test liability_value(bank, DEPOSIT) == 0
+    @test asset_value(bank, DEBT) == 0
+    @test validate(debtor) && validate(bank)
+end
+
+@testset "Debt - a spread shortfall is rounded down, leftover paid last" begin
+    unit = eps(Currency)
+    bank = Balance()
+    debtor = Balance()
+    debt = bank_loan(bank, debtor, 100, 0, 4)
+    book_asset!(debtor, DEPOSIT, -(75 + 2 * unit)) # The debtor can pay 25 - 2 units.
+
+    _, (paid_installment, paid_interest, shortfall) = process_debt!(debt)
+    @test (paid_installment, paid_interest, shortfall) == (25 - 2 * unit, 0, 2 * unit)
+    # 2 units over 3 installments: nothing each, the 2 units in the first installment.
+    @test debt.installments == [25 + 2 * unit, Currency(25), Currency(25)]
+    @test liability_value(debtor, DEBT) == sum(debt.installments)
+end

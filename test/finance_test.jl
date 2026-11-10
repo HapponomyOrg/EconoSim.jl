@@ -82,6 +82,26 @@ end
     @test min_liability(b, EQUITY) < 0
 end
 
+@testset "Balance - Float64 amounts are rounded before the check" begin
+    unit = eps(Currency)
+    b = Balance()
+    book_liability!(b, DEBT, Currency(0.3))
+    book_asset!(b, DEPOSIT, Currency(0.3))
+
+    # -(0.1 + 0.2) is -0.30000000000000004 in Float64 but books exactly -0.3.
+    @test EconoSim.check_booking(b, DEBT, liability, false, -(0.1 + 0.2))
+    @test book_liability!(b, DEBT, -(0.1 + 0.2))
+    @test liability_value(b, DEBT) == 0
+    @test book_asset!(b, DEPOSIT, -(0.1 + 0.2))
+    @test asset_value(b, DEPOSIT) == 0
+    @test validate(b)
+
+    # An amount that rounds to more than the entry holds is still refused.
+    book_asset!(b, DEPOSIT, Currency(0.3))
+    @test !book_asset!(b, DEPOSIT, -(0.3 + 0.6 * Float64(unit)))
+    @test asset_value(b, DEPOSIT) == Currency(0.3)
+end
+
 @testset "Transfers" begin
     a = BalanceEntry("Asset")
     l = BalanceEntry("Liability")
