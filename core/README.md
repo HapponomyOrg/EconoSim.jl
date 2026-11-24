@@ -14,7 +14,7 @@ dependency.
 |---|---|
 | `src/money.jl` | `Money` (Int64 × 10^4), ppm rates, overflow-safe `apply_rate`, `split_amount` |
 | `src/rng.jl` | Explicit xorshift64 `Rng`; no global RNG |
-| `src/entries.jl` | `Entry` / `Side` enums; fixed ledger slots |
+| `src/entries.jl` | `Entry` / `Side` enums; `LedgerSchema` with 5 default and up to 32 slots |
 | `src/balance.jl` | Concrete double-entry `Balance` with integer ledgers and no property bags |
 | `src/sumsy.jl` | `DemTiers`, `SuMSy`, `telo`, demurrage, `SuMSyAccount` |
 | `src/debt.jl` | `Debt`, `borrow`, `process_debt!` |
@@ -37,7 +37,9 @@ julia --project=core -e 'using Pkg; Pkg.test()'
 - Money arithmetic is checked by default: overflow throws. Call
   `set_overflow_mode!(OVERFLOW_SATURATE)` for the explicit saturating mode used
   by the browser build.
-- `Balance` has one `Money` slot per `Entry` on each side. Booking an asset
+- `Balance` has one `Money` slot per active `Entry` on each side. The default
+  schema has five slots; `LedgerSchema(n)` activates reserved slots for bonds,
+  shares, or typed loans without dynamic dictionaries. Booking an asset
   increases equity; booking a liability decreases it, preserving
   `sum(assets) == sum(liabilities)`.
 - Demurrage tiers are stored as integer spans + ppm rates, replacing

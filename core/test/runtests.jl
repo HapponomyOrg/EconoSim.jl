@@ -85,6 +85,37 @@ using EconoSimCore
         @test asset_value(other, SUMSY_DEPOSIT) == money(15)
     end
 
+    @testset "extended ledger schema" begin
+        @test_throws ArgumentError LedgerSchema(N_ENTRIES - 1)
+        @test_throws ArgumentError LedgerSchema(MAX_ENTRIES + 1)
+
+        schema = LedgerSchema(12)
+        balance = Balance(; schema = schema)
+        @test entry_count(balance) == 12
+        @test validate(balance)
+
+        @test book_asset!(balance, BOND, money(1_000))
+        @test book_asset!(balance, SHARE, money(250))
+        @test book_asset!(balance, LOAN_RECEIVABLE, money(400))
+        @test book_asset!(balance, CUSTOM_ENTRY_FIRST, money(75))
+        @test book_liability!(balance, LOAN_PAYABLE, money(300))
+
+        @test asset_value(balance, BOND) == money(1_000)
+        @test asset_value(balance, SHARE) == money(250)
+        @test liability_value(balance, LOAN_PAYABLE) == money(300)
+        @test validate(balance)
+
+        other = Balance(; schema = schema)
+        @test transfer_asset!(balance, other, SHARE, money(50))
+        @test asset_value(other, SHARE) == money(50)
+        @test validate(balance)
+        @test validate(other)
+
+        clear!(balance)
+        @test assets_value(balance) == zero(Money)
+        @test liabilities_value(balance) == zero(Money)
+    end
+
     @testset "SuMSy tiers and telo" begin
         flat = make_tiers(0.01)
         @test length(flat.spans) == 1

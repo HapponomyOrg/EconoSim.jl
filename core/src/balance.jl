@@ -12,27 +12,32 @@ mutable struct Balance
     min_assets::Vector{Money}
     min_liabilities::Vector{Money}
     last_transaction::Int64
+    count::Int32
 end
 
 """
-    Balance(; def_min_asset = 0, def_min_liability = 0, last_transaction = 0)
+    Balance(; schema = DEFAULT_LEDGER_SCHEMA, def_min_asset = 0,
+              def_min_liability = 0, last_transaction = 0)
 
-Create a zeroed balance sheet. Equity may go negative by default; other
-liabilities default to the supplied minimum.
+Create a zeroed balance sheet with `schema.count` active entries. Equity may go
+negative by default; other liabilities default to the supplied minimum.
 """
-function Balance(; def_min_asset::Money = MONEY_ZERO,
+function Balance(; schema::LedgerSchema = DEFAULT_LEDGER_SCHEMA,
+                   def_min_asset::Money = MONEY_ZERO,
                    def_min_liability::Money = MONEY_ZERO,
                    last_transaction::Integer = 0)
-    assets = fill(MONEY_ZERO, N_ENTRIES)
-    liabilities = fill(MONEY_ZERO, N_ENTRIES)
-    min_assets = Vector{Money}(undef, N_ENTRIES)
-    min_liabilities = Vector{Money}(undef, N_ENTRIES)
-    for i in 1:N_ENTRIES
+    count = Int(schema.count)
+    assets = fill(MONEY_ZERO, count)
+    liabilities = fill(MONEY_ZERO, count)
+    min_assets = Vector{Money}(undef, count)
+    min_liabilities = Vector{Money}(undef, count)
+    for i in 1:count
         min_assets[i] = def_min_asset
         min_liabilities[i] = def_min_liability
     end
     min_liabilities[entry_index(EQUITY)] = typemin(Money)
-    return Balance(assets, liabilities, min_assets, min_liabilities, Int64(last_transaction))
+    return Balance(assets, liabilities, min_assets, min_liabilities,
+                   Int64(last_transaction), schema.count)
 end
 
 function clear!(balance::Balance, reset_last_transaction::Bool = false)
@@ -51,14 +56,14 @@ end
 @inline validate(balance::Balance) = assets_value(balance) == liabilities_value(balance)
 
 function def_min_asset!(balance::Balance, amount::Money = MONEY_ZERO)
-    for i in 1:N_ENTRIES
+    for i in 1:balance.count
         balance.min_assets[i] = amount
     end
     return balance
 end
 
 function def_min_liability!(balance::Balance, amount::Money = MONEY_ZERO)
-    for i in 1:N_ENTRIES
+    for i in 1:balance.count
         balance.min_liabilities[i] = amount
     end
     balance.min_liabilities[entry_index(EQUITY)] = typemin(Money)
