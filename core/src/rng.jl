@@ -6,20 +6,35 @@
 
 """
     Rng(seed::Integer)
+    Rng(script::AbstractVector{<:Integer})
 
-A small xorshift64* generator. The state is a single `UInt64`.
+A small xorshift64* generator. The state is a single `UInt64`. The vector
+constructor creates a replay generator for deterministic parity tests: each
+`next_u64!` returns the next scripted value before falling back to xorshift.
 """
 mutable struct Rng
     state::UInt64
+    script::Vector{UInt64}
+    cursor::Int
 
     function Rng(seed::Integer)
         s = UInt64(seed)
         s == 0 && (s = 0x9E3779B97F4A7C15)
-        return new(s)
+        return new(s, UInt64[], 1)
+    end
+
+    function Rng(script::AbstractVector{<:Integer})
+        return new(0x9E3779B97F4A7C15, UInt64.(script), 1)
     end
 end
 
 @inline function next_u64!(rng::Rng)::UInt64
+    if rng.cursor <= length(rng.script)
+        value = rng.script[rng.cursor]
+        rng.cursor += 1
+        return value
+    end
+
     x = rng.state
     x ⊻= x >> 12
     x ⊻= x << 25

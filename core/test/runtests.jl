@@ -48,6 +48,10 @@ using EconoSimCore
         @test all(1 <= rand_index(rng, 10) <= 10 for _ in 1:100)
         @test all(0.0 <= rand_unit(rng) < 1.0 for _ in 1:100)
         @test Rng(0).state != 0
+
+        scripted = Rng([0, 1, 2])
+        @test [next_u64!(scripted) for _ in 1:3] == UInt64[0, 1, 2]
+        @test next_u64!(scripted) != 0  # falls back to xorshift
     end
 
     @testset "Balance" begin

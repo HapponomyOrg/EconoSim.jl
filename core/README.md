@@ -13,7 +13,7 @@ dependency.
 | File | Contents |
 |---|---|
 | `src/money.jl` | `Money` (Int64 × 10^4), ppm rates, overflow-safe `apply_rate`, `split_amount` |
-| `src/rng.jl` | Explicit xorshift64 `Rng`; no global RNG |
+| `src/rng.jl` | Explicit xorshift64 `Rng`; supports a scripted replay stream for parity tests |
 | `src/entries.jl` | `Entry` / `Side` enums; `LedgerSchema` with 5 default and up to 32 slots |
 | `src/balance.jl` | Concrete double-entry `Balance` with integer ledgers and no property bags |
 | `src/sumsy.jl` | `DemTiers`, `SuMSy`, `telo`, demurrage, `SuMSyAccount` |
