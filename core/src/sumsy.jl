@@ -106,6 +106,13 @@ telo(sumsy::SuMSy) = telo(sumsy.guaranteed_income, sumsy.demurrage, sumsy.dem_fr
     calculate_time_range_demurrage(balance, tiers, dem_free, interval, timerange, allow_negative)
 
 Demurrage owed over `timerange` periods of length `interval`.
+
+Each tier's product is evaluated in `Float64` and only the final total is
+rounded to `Money`, mirroring main EconoSim's `Currency * Percentage`
+arithmetic. Legacy accumulates those products as floats, so a half-unit tie
+rounds with the float error of the operands rather than exactly to even.
+Reproducing that here keeps demurrage identical to legacy at every tie, which
+matters once a balance is adjusted thousands of times.
 """
 function calculate_time_range_demurrage(balance::Money, tiers::DemTiers,
                                         dem_free::Money, interval::Int,
@@ -118,17 +125,18 @@ function calculate_time_range_demurrage(balance::Money, tiers::DemTiers,
     remaining = balance > MONEY_ZERO ? balance - dem_free : balance
     remaining = Money(remaining.value * sign)
 
-    demurrage = MONEY_ZERO
+    demurrage = 0.0
     for i in eachindex(tiers.rates)
         remaining <= MONEY_ZERO && break
         span = tiers.spans[i]
         amount = span == typemax(Money) ? remaining : min(remaining, span)
-        demurrage += apply_rate(amount, tiers.rates[i])
+        demurrage += currency(amount) *
+                     (Float64(tiers.rates[i]) / Float64(RATE_SCALE))
         remaining -= amount
     end
 
-    demurrage = Money(div(demurrage.value * timerange, interval))
-    return Money(demurrage.value * sign)
+    demurrage *= Float64(timerange) / Float64(interval) * Float64(sign)
+    return Money(round(Int64, demurrage * SCALE))
 end
 
 """
@@ -140,7 +148,8 @@ function calculate_adjustments(balance::Money, sumsy::SuMSy, gi_eligible::Bool,
                                dem_free::Money, interval::Int, timerange::Int,
                                allow_negative::Bool)
     guaranteed_income = gi_eligible ?
-        Money(div(sumsy.guaranteed_income.value * timerange, interval)) : MONEY_ZERO
+        Money(div_round_nearest(sumsy.guaranteed_income.value * timerange,
+                                interval)) : MONEY_ZERO
     demurrage = calculate_time_range_demurrage(balance, sumsy.demurrage, dem_free,
                                                interval, timerange, allow_negative)
     return guaranteed_income, demurrage
@@ -198,11 +207,34 @@ function adjust!(account::SuMSyAccount, timestamp::Integer)
     end
 
     balance = asset_value(account)
-    guaranteed_income, demurrage = calculate_adjustments(
-        balance, account.sumsy, account.gi_eligible, account.dem_free,
-        account.sumsy_interval, elapsed, account.allow_negative_demurrage)
+    total_income = MONEY_ZERO
+    total_demurrage = MONEY_ZERO
 
-    net = guaranteed_income - demurrage
+    # Legacy applies full intervals one at a time, compounding the balance, and
+    # then rounds the total adjustment over a partial interval. `timerange` may
+    # span several intervals when a transactional account is adjusted late.
+    remaining = elapsed
+    while remaining >= account.sumsy_interval
+        guaranteed_income, demurrage = calculate_adjustments(
+            balance, account.sumsy, account.gi_eligible, account.dem_free,
+            account.sumsy_interval, account.sumsy_interval,
+            account.allow_negative_demurrage)
+        balance += guaranteed_income - demurrage
+        total_income += guaranteed_income
+        total_demurrage += demurrage
+        remaining -= account.sumsy_interval
+    end
+
+    if remaining > 0
+        guaranteed_income, demurrage = calculate_adjustments(
+            balance, account.sumsy, account.gi_eligible, account.dem_free,
+            account.sumsy_interval, remaining,
+            account.allow_negative_demurrage)
+        total_income += guaranteed_income
+        total_demurrage += demurrage
+    end
+
+    net = total_income - total_demurrage
     if net != MONEY_ZERO
         book_asset!(account.balance, SUMSY_DEPOSIT, net; timestamp = timestamp)
     else
@@ -210,7 +242,7 @@ function adjust!(account::SuMSyAccount, timestamp::Integer)
     end
 
     account.last_adjustment = Int64(timestamp)
-    return guaranteed_income, demurrage
+    return total_income, total_demurrage
 end
 
 """

@@ -8,6 +8,7 @@
 #   julia --project=test/parity test/parity/runtests.jl
 
 using Test
+using Random
 import EconoSim
 import EconoSimCore
 
@@ -185,6 +186,55 @@ end
         assert_same_money(legacy_gi, core_gi)
         assert_same_money(legacy_dem, core_dem)
         _assert_account(legacy, core)
+    end
+end
+
+@testset "Demurrage tie sweep" begin
+    legacy_tiers = ES.make_tiers(PAPER_TIERS)
+    core_tiers = EC.make_tiers(PAPER_TIERS)
+
+    function same_demurrage(balance, interval, timerange)
+        assert_same_money(
+            ES.calculate_time_range_demurrage(
+                ES.Currency(balance) / 10_000, legacy_tiers, 0,
+                interval, timerange, false),
+            EC.calculate_time_range_demurrage(
+                EC.Money(balance), core_tiers, EC.MONEY_ZERO,
+                interval, timerange, false))
+    end
+
+    # Half-unit ties decide the last decimal; sweep them densely.
+    for balance in 0:20_000
+        same_demurrage(balance, 1, 1)
+    end
+    for (threshold, _) in PAPER_TIERS
+        start = round(Int, threshold * 10_000)
+        for balance in max(start - 200, 0):(start + 200)
+            same_demurrage(balance, 1, 1)
+            same_demurrage(balance, 30, 30)
+            same_demurrage(balance, 30, 7)
+        end
+    end
+
+    rng = MersenneTwister(11)
+    for _ in 1:5_000
+        same_demurrage(rand(rng, 0:10^12), 30, rand(rng, 1:30))
+    end
+end
+
+@testset "SuMSy prorating and compounding" begin
+    # Legacy compounds full intervals and rounds guaranteed income when the
+    # timerange is not a multiple of the interval.
+    for tiers in (FLAT_TIERS, PAPER_TIERS)
+        legacy = _legacy_account(tiers; transactional = true, interval = 30)
+        core = _core_account(tiers; transactional = true, interval = 30)
+        for timestamp in (1, 3, 7, 13, 29, 30, 37, 44, 60, 61, 91, 137)
+            legacy_gi, legacy_dem = ES.adjust_sumsy_balance!(legacy, timestamp)
+            core_gi, core_dem = EC.adjust!(core, timestamp)
+            assert_same_money(legacy_gi, core_gi)
+            assert_same_money(legacy_dem, core_dem)
+            _assert_account(legacy, core)
+        end
     end
 end
 

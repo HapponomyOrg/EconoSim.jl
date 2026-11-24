@@ -152,6 +152,24 @@ Convert parts per million back to a rate for reporting.
 @inline rate(x::Int64) = Float64(x) / RATE_SCALE
 
 """
+    div_round_nearest(a::Int64, b::Int64) -> Int64
+
+`a / b` rounded half to even, using floored division like `FixedPointDecimals`.
+`b` must be positive. Use this wherever main EconoSim divides a `Currency` by
+an `Integer`, which rounds instead of truncating.
+"""
+@inline function div_round_nearest(a::Int64, b::Int64)
+    q, r = fldmod(a, b)
+    half = b >> 1
+    if iseven(b) && r == half
+        return isodd(q) ? q + 1 : q
+    elseif r > half
+        return q + 1
+    end
+    return q
+end
+
+"""
     apply_rate(value::Money, ppm_rate::Int64) -> Money
 
 Apply a ppm rate to an amount. The intermediate product is split so that
@@ -200,3 +218,4 @@ end
 export SCALE, RATE_SCALE, HALF, RATE_HALF, Money, money, scaled, currency, MONEY_ZERO
 export OVERFLOW_ERROR, OVERFLOW_SATURATE, overflow_mode, set_overflow_mode!
 export ppm, permyriad, rate, apply_rate, split_amount, saturating_add
+export div_round_nearest
