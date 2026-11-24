@@ -220,14 +220,19 @@ end
                 dict::Dict{BalanceEntry, Currency},
                 amount::Real)
 
+The amount is rounded to the balance's currency first, as `book_amount!` does, so the check tests exactly what would be
+booked. Without that, float noise in an amount such as -(0.1 + 0.2) on an entry of 0.3 refused a booking that ends
+exactly on the minimum.
+
 # Returns
 True if the booking can be executed, false if it violates minimum value constrictions.
 """
-function check_booking(balance::Balance,
+function check_booking(balance::Balance{C},
                     entry::BalanceEntry,
                     type::EntryType,
                     set_to_value::Bool,
-                    amount::Real)
+                    amount::Real) where {C}
+    amount = C(amount)
     dict = entry_dict(balance, type)
 
     if !set_to_value && entry in keys(dict)
@@ -243,14 +248,18 @@ end
     book_amount!(entry::BalanceEntry,
                 dict::Dict{BalanceEntry, Currency},
                 amount::Real)
+
+The amount is rounded to the balance's currency once, before the check and the booking.
 """
-function book_amount!(balance::Balance,
+function book_amount!(balance::Balance{C},
                     entry::BalanceEntry,
                     type::EntryType,
                     set_to_value::Bool,
                     amount::Real,
                     timestamp::Int = balance.last_transaction,
-                    skip_check::Bool = false)
+                    skip_check::Bool = false) where {C}
+    amount = C(amount)
+
     if skip_check || check_booking(balance, entry, type, set_to_value, amount)
         dict = entry_dict(balance, type)
         prev_amount = get!(dict, entry, CUR_0)

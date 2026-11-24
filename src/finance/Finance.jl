@@ -17,11 +17,11 @@ export SUMSY_DEP, SUMSY_DEBT
 export SuMSy, SuMSyDemurrage, DemTiers, DemSettings, make_tiers, NO_DEM_TIERS
 export telo, time_telo, calculate_sumsy_deposit
 export SuMSyBalance, SingleSuMSyBalance, MultiSuMSyBalance
-export get_sumsy, is_transactional, set_transactional
+export get_sumsy, get_granularity, set_granularity!
 export get_balance, get_def_sumsy_entry, sumsy_assets
 export adjust_sumsy_balance!, reset_sumsy_balance!
 export set_sumsy!, get_sumsy
-export set_sumsy_active!, is_sumsy_active, is_transactional, set_gi_eligible!, is_gi_eligible
+export set_sumsy_active!, is_sumsy_active, set_gi_eligible!, is_gi_eligible
 export get_seed, get_guaranteed_income, get_dem_tiers, get_initial_dem_free
 export set_dem_free!, get_dem_free, transfer_dem_free!
 export set_last_adjustment!, get_last_adjustment
