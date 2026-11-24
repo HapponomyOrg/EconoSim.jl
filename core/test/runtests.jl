@@ -14,13 +14,13 @@ using EconoSimCore
         @test abs(money(-1.5)) == money(1.5)
         @test sign(money(-1.5)) == -1
 
-        @test permyriad(0.01) == 100
-        @test permyriad(0.5) == 5_000
-        @test rate(100) == 0.01
+        @test ppm(0.01) == 10_000
+        @test ppm(0.5) == 500_000
+        @test rate(10_000) == 0.01
 
-        @test apply_rate(money(1_000), 100) == money(10)
-        @test apply_rate(money(1_000), 2_000) == money(200)
-        @test apply_rate(money(-1_000), 100) == scaled(-99_999)
+        @test apply_rate(money(1_000), ppm(0.01)) == money(10)
+        @test apply_rate(money(1_000), ppm(0.20)) == money(200)
+        @test apply_rate(money(-1_000), ppm(0.01)) == scaled(-99_999)
 
         share, remainder = split_amount(money(10), 3)
         @test share == scaled(33_333)
@@ -78,7 +78,7 @@ using EconoSimCore
         flat = make_tiers(0.01)
         @test length(flat.spans) == 1
         @test flat.spans[1] == typemax(Money)
-        @test flat.rates[1] == 100
+        @test flat.rates[1] == ppm(0.01)
 
         @test telo(money(2_000), flat) == money(200_000)
         @test telo(2_000.0, 0.01) == money(200_000)

@@ -2,11 +2,12 @@
 #
 # Money is stored as an Int64 scaled by 10^4 (currency × 10,000), matching the
 # four-decimal precision MoneySim uses, but without FixedPointDecimals.
-# Rates are permyriad (rate × 10,000).
+# Rates are parts per million (rate × 1,000,000).
 
 const SCALE = Int64(10_000)
-const PERMYRIAD = SCALE
+const RATE_SCALE = Int64(1_000_000)
 const HALF = SCALE ÷ 2
+const RATE_HALF = RATE_SCALE ÷ 2
 
 """
     Money(value::Int64)
@@ -93,38 +94,47 @@ end
     return s
 end
 
+"""    ppm(x::Real) -> Int64
+
+Convert a rate to parts per million (rate × 1,000,000), rounded to an integer.
+"""
+@inline ppm(x::Real) = round(Int64, x * RATE_SCALE)
+
 """    permyriad(x::Real) -> Int64
 
-Convert a rate to permyriad (rate × 10,000), rounded to an integer.
+Deprecated alias for [`ppm`](@ref). It now returns parts per million, not
+permyriad units.
 """
-@inline permyriad(x::Real) = round(Int64, x * PERMYRIAD)
+@inline permyriad(x::Real) = ppm(x)
 
 """    rate(x::Int64) -> Float64
 
-Convert permyriad back to a rate for reporting.
+Convert parts per million back to a rate for reporting.
 """
-@inline rate(x::Int64) = Float64(x) / PERMYRIAD
+@inline rate(x::Int64) = Float64(x) / RATE_SCALE
 
 """
-    apply_rate(value::Money, permyriad_rate::Int64) -> Money
+    apply_rate(value::Money, ppm_rate::Int64) -> Money
 
-Apply a permyriad rate to an amount. The intermediate product is split so that
+Apply a ppm rate to an amount. The intermediate product is split so that
 `q * rate` cannot overflow for realistic simulation amounts.
 """
-@inline function apply_rate(value::Money, permyriad_rate::Int64)
+@inline function apply_rate(value::Money, ppm_rate::Int64)
     x = value.value
-    p = max(permyriad_rate, Int64(1))
+    p = max(ppm_rate, Int64(1))
     if x <= typemax(Int64) ÷ p
-        return Money((x * permyriad_rate + HALF) ÷ SCALE)
+        return Money((x * ppm_rate + RATE_HALF) ÷ RATE_SCALE)
     end
-    hi = (x ÷ SCALE) * permyriad_rate
-    lo = ((x % SCALE) * permyriad_rate + HALF) ÷ SCALE
+    # RATE_SCALE is 100 × SCALE, so the high part is q * p / 100.
+    q, rem = divrem(x, SCALE)
+    hi = (q ÷ 100) * ppm_rate + ((q % 100) * ppm_rate) ÷ 100
+    lo = ((rem * ppm_rate) + RATE_HALF) ÷ RATE_SCALE
     return Money(hi >= (typemax(Int64) >> 1) - lo ?
                  (typemax(Int64) >> 1) : (hi + lo))
 end
 
-@inline apply_rate(value::Money, permyriad_rate::Real) =
-    apply_rate(value, permyriad(permyriad_rate))
+@inline apply_rate(value::Money, ppm_rate::Real) =
+    apply_rate(value, ppm(ppm_rate))
 
 """
     split_amount(total::Money, parts::Int) -> (share::Money, remainder::Money)
@@ -138,5 +148,5 @@ function split_amount(total::Money, parts::Int)
     return Money(q), Money(r)
 end
 
-export SCALE, PERMYRIAD, HALF, Money, money, scaled, currency, MONEY_ZERO
-export permyriad, rate, apply_rate, split_amount, saturating_add
+export SCALE, RATE_SCALE, HALF, RATE_HALF, Money, money, scaled, currency, MONEY_ZERO
+export ppm, permyriad, rate, apply_rate, split_amount, saturating_add

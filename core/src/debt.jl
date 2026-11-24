@@ -43,7 +43,7 @@ function Debt(creditor::Balance, debtor::Balance, amount::Money,
     share, rest = split_amount(amount, Int(installments))
     values = fill(share, Int(installments))
     values[1] = share + rest
-    return Debt(creditor, debtor, values, permyriad(interest_rate);
+    return Debt(creditor, debtor, values, ppm(interest_rate);
                 bank_debt = bank_debt, money_entry = money_entry,
                 debt_entry = debt_entry, creation = creation,
                 interval = interval, compounded_interest = compounded_interest)

@@ -1,7 +1,7 @@
 name = "EconoSimCore"
 uuid = "095a6474-748a-41c3-bb36-58d2416a9b56"
 authors = ["Stef Kuypers <stef@happonomy.org>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [compat]
 julia = "1.10"

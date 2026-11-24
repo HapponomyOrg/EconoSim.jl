@@ -1,14 +1,14 @@
 # SuMSy (Sustainable Money System) mechanics.
 #
 # Guaranteed income creates money; demurrage destroys it. Tiers are stored as
-# integer spans and permyriad rates, so no Interval or Percentage types leak
+# integer spans and ppm rates, so no Interval or Percentage types leak
 # into the core.
 
 """
     DemTiers(spans, rates)
 
 A piecewise demurrage schedule. `spans[i]` is the width of tier `i` (the last
-span is `typemax(Money)`); `rates[i]` is its permyriad rate.
+span is `typemax(Money)`); `rates[i]` is its ppm rate.
 """
 struct DemTiers
     spans::Vector{Money}
@@ -33,7 +33,7 @@ function make_tiers(settings::AbstractVector{<:Tuple{<:Real,<:Real}})
         lower = money(ordered[i][1])
         upper = i == length(ordered) ? typemax(Money) : money(ordered[i + 1][1])
         spans[i] = upper == typemax(Money) ? typemax(Money) : upper - lower
-        rates[i] = permyriad(ordered[i][2])
+        rates[i] = ppm(ordered[i][2])
     end
 
     return DemTiers(spans, rates)
@@ -78,7 +78,7 @@ function telo(income::Money, demurrage::DemTiers, dem_free::Money = MONEY_ZERO)
 
         if span == typemax(Money) || total_dem + apply_rate(span, rate_pm) > income
             if rate_pm != 0
-                telo_value += Money(div((income.value - total_dem.value) * PERMYRIAD,
+                telo_value += Money(div((income.value - total_dem.value) * RATE_SCALE,
                                         rate_pm))
             else
                 telo_value = typemax(Money)

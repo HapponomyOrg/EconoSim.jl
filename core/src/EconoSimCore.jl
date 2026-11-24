@@ -9,8 +9,8 @@ This module is deliberately free of Agents.jl, DataFrames, UUIDs, Intervals,
 and `FixedPointDecimals`. The high-level `EconoSim` package remains the
 Agents.jl-facing API and can delegate to this core.
 
-All money is `Money` (Int64 scaled by 10^4). All rates are `Int64` permyriad
-(rate × 10^4). See `docs/plans/2026-10-21-wasm-ready-core.md`.
+All money is `Money` (Int64 scaled by 10^4). All rates are `Int64` in parts
+per million (rate × 10^6). See `docs/plans/2026-10-21-wasm-ready-core.md`.
 """
 module EconoSimCore
 
