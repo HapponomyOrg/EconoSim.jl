@@ -34,6 +34,9 @@ julia --project=core -e 'using Pkg; Pkg.test()'
   `10_000`. This is enough for realistic national aggregates and avoids the
   Int128 division gap in the wasm backend.
 - Rates are `Int64` parts per million (rate × 1,000,000).
+- Money arithmetic is checked by default: overflow throws. Call
+  `set_overflow_mode!(OVERFLOW_SATURATE)` for the explicit saturating mode used
+  by the browser build.
 - `Balance` has one `Money` slot per `Entry` on each side. Booking an asset
   increases equity; booking a liability decreases it, preserving
   `sum(assets) == sum(liabilities)`.

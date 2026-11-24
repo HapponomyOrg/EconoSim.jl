@@ -9,6 +9,32 @@ const RATE_SCALE = Int64(1_000_000)
 const HALF = SCALE ÷ 2
 const RATE_HALF = RATE_SCALE ÷ 2
 
+# Overflow policy: checked by default; saturating is an explicit browser mode.
+const OVERFLOW_ERROR = Int64(0)
+const OVERFLOW_SATURATE = Int64(1)
+const OVERFLOW_MODE = Int64[OVERFLOW_ERROR]
+
+@inline overflow_mode() = OVERFLOW_MODE[1]
+
+"""
+    set_overflow_mode!(mode)
+
+Select `OVERFLOW_ERROR` (default) or `OVERFLOW_SATURATE` for subsequent money
+arithmetic. The wasm browser build sets `OVERFLOW_SATURATE` explicitly.
+"""
+function set_overflow_mode!(mode::Integer)
+    (mode == OVERFLOW_ERROR || mode == OVERFLOW_SATURATE) ||
+        throw(ArgumentError("invalid overflow mode: $mode"))
+    OVERFLOW_MODE[1] = Int64(mode)
+    return nothing
+end
+
+@inline function _overflow_value(sign::Int)
+    overflow_mode() == OVERFLOW_SATURATE ||
+        throw(OverflowError("Money arithmetic overflow"))
+    return sign > 0 ? typemax(Int64) : typemin(Int64)
+end
+
 """
     Money(value::Int64)
 
@@ -48,11 +74,40 @@ Base.typemin(::Type{Money}) = Money(typemin(Int64))
 Base.typemax(::Type{Money}) = Money(typemax(Int64))
 Base.iszero(m::Money) = m.value == 0
 
-@inline Base.:+(a::Money, b::Money) = Money(a.value + b.value)
-@inline Base.:-(a::Money, b::Money) = Money(a.value - b.value)
-@inline Base.:-(a::Money) = Money(-a.value)
-@inline Base.:*(a::Money, b::Integer) = Money(a.value * b)
-@inline Base.:*(b::Integer, a::Money) = Money(a.value * b)
+@inline function Base.:+(a::Money, b::Money)
+    s = a.value + b.value
+    if (b.value > 0 && s < a.value) || (b.value < 0 && s > a.value)
+        return Money(_overflow_value(b.value > 0 ? 1 : -1))
+    end
+    return Money(s)
+end
+
+@inline function Base.:-(a::Money, b::Money)
+    s = a.value - b.value
+    if (b.value < 0 && s < a.value) || (b.value > 0 && s > a.value)
+        return Money(_overflow_value(b.value < 0 ? 1 : -1))
+    end
+    return Money(s)
+end
+
+@inline function Base.:-(a::Money)
+    a.value == typemin(Int64) && return Money(_overflow_value(1))
+    return Money(-a.value)
+end
+
+@inline function Base.:*(a::Money, b::Integer)
+    b == 0 && return MONEY_ZERO
+    a.value == typemin(Int64) && b == -1 &&
+        return Money(_overflow_value(1))
+    product = a.value * Int64(b)
+    if div(product, Int64(b)) != a.value
+        sign = ((a.value < 0) ⊻ (b < 0)) ? -1 : 1
+        return Money(_overflow_value(sign))
+    end
+    return Money(product)
+end
+
+@inline Base.:*(b::Integer, a::Money) = a * b
 @inline Base.:(==)(a::Money, b::Money) = a.value == b.value
 @inline Base.isless(a::Money, b::Money) = isless(a.value, b.value)
 @inline Base.hash(m::Money, h::UInt) = hash(m.value, h)
@@ -70,29 +125,12 @@ Base.show(io::IO, m::Money) = print(io, "Money(", currency(m), ")")
 """
     saturating_add(a::Money, b::Money) -> Money
 
-Add two amounts, clamping at `typemax(Int64)` / `typemin(Int64)` instead of
-wrapping. The loan circuit uses this because paper-1 growth runs can exceed the
-scaled Int64 range; clamping keeps the series finite and signed.
+Deprecated alias for `a + b`. The active overflow mode decides whether an
+overflow throws or saturates.
 """
-@inline function saturating_add(a::Money, b::Money)
-    s = a.value + b.value
-    if b.value > 0 && s < a.value
-        return Money(typemax(Int64))
-    elseif b.value < 0 && s > a.value
-        return Money(typemin(Int64))
-    end
-    return Money(s)
-end
+@inline saturating_add(a::Money, b::Money) = a + b
 
-@inline function saturating_add(a::Int64, b::Int64)
-    s = a + b
-    if b > 0 && s < a
-        return typemax(Int64)
-    elseif b < 0 && s > a
-        return typemin(Int64)
-    end
-    return s
-end
+@inline saturating_add(a::Int64, b::Int64) = a + b
 
 """    ppm(x::Real) -> Int64
 
@@ -129,8 +167,8 @@ Apply a ppm rate to an amount. The intermediate product is split so that
     q, rem = divrem(x, SCALE)
     hi = (q ÷ 100) * ppm_rate + ((q % 100) * ppm_rate) ÷ 100
     lo = ((rem * ppm_rate) + RATE_HALF) ÷ RATE_SCALE
-    return Money(hi >= (typemax(Int64) >> 1) - lo ?
-                 (typemax(Int64) >> 1) : (hi + lo))
+    hi >= typemax(Int64) - lo && return Money(_overflow_value(1))
+    return Money(hi + lo)
 end
 
 @inline apply_rate(value::Money, ppm_rate::Real) =
@@ -149,4 +187,5 @@ function split_amount(total::Money, parts::Int)
 end
 
 export SCALE, RATE_SCALE, HALF, RATE_HALF, Money, money, scaled, currency, MONEY_ZERO
+export OVERFLOW_ERROR, OVERFLOW_SATURATE, overflow_mode, set_overflow_mode!
 export ppm, permyriad, rate, apply_rate, split_amount, saturating_add

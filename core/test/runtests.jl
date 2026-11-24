@@ -26,6 +26,17 @@ using EconoSimCore
         @test share == scaled(33_333)
         @test remainder == scaled(1)
         @test share * 3 + remainder == money(10)
+
+        # Checked by default; saturation is explicit.
+        set_overflow_mode!(OVERFLOW_ERROR)
+        @test_throws OverflowError Money(typemax(Int64)) + scaled(1)
+        @test_throws OverflowError Money(typemin(Int64)) - scaled(1)
+        @test_throws OverflowError Money(typemin(Int64)) * -1
+        set_overflow_mode!(OVERFLOW_SATURATE)
+        @test (Money(typemax(Int64)) + scaled(1)).value == typemax(Int64)
+        @test (Money(typemin(Int64)) - scaled(1)).value == typemin(Int64)
+        @test (Money(typemin(Int64)) * -1).value == typemax(Int64)
+        set_overflow_mode!(OVERFLOW_ERROR)
     end
 
     @testset "Rng" begin
