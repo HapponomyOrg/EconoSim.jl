@@ -1,0 +1,79 @@
+# Explicit, deterministic RNG.
+#
+# The simulation core never uses the global task-local RNG. Every stochastic
+# step receives an `Rng`, so a seed fully determines a run and the stream is
+# stable across Julia versions.
+
+"""
+    Rng(seed::Integer)
+    Rng(script::AbstractVector{<:Integer})
+
+A small xorshift64* generator. The state is a single `UInt64`. The vector
+constructor creates a replay generator for deterministic parity tests: each
+`next_u64!` returns the next scripted value before falling back to xorshift.
+"""
+mutable struct Rng
+    state::UInt64
+    script::Vector{UInt64}
+    cursor::Int
+
+    function Rng(seed::Integer)
+        s = UInt64(seed)
+        s == 0 && (s = 0x9E3779B97F4A7C15)
+        return new(s, UInt64[], 1)
+    end
+
+    function Rng(script::AbstractVector{<:Integer})
+        return new(0x9E3779B97F4A7C15, UInt64.(script), 1)
+    end
+end
+
+@inline function next_u64!(rng::Rng)::UInt64
+    if rng.cursor <= length(rng.script)
+        value = rng.script[rng.cursor]
+        rng.cursor += 1
+        return value
+    end
+
+    x = rng.state
+    x ⊻= x >> 12
+    x ⊻= x << 25
+    x ⊻= x >> 27
+    rng.state = x
+    return x * 0x2545f4914f6cdd1d
+end
+
+"""
+    rand_index(rng::Rng, n::Int) -> Int
+
+Uniform integer in `1:n`.
+"""
+@inline function rand_index(rng::Rng, n::Int)
+    n > 0 || throw(ArgumentError("n must be positive"))
+    return Int(rem(next_u64!(rng), UInt64(n))) + 1
+end
+
+"""
+    rand_unit(rng::Rng) -> Float64
+
+Uniform `Float64` in `[0, 1)`.
+"""
+@inline function rand_unit(rng::Rng)::Float64
+    # 53 random bits, the same width as a Float64 significand.
+    return Float64(next_u64!(rng) >> 11) * (1.0 / 9007199254740992.0)
+end
+
+@inline rand_bool(rng::Rng, probability::Float64 = 0.5) = rand_unit(rng) < probability
+
+"""
+    rand_between(rng, low, high) -> Integer
+
+Uniform integer in the inclusive range `low:high`.
+"""
+@inline function rand_between(rng::Rng, low::Integer, high::Integer)
+    high <= low && return Int64(low)
+    span = UInt64(high - low) + UInt64(1)
+    return Int64(low) + Int64(rem(next_u64!(rng), span))
+end
+
+export Rng, next_u64!, rand_index, rand_unit, rand_bool, rand_between

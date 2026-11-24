@@ -1,0 +1,11 @@
+[deps]
+EconoSim = "cc8cb6e0-4c11-4d04-b964-59e7aacda730"
+EconoSimCore = "095a6474-748a-41c3-bb36-58d2416a9b56"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+EconoSim = {path = "../.."}
+EconoSimCore = {path = "../../core"}
+
+[compat]
+julia = "1.11"
