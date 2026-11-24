@@ -157,11 +157,22 @@ Convert parts per million back to a rate for reporting.
 Apply a ppm rate to an amount. The intermediate product is split so that
 `q * rate` cannot overflow for realistic simulation amounts.
 """
+@inline function _round_rate(numerator::Int64)
+    negative = numerator < 0
+    magnitude = negative ? -numerator : numerator
+    quotient, remainder = divrem(magnitude, RATE_SCALE)
+    if 2 * remainder > RATE_SCALE ||
+       (2 * remainder == RATE_SCALE && isodd(quotient))
+        quotient += 1
+    end
+    return negative ? -quotient : quotient
+end
+
 @inline function apply_rate(value::Money, ppm_rate::Int64)
     x = value.value
     p = max(ppm_rate, Int64(1))
     if x <= typemax(Int64) ÷ p
-        return Money((x * ppm_rate + RATE_HALF) ÷ RATE_SCALE)
+        return Money(_round_rate(x * ppm_rate))
     end
     # RATE_SCALE is 100 × SCALE, so the high part is q * p / 100.
     q, rem = divrem(x, SCALE)
