@@ -186,6 +186,17 @@ function adjust!(account::SuMSyAccount, timestamp::Integer)
     elapsed = Int(timestamp) - Int(account.last_adjustment)
     elapsed <= 0 && return (MONEY_ZERO, MONEY_ZERO)
 
+    # Match legacy `calculate_adjustments`: non-transactional accounts only
+    # adjust for full `sumsy_interval` multiples. A call at a partial interval
+    # still advances `last_adjustment`, so the partial period is skipped.
+    if !account.transactional
+        elapsed = div(elapsed, account.sumsy_interval) * account.sumsy_interval
+        if elapsed <= 0
+            account.last_adjustment = Int64(timestamp)
+            return (MONEY_ZERO, MONEY_ZERO)
+        end
+    end
+
     balance = asset_value(account)
     guaranteed_income, demurrage = calculate_adjustments(
         balance, account.sumsy, account.gi_eligible, account.dem_free,
