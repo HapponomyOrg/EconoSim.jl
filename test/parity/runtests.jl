@@ -102,23 +102,23 @@ end
                                    allow_negative_demurrage = true))
 end
 
-function _legacy_account(tiers; transactional = false, gi_eligible = true,
+function _legacy_account(tiers; granularity = 30, gi_eligible = true,
                          interval = 30, dem_free = 0)
     sumsy = ES.SuMSy(2_000, dem_free, tiers)
     account = ES.SingleSuMSyBalance(sumsy; initialize = false,
                                     allow_negative_sumsy = true,
                                     sumsy_interval = interval,
-                                    transactional = transactional,
+                                    granularity = granularity,
                                     gi_eligible = gi_eligible)
     ES.book_asset!(account, ES.SUMSY_DEP, 1_000)
     return account
 end
 
-function _core_account(tiers; transactional = false, gi_eligible = true,
+function _core_account(tiers; granularity = 30, gi_eligible = true,
                        interval = 30, dem_free = 0)
     sumsy = EC.SuMSy(2_000, dem_free, tiers)
     account = EC.SuMSyAccount(sumsy; interval = interval,
-                              transactional = transactional,
+                              granularity = granularity,
                               gi_eligible = gi_eligible,
                               dem_free = EC.money(dem_free),
                               allow_negative = true)
@@ -155,9 +155,9 @@ end
         _assert_account(legacy, core)
     end
 
-    # Transactional accounts prorate partial periods.
-    legacy = _legacy_account(PAPER_TIERS; transactional = true)
-    core = _core_account(PAPER_TIERS; transactional = true)
+    # Settling every step prorates and compounds.
+    legacy = _legacy_account(PAPER_TIERS; granularity = 1)
+    core = _core_account(PAPER_TIERS; granularity = 1)
     for timestamp in (15, 30, 45, 75)
         legacy_gi, legacy_dem = ES.adjust_sumsy_balance!(legacy, timestamp)
         core_gi, core_dem = EC.adjust!(core, timestamp)
@@ -226,8 +226,8 @@ end
     # Legacy compounds full intervals and rounds guaranteed income when the
     # timerange is not a multiple of the interval.
     for tiers in (FLAT_TIERS, PAPER_TIERS)
-        legacy = _legacy_account(tiers; transactional = true, interval = 30)
-        core = _core_account(tiers; transactional = true, interval = 30)
+        legacy = _legacy_account(tiers; granularity = 1, interval = 30)
+        core = _core_account(tiers; granularity = 1, interval = 30)
         for timestamp in (1, 3, 7, 13, 29, 30, 37, 44, 60, 61, 91, 137)
             legacy_gi, legacy_dem = ES.adjust_sumsy_balance!(legacy, timestamp)
             core_gi, core_dem = EC.adjust!(core, timestamp)

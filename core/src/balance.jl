@@ -75,6 +75,11 @@ function min_asset!(balance::Balance, entry::Entry, amount::Money = MONEY_ZERO)
     return balance
 end
 
+@inline min_asset(balance::Balance, entry::Entry) =
+    balance.min_assets[entry_index(entry)]
+@inline min_liability(balance::Balance, entry::Entry) =
+    balance.min_liabilities[entry_index(entry)]
+
 function min_liability!(balance::Balance, entry::Entry, amount::Money = MONEY_ZERO)
     entry === EQUITY && return balance
     balance.min_liabilities[entry_index(entry)] = amount
@@ -93,6 +98,34 @@ typemin_liability!(balance::Balance, entry::Entry) =
     new_value = set_to_value ? amount : current + amount
     minimum = is_asset ? balance.min_assets[idx] : balance.min_liabilities[idx]
     return new_value >= minimum
+end
+
+"""
+    check_booking(balance, entry, side, set_to_value, amount) -> Bool
+
+Whether booking `amount` on `side` would keep the entry at or above its
+minimum. Nothing is changed. Mirrors main EconoSim's `check_booking`.
+"""
+@inline check_booking(balance::Balance, entry::Entry, side::Side,
+                      set_to_value::Bool, amount::Money) =
+    _can_book(balance, entry, side === ASSET, amount, set_to_value)
+
+"""
+    available_asset(balance, entry) -> Money
+
+The amount that can be deducted from an asset entry without breaking its
+minimum. Never negative. Mirrors main EconoSim's `available_asset`.
+"""
+function available_asset(balance::Balance, entry::Entry)
+    value = asset_value(balance, entry)
+    minimum = min_asset(balance, entry)
+
+    # Guard against overflow when the minimum is close to typemin.
+    if minimum < MONEY_ZERO && value.value > typemax(Int64) + minimum.value
+        return Money(typemax(Int64))
+    end
+
+    return max(MONEY_ZERO, value - minimum)
 end
 
 function _book!(balance::Balance, entry::Entry, is_asset::Bool, amount::Money;
@@ -186,5 +219,6 @@ end
 
 export Balance, clear!, asset_value, liability_value, assets_value, liabilities_value
 export equity, validate, def_min_asset!, def_min_liability!, min_asset!, min_liability!
+export min_asset, min_liability, check_booking, available_asset
 export typemin_asset!, typemin_liability!
 export book_asset!, book_liability!, transfer!, transfer_asset!, transfer_liability!
